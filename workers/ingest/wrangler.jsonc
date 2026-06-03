@@ -1,0 +1,106 @@
+/**
+ * OmniCharts ingest Worker — docs/11-cloudflare-deployment.md, docs/22-ingest-free-tier-tuning.md
+ */
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "omnicharts-ingest",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-06-01",
+	"compatibility_flags": ["nodejs_compat"],
+	"observability": { "enabled": true },
+	"dev": {
+		"ip": "127.0.0.1",
+		"port": 8787,
+		"generate_types": false
+	},
+	"upload_source_maps": true,
+	"triggers": {
+		"crons": [
+			"*/1 * * * *",
+			"15 0 * * *",
+			"0 */6 * * *"
+		]
+	},
+	"vars": {
+		"TWITCH_MIN_VIEWERS": "2",
+		"TWITCH_MAX_TRACKED": "3000",
+		"TWITCH_RANKING_MIN_AIRTIME_MINUTES": "1"
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "omnicharts",
+			"database_id": "81d6616e-8277-4dd6-954c-2f0470004254",
+			"migrations_dir": "../../migrations/d1"
+		}
+	],
+	"r2_buckets": [
+		{
+			// NDJSON cold archive — src/r2/sample-archive.ts (SAMPLE_ARCHIVE_ENABLED=1)
+			"binding": "SAMPLES",
+			"bucket_name": "omnicharts-samples"
+		}
+	],
+	"queues": {
+		"producers": [
+			{
+				"binding": "INGEST_QUEUE",
+				"queue": "omnicharts-ingest"
+			}
+		],
+		"consumers": [
+			{
+				"queue": "omnicharts-ingest",
+				"max_batch_size": 5,
+				"max_batch_timeout": 5,
+				"max_retries": 2,
+				"dead_letter_queue": "omnicharts-ingest-dlq"
+			}
+		]
+	},
+	"env": {
+		"staging": {
+			"triggers": {
+				"crons": ["*/5 * * * *", "15 0 * * *", "0 */6 * * *"]
+			},
+			"vars": {
+				"ENVIRONMENT": "staging",
+				"INGEST_COVERAGE_MODE": "shards_only",
+				"LIVE_SWEEP_MAX_PAGES": "3",
+				"TWITCH_MIN_VIEWERS": "20",
+				"TWITCH_MAX_TRACKED": "200",
+				"TWITCH_RANKING_MIN_AIRTIME_MINUTES": "60",
+				"SAMPLE_ARCHIVE_ENABLED": "0"
+			}
+		},
+		"production": {
+			"limits": {
+				"cpu_ms": 30000
+			},
+			"vars": {
+				"ENVIRONMENT": "production",
+				"INGEST_COVERAGE_MODE": "full",
+				"TWITCH_MIN_VIEWERS": "20",
+				"TWITCH_RANKING_MIN_AIRTIME_MINUTES": "60",
+				"SAMPLE_ARCHIVE_ENABLED": "0"
+			},
+			"queues": {
+				"producers": [
+					{
+						"binding": "INGEST_QUEUE",
+						"queue": "omnicharts-ingest"
+					}
+				],
+				"consumers": [
+					{
+						"queue": "omnicharts-ingest",
+						"max_batch_size": 10,
+						"max_batch_timeout": 5,
+						"max_retries": 3,
+						"dead_letter_queue": "omnicharts-ingest-dlq"
+					}
+				]
+			}
+		}
+	}
+}
