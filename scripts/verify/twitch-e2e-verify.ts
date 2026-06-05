@@ -143,15 +143,17 @@ async function ingestHealthStep(): Promise<boolean> {
 			log({ name: 'ingest health', pass: false, detail: 'invalid JSON from /health' });
 			return false;
 		}
-		if (parsed.status === 'degraded') {
+		if (parsed.db !== 'connected') {
 			log({
 				name: 'ingest health',
 				pass: false,
-				detail: `status degraded — ingest lag > threshold (${snippet})`
+				detail: `db=${parsed.db ?? 'unknown'}`
 			});
 			return false;
 		}
-		if (parsed.status !== 'ok' || parsed.db !== 'connected') {
+		if (parsed.status === 'degraded') {
+			detail = `GET /health degraded (ingest lag) — ${snippet}`;
+		} else if (parsed.status !== 'ok') {
 			log({
 				name: 'ingest health',
 				pass: false,

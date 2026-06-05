@@ -66,6 +66,21 @@ describe('buildRankingsGamesResponse', () => {
 		});
 	});
 
+	it('uses platform-specific min viewers from env', async () => {
+		const spy = vi.spyOn(topGames, 'getTopGamesByAverageViewers').mockResolvedValue([]);
+
+		await buildRankingsGamesResponse(
+			{} as D1Database,
+			{ platform: 'youtube', period: '7d', limit: 20 },
+			{ YOUTUBE_MIN_VIEWERS: 30, TWITCH_MIN_VIEWERS: 2 }
+		);
+
+		expect(spy).toHaveBeenCalledWith(
+			{},
+			expect.objectContaining({ platformId: 'youtube', minAverageViewers: 30 })
+		);
+	});
+
 	it('returns empty items for youtube when no rollups', async () => {
 		vi.spyOn(topGames, 'getTopGamesByAverageViewers').mockResolvedValue([]);
 

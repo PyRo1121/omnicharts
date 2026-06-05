@@ -16,6 +16,6 @@ export function serverLoadContext(
 	return {
 		fetch: fetchFn,
 		db: getD1(platform),
-		cfEnv: platform?.env ?? null
+		cfEnv: (platform?.env as WebRankingEnv | undefined) ?? null
 	};
 }

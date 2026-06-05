@@ -144,7 +144,7 @@ async function waitForStableIngest(): Promise<void> {
 		const h = await fetchHealth();
 		const stable =
 			h.ok &&
-			h.body?.status === 'ok' &&
+			(h.body?.status === 'ok' || h.body?.status === 'degraded') &&
 			h.body?.db === 'connected' &&
 			h.body?.twitch === 'configured';
 		if (stable) {

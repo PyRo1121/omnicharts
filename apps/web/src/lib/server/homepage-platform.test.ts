@@ -29,6 +29,16 @@ describe('homepage load — non-Twitch platforms (docs/09 Phase 3)', () => {
 	it('loads kick channel rankings without platformUnsupported banner', async () => {
 		const fetchFn = vi.fn().mockImplementation((input: RequestInfo | URL) => {
 			const url = String(input);
+			if (url.includes('/health')) {
+				return Promise.resolve({
+					ok: true,
+					json: async () => ({
+						status: 'ok',
+						tracked_channels: { twitch: 0, kick: 15, youtube: 0 },
+						channels_live_by_platform: { twitch: 0, kick: 4, youtube: 0 }
+					})
+				});
+			}
 			if (url.includes('/rankings/games')) {
 				return Promise.resolve({
 					ok: true,
@@ -67,6 +77,8 @@ describe('homepage load — non-Twitch platforms (docs/09 Phase 3)', () => {
 		expect(result.platform).toBe('kick');
 		expect(result.platformUnsupported).toBe(false);
 		expect(result.overview.topChannelName).toBe('xQc');
+		expect(result.overview.stats.find((s) => s.label === 'Channels tracked')?.value).toBe('15');
+		expect(result.overview.stats.find((s) => s.label === 'Live now')?.value).toBe('4');
 		expect(result.overview.stats.some((s) => s.label.includes('Top 20 ranked'))).toBe(true);
 		expect(result.channelRankings.rows[0]?.slug).toBe('xqc');
 		expect(result.gameRankings).toMatchObject({ source: 'live', rows: [] });

@@ -108,4 +108,19 @@ describe('buildRankingsChannelsResponse', () => {
 			tracked_since: '2026-03-01T00:00:00.000Z'
 		});
 	});
+
+	it('uses platform-specific min viewers from env', async () => {
+		const spy = vi.spyOn(topChannels, 'getTopChannelsByHoursWatched').mockResolvedValue([]);
+
+		await buildRankingsChannelsResponse(
+			{} as D1Database,
+			{ platform: 'kick', period: '7d', limit: 20 },
+			{ KICK_MIN_VIEWERS: 50, TWITCH_MIN_VIEWERS: 2 }
+		);
+
+		expect(spy).toHaveBeenCalledWith(
+			{},
+			expect.objectContaining({ platformId: 'kick', minAverageViewers: 50 })
+		);
+	});
 });
