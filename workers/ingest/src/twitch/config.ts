@@ -60,6 +60,18 @@ export const ENRICH_MAX_CHANNELS_PER_RUN = 500;
 export const ENRICH_BEFORE_ROLLUP_MAX_CHANNELS = 100;
 export const ENRICH_STALE_HOURS = 24;
 
+/** VOD metadata backfill — capped per admin/cron run (Helix 1 pt/page). */
+export const VOD_BACKFILL_MAX_CHANNELS_PER_RUN = 25;
+export const VOD_BACKFILL_STALE_DAYS = 7;
+export const VOD_BACKFILL_VIDEOS_FIRST = 100;
+
+export function vodBackfillMaxChannelsFromEnv(env: Env): number {
+	const n = Number(env.VOD_BACKFILL_MAX_CHANNELS_PER_RUN ?? VOD_BACKFILL_MAX_CHANNELS_PER_RUN);
+	return Number.isFinite(n) && n > 0
+		? Math.floor(n)
+		: VOD_BACKFILL_MAX_CHANNELS_PER_RUN;
+}
+
 /**
  * Max tracked channels with *missing* lifecycle subs to create per sync run (2 Helix POSTs each).
  * Tradeoff: higher = faster catch-up on new channels but more subrequests/CPU per queue message;

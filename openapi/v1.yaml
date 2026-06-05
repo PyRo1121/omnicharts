@@ -175,6 +175,39 @@ paths:
         '401':
           description: Missing or invalid admin API key
 
+  /admin/twitch/vod-backfill:
+    post:
+      tags: [admin]
+      summary: Backfill Twitch archive VOD metadata (admin)
+      operationId: backfillTwitchVodMetadata
+      servers:
+        - url: https://ingest.omnicharts.com
+          description: Ingest Worker root (production TBD)
+        - url: http://127.0.0.1:8787
+          description: Local wrangler dev (ingest root)
+      description: |
+        Fetches Helix archive VODs for tracked Twitch channels and upserts metadata into
+        `stream_sessions` (`backfill_source = vod`). Tier windows 7/14/60 days by broadcaster type.
+      security:
+        - AdminApiKey: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VodBackfillRequest'
+      responses:
+        '200':
+          description: Backfill summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VodBackfillResponse'
+        '401':
+          description: Missing or invalid admin API key
+        '503':
+          description: Twitch credentials not configured
+
   /channels/resolve:
     get:
       tags: [channels]
@@ -663,6 +696,51 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/WatchlistImportRowResult'
+
+    VodBackfillRequest:
+      type: object
+      properties:
+        platform_channel_ids:
+          type: array
+          items:
+            type: string
+          description: Helix broadcaster user_id values; omit for next stale tracked batch
+        limit:
+          type: integer
+          minimum: 1
+          description: Max channels per run (default 25)
+
+    VodBackfillStats:
+      type: object
+      required: [ok, candidates, channels_processed, videos_fetched, sessions_upserted, pages]
+      properties:
+        ok:
+          type: boolean
+        skipped:
+          type: string
+          enum: [NEEDS_API]
+        candidates:
+          type: integer
+        channels_processed:
+          type: integer
+        videos_fetched:
+          type: integer
+        sessions_upserted:
+          type: integer
+        pages:
+          type: integer
+
+    VodBackfillResponse:
+      type: object
+      required: [ok, mode, stats]
+      properties:
+        ok:
+          type: boolean
+        mode:
+          type: string
+          enum: [vod_backfill]
+        stats:
+          $ref: '#/components/schemas/VodBackfillStats'
 
   securitySchemes:
     AdminApiKey:

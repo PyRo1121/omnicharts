@@ -69,6 +69,17 @@ describe('cronToMessages', () => {
 		]);
 	});
 
+	it('discover cron optionally enqueues vod backfill when enabled', () => {
+		expect(
+			cronToMessages(DISCOVER_TWITCH_CRON, { VOD_BACKFILL_ON_DISCOVER: '1' } as Env)
+		).toEqual([
+			{ type: 'discover_twitch' },
+			{ type: 'sync_eventsub_twitch' },
+			{ type: 'discover_kick' },
+			{ type: 'vod_backfill_twitch' }
+		]);
+	});
+
 	it('unknown cron returns empty', () => {
 		expect(cronToMessages('0 0 1 1 *')).toEqual([]);
 	});

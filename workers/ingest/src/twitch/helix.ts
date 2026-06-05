@@ -43,6 +43,25 @@ export type HelixUser = {
 	created_at: string;
 };
 
+/** GET /helix/videos — archive VOD metadata (Phase 4 backfill). */
+export type HelixVideo = {
+	id: string;
+	user_id: string;
+	user_login: string;
+	user_name: string;
+	title: string;
+	description: string;
+	created_at: string;
+	published_at: string;
+	url: string;
+	thumbnail_url: string;
+	viewable: string;
+	view_count: number;
+	language: string;
+	type: string;
+	duration: string;
+};
+
 /** GET /helix/channels — offline channel shell (title, game, tags). */
 export type HelixChannel = {
 	broadcaster_id: string;
@@ -212,6 +231,20 @@ export class TwitchHelixClient {
 			out.push(...(await this.getChannelsBatch(ids)));
 		}
 		return out;
+	}
+
+	/** Paginate archive VODs for one broadcaster (1 Helix point per page). */
+	async getArchiveVideosPage(
+		userId: string,
+		opts: { first?: number; after?: string } = {}
+	): Promise<HelixListResponse<HelixVideo>> {
+		const params: Record<string, string> = {
+			user_id: userId,
+			type: 'archive',
+			first: String(opts.first ?? 100)
+		};
+		if (opts.after) params.after = opts.after;
+		return this.get<HelixListResponse<HelixVideo>>('/videos', params);
 	}
 
 	private async getUsersBatch(userIds: string[]): Promise<HelixUser[]> {

@@ -90,6 +90,15 @@ Same query params as JSON. Error `invalid_format` when not `json` or `csv`. See 
 - Body: `text/csv` raw upload or JSON `{ "csv": "..." }`; `X-Admin-Api-Key` / Bearer per [15-ingest-runbook](./15-ingest-runbook.md)
 - Tests: `watchlist-csv-parse`, `watchlist-import`, `watchlist-upsert`, `watchlist-admin-routes`, Helix `getUsersByLogins`
 
-## Next after 4.5
+## Slice 4.6 — Twitch VOD metadata backfill (shipped 2026-06-05)
 
-**4.6 — Twitch VOD metadata backfill:** tier-limited Helix VOD enrichment per roadmap.
+- `POST /admin/twitch/vod-backfill` — admin-authed Helix archive VOD metadata for tracked channels
+- Tier windows from `broadcaster_type`: 7d default / 14d affiliate / 60d partner ([05-ingestion](./05-ingestion-per-platform.md))
+- Persists `stream_sessions` with `backfill_source = vod`, `duration`, `view_count`; `channels.vod_backfilled_at` cursor
+- Queue: `vod_backfill_twitch`; optional 6h cron when `VOD_BACKFILL_ON_DISCOVER=1` (default off)
+- Helix `GET /videos?user_id=&type=archive` with existing 429 retry budget; cap `VOD_BACKFILL_MAX_CHANNELS_PER_RUN` (default 25)
+- Tests: `vod-retention`, `vod-backfill`, `helix-videos`, `vod-admin-routes`, `db-vod-sessions`, `cron-messages`
+
+## Next after 4.6
+
+**4.7 — Language filter on rankings:** when platform API tags provide language.

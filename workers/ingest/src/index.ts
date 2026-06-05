@@ -76,6 +76,7 @@ import { recordDiscoverySeed, recordKickDiscoverySeed } from './discovery/seed';
 import { rankingQueryOptionsForPlatform } from './ranking/rollup-queries';
 import { isAdminPostPath, isAdminRankingsGetPath, requireAdminApiKey } from './admin/auth';
 import { importWatchlistCsv } from './watchlist/import';
+import { runTwitchVodBackfill } from './twitch/vod-backfill';
 import { ingestNonFatalError, ingestWarn } from './log';
 import { cronToMessages } from './cron-messages';
 import { requireDb, requireIngestQueue } from './worker-bindings';
@@ -141,6 +142,10 @@ export default {
 
 		if (url.pathname === '/admin/watchlist/import' && request.method === 'POST') {
 			return adminWatchlistImport(request, env);
+		}
+
+		if (url.pathname === '/admin/twitch/vod-backfill' && request.method === 'POST') {
+			return adminTwitchVodBackfill(request, env);
 		}
 
 		if (url.pathname === '/v1/rankings/channels' && request.method === 'GET') {
@@ -271,6 +276,12 @@ async function handleQueueMessage(payload: IngestQueueMessage, env: Env): Promis
 			break;
 		case 'rollup_daily':
 			await runDailyRollup(env, payload.date);
+			break;
+		case 'vod_backfill_twitch':
+			await runTwitchVodBackfill(env, {
+				platformChannelIds: payload.platform_channel_ids,
+				limit: payload.limit
+			});
 			break;
 	}
 }
@@ -449,6 +460,37 @@ async function adminWatchlistImport(request: Request, env: Env): Promise<Respons
 	}
 
 	return Response.json(stats);
+}
+
+async function adminTwitchVodBackfill(request: Request, env: Env): Promise<Response> {
+	if (!hasTwitchAppCredentials(env)) {
+		return twitchAppCredentialsErrorResponse();
+	}
+
+	let platformChannelIds: string[] | undefined;
+	let limit: number | undefined;
+	try {
+		const body = (await request.json()) as {
+			platform_channel_ids?: string[];
+			limit?: number;
+		};
+		if (Array.isArray(body.platform_channel_ids)) {
+			platformChannelIds = body.platform_channel_ids.filter(
+				(id): id is string => typeof id === 'string'
+			);
+		}
+		if (typeof body.limit === 'number' && Number.isFinite(body.limit) && body.limit > 0) {
+			limit = Math.floor(body.limit);
+		}
+	} catch {
+		/* empty body — backfill next stale tracked batch */
+	}
+
+	const stats = await runTwitchVodBackfill(env, { platformChannelIds, limit });
+	if (stats.skipped === 'NEEDS_API') {
+		return twitchAppCredentialsErrorResponse();
+	}
+	return Response.json({ ok: stats.ok, mode: 'vod_backfill', stats });
 }
 
 function rankingsQueryErrorResponse(

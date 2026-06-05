@@ -30,6 +30,7 @@ Operations guide for `workers/ingest`. Read with [11-cloudflare-deployment.md](.
 | `rollup_daily` | `{ date? }` | Close sessions; upsert daily rollups |
 | `discover_twitch` | — | Supplemental top-games scan + `game_categories` |
 | `sync_eventsub_twitch` | — | Create missing `stream.online` / `stream.offline` webhook subs (batched) |
+| `vod_backfill_twitch` | `{ platform_channel_ids?, limit? }` | Tier-limited Helix archive VOD metadata → `stream_sessions` (`backfill_source = vod`) |
 
 Idempotency: `UNIQUE(stream_session_id, sampled_at)` on samples.
 
@@ -208,6 +209,19 @@ curl -sS -X POST http://127.0.0.1:8787/admin/watchlist/import \
 JSON body alternative: `{ "csv": "platform,slug\ntwitch,ninja" }`.
 
 Per-row `needs_api` when platform secrets missing (same `NEEDS_API` gates as discover/poll). Re-run after credentials configured. See [07-api-spec](./07-api-spec.md#agency-watchlist-import-phase-4-admin).
+
+### Twitch VOD metadata backfill (Phase 4)
+
+Tier-limited Helix archive VOD metadata for **tracked** Twitch channels (no viewer samples / rollup HW).
+
+```bash
+curl -sS -X POST http://127.0.0.1:8787/admin/twitch/vod-backfill \
+  -H "X-Admin-Api-Key: $ADMIN_API_KEY" \
+  -H "content-type: application/json" \
+  -d '{"limit": 25}'
+```
+
+Optional `platform_channel_ids` array scopes to specific Helix `user_id` values. Empty body backfills the next stale batch (`vod_backfilled_at` null or &gt;7d). Enable on 6h discover cron with `VOD_BACKFILL_ON_DISCOVER=1` (appends queue message `vod_backfill_twitch`). See [07-api-spec](./07-api-spec.md#twitch-vod-metadata-backfill-phase-4-admin).
 
 ---
 

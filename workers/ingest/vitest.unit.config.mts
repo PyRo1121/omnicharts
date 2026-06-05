@@ -126,7 +126,12 @@ export default defineConfig({
 			'test/watchlist-csv-parse.spec.ts',
 			'test/watchlist-import.spec.ts',
 			'test/watchlist-admin-routes.spec.ts',
-			'test/watchlist-upsert.spec.ts'
+			'test/watchlist-upsert.spec.ts',
+			'test/vod-retention.spec.ts',
+			'test/vod-backfill.spec.ts',
+			'test/vod-admin-routes.spec.ts',
+			'test/helix-videos.spec.ts',
+			'test/db-vod-sessions.spec.ts'
 		],
 		coverage: {
 			provider: 'v8',

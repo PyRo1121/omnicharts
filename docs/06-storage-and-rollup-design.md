@@ -181,6 +181,7 @@ D1 limits: watch row size and DB size on free tier; prune `viewer_samples` aggre
 - Files: `0001_init_schema.sql` … `0008_ingest_hot_path_indexes.sql` (`0007` = `viewer_samples(sampled_at)`; `0008` = poll/rollup session indexes).
 - **`0004_helix_stream_fields`:** `channels.language`; `stream_sessions.language`, `tags_json` (Helix `tags[]` JSON), `thumbnail_url`, `stream_type` (Helix `type`). Not stored: deprecated `tag_ids`, `is_mature`.
 - **`0005_channel_profile_helix`:** Tier B — `GET /users` → `avatar_url`, `description`, `display_name`, `broadcaster_type`, `platform_created_at`; `GET /channels` → `channel_profile_json` (`game_id`, `game_name`, `title`, `tags`, `is_branded_content`). `profile_enriched_at` tracks refresh. Ingest: `runTwitchProfileEnrichment` after coverage reconcile batch, discovery cap, `POST /admin/twitch/enrich-profiles`.
+- **`0010_twitch_vod_metadata`:** `channels.vod_backfilled_at`; `stream_sessions.backfill_source` (`vod` \| live unset), `duration` (Helix ISO 8601), `view_count`. Ingest: `runTwitchVodBackfill`, `POST /admin/twitch/vod-backfill`, optional queue `vod_backfill_twitch` (Phase 4.6).
 
 **Schema conventions:**
 

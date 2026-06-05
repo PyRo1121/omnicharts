@@ -16,7 +16,12 @@ export type IngestQueueMessage =
 	| { type: 'rollup_daily'; date?: string }
 	| { type: 'discover_twitch' }
 	| { type: 'discover_kick' }
-	| { type: 'sync_eventsub_twitch' };
+	| { type: 'sync_eventsub_twitch' }
+	| {
+			type: 'vod_backfill_twitch';
+			platform_channel_ids?: string[];
+			limit?: number;
+	  };
 
 const INGEST_PLATFORMS = ['twitch', 'kick', 'youtube'] as const;
 
@@ -48,6 +53,11 @@ function isIngestQueueMessage(data: unknown): data is IngestQueueMessage {
 			return true;
 		case 'poll_twitch_enrich':
 			return msg.platform_channel_ids === undefined || isStringArray(msg.platform_channel_ids);
+		case 'vod_backfill_twitch':
+			return (
+				(msg.platform_channel_ids === undefined || isStringArray(msg.platform_channel_ids)) &&
+				(msg.limit === undefined || typeof msg.limit === 'number')
+			);
 		case 'rollup_daily':
 			return msg.date === undefined || typeof msg.date === 'string';
 		default:

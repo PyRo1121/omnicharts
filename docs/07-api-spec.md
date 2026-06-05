@@ -99,6 +99,23 @@ Platform credentials: Twitch app token, Kick client credentials, `YOUTUBE_API_KE
 
 ---
 
+## Twitch VOD metadata backfill (Phase 4, admin)
+
+Ingest Worker only — metadata enrichment for recent archive VODs (`GET /helix/videos?type=archive`). Does **not** write viewer samples or rollup HW; stores `stream_sessions` rows with `backfill_source = vod`.
+
+`POST /admin/twitch/vod-backfill`
+
+| Auth | `X-Admin-Api-Key` or `Authorization: Bearer <ADMIN_API_KEY>` |
+| Body | Optional JSON `{ "platform_channel_ids": ["545050196"], "limit": 25 }` — omit body to backfill next stale **tracked** Twitch batch |
+
+**Tier windows** (from `channels.broadcaster_type`): default **7d**, affiliate **14d**, partner **60d** ([05-ingestion](./05-ingestion-per-platform.md)).
+
+**Response:** `{ ok, mode: "vod_backfill", stats: { candidates, channels_processed, videos_fetched, sessions_upserted, pages } }` or `503` when Twitch credentials missing (`NEEDS_API`).
+
+**Cron:** enqueue `{ "type": "vod_backfill_twitch" }` on the ingest queue, or set `VOD_BACKFILL_ON_DISCOVER=1` to append to the 6h discover cron batch (cap `VOD_BACKFILL_MAX_CHANNELS_PER_RUN`, default 25).
+
+---
+
 ## Endpoints
 
 ### `GET /v1/rankings/channels`
