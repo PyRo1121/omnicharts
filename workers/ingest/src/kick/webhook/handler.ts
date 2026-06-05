@@ -5,12 +5,12 @@
 import { ingestWarn } from '../../log';
 import { requireDb } from '../../worker-bindings';
 import {
-	isDuplicateKickWebhookMessage,
+	claimKickWebhookMessageId,
 	recordKickWebhookMessageId
 } from './message-dedup';
 import { applyKickLivestreamStatusUpdated, parseLivestreamStatusUpdated } from './lifecycle';
 import type { KickWebhookHeaders } from './types';
-import { verifyKickWebhookSignature } from './verify';
+import { isKickWebhookTimestampFresh, verifyKickWebhookSignature } from './verify';
 
 const HEADER_MESSAGE_ID = 'Kick-Event-Message-Id';
 const HEADER_TIMESTAMP = 'Kick-Event-Message-Timestamp';
@@ -72,8 +72,12 @@ export async function handleKickWebhook(
 		return new Response('Invalid Kick webhook signature', { status: 401 });
 	}
 
+	if (!isKickWebhookTimestampFresh(headers.messageTimestamp)) {
+		return new Response('Stale Kick webhook timestamp', { status: 403 });
+	}
+
 	const db = requireDb(env);
-	if (await isDuplicateKickWebhookMessage(db, headers.messageId)) {
+	if (!(await claimKickWebhookMessageId(db, headers.messageId))) {
 		return new Response(null, { status: 204 });
 	}
 

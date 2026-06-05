@@ -4,6 +4,7 @@ export type KickWebhookBroadcaster = {
 	user_id: number;
 	username?: string;
 	channel_slug: string;
+	channel_id?: number;
 	is_anonymous?: boolean;
 	is_verified?: boolean;
 	profile_picture?: string;
@@ -12,6 +13,7 @@ export type KickWebhookBroadcaster = {
 
 export type KickLivestreamStatusUpdatedEvent = {
 	broadcaster: KickWebhookBroadcaster;
+	channel_id?: number;
 	is_live: boolean;
 	title?: string;
 	started_at?: string;

@@ -48,6 +48,9 @@ jobs:
       - name: verify:twitch (checkpoint skipped)
         run: bun run verify:twitch
 
+      - name: verify:kick (live discover skipped)
+        run: VERIFY_SKIP_KICK_LIVE=1 bun run verify:kick
+
       - name: Install Playwright Chromium (REM-035)
         continue-on-error: true
         run: cd apps/web && bunx playwright install chromium --with-deps

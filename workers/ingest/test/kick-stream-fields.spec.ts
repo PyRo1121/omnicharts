@@ -18,10 +18,10 @@ describe('kick stream-fields', () => {
 		).toBe('99-2026-06-01T12:00:00Z');
 	});
 
-	it('isKickViewerCountKnown rejects null and accepts numbers', () => {
+	it('isKickViewerCountKnown rejects null, zero, and accepts positive numbers', () => {
 		expect(isKickViewerCountKnown(null)).toBe(false);
 		expect(isKickViewerCountKnown(undefined)).toBe(false);
-		expect(isKickViewerCountKnown(0)).toBe(true);
+		expect(isKickViewerCountKnown(0)).toBe(false);
 		expect(isKickViewerCountKnown(42)).toBe(true);
 	});
 

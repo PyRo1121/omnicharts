@@ -68,9 +68,15 @@ describe('handleKickWebhook', () => {
 					bind: (...args: unknown[]) => ({
 						run: async () => {
 							if (q.includes('INSERT INTO ingest_metadata')) {
-								metadata.set(String(args[0]), String(args[1]));
+								const key = String(args[0]);
+								if (q.includes('ON CONFLICT(key) DO NOTHING')) {
+									if (metadata.has(key)) return { meta: { changes: 0 } };
+									metadata.set(key, String(args[1]));
+									return { meta: { changes: 1 } };
+								}
+								metadata.set(key, String(args[1]));
 							}
-							return {};
+							return { meta: { changes: 1 } };
 						},
 						first: async () => {
 							if (q.includes('ingest_metadata')) {
@@ -85,7 +91,8 @@ describe('handleKickWebhook', () => {
 						}
 					})
 				};
-			}
+			},
+			batch: async () => [{}]
 		}
 	} as unknown as Env;
 

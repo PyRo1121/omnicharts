@@ -6,6 +6,8 @@
 let cachedKey: CryptoKey | null = null;
 let cachedKeyPem: string | null = null;
 
+const DEFAULT_MAX_SKEW_SECONDS = 600;
+
 function pemToSpkiBytes(pem: string): Uint8Array {
 	const b64 = pem
 		.replace(/-----BEGIN PUBLIC KEY-----/g, '')
@@ -42,6 +44,17 @@ export function buildKickWebhookSignedPayload(
 	rawBody: string
 ): string {
 	return `${messageId}.${timestamp}.${rawBody}`;
+}
+
+export function isKickWebhookTimestampFresh(
+	timestamp: string,
+	maxSkewSeconds = DEFAULT_MAX_SKEW_SECONDS
+): boolean {
+	if (!timestamp.includes('T')) return false;
+	const parsedMs = Date.parse(timestamp);
+	if (!Number.isFinite(parsedMs)) return false;
+	const ageSec = Math.abs(Date.now() - parsedMs) / 1000;
+	return ageSec <= maxSkewSeconds;
 }
 
 export async function verifyKickWebhookSignature(opts: {

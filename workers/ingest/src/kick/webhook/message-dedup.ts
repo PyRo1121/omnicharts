@@ -47,3 +47,40 @@ export async function recordKickWebhookMessageId(db: D1Database, messageId: stri
 		.bind(keyFor(messageId), JSON.stringify(payload))
 		.run();
 }
+
+/** Synchronous claim before processing — returns false when another delivery owns message_id. */
+export async function claimKickWebhookMessageId(
+	db: D1Database,
+	messageId: string
+): Promise<boolean> {
+	const key = keyFor(messageId);
+	const payload: DedupEntry = { seenAt: new Date().toISOString() };
+	const result = await db
+		.prepare(
+			`INSERT INTO ingest_metadata (key, value) VALUES (?, ?)
+       ON CONFLICT(key) DO NOTHING`
+		)
+		.bind(key, JSON.stringify(payload))
+		.run();
+
+	if ((result.meta?.changes ?? 0) > 0) return true;
+
+	const row = await db
+		.prepare(`SELECT value FROM ingest_metadata WHERE key = ?`)
+		.bind(key)
+		.first<{ value: string }>();
+	if (!row?.value) return true;
+
+	const entry = parseEntry(row.value);
+	if (entry !== null && isFresh(entry)) return false;
+
+	await db.prepare(`DELETE FROM ingest_metadata WHERE key = ?`).bind(key).run();
+	const retry = await db
+		.prepare(
+			`INSERT INTO ingest_metadata (key, value) VALUES (?, ?)
+       ON CONFLICT(key) DO NOTHING`
+		)
+		.bind(key, JSON.stringify(payload))
+		.run();
+	return (retry.meta?.changes ?? 0) > 0;
+}

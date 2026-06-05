@@ -26,6 +26,18 @@ export function searchPlatformId(platform: PlatformId): Exclude<PlatformId, 'all
 	return 'twitch';
 }
 
+export function parseUiPlatform(raw: string | null): PlatformId {
+	if (raw && platforms.some((p) => p.id === raw)) return raw as PlatformId;
+	return 'twitch';
+}
+
+export function platformQueryParam(platform: PlatformId): string {
+	if (platform === 'kick' || platform === 'youtube' || platform === 'all') {
+		return `&platform=${platform}`;
+	}
+	return '';
+}
+
 export const platforms: { id: PlatformId; label: string }[] = [
 	{ id: 'all', label: 'All platforms' },
 	{ id: 'twitch', label: 'Twitch' },

@@ -1,10 +1,14 @@
 import { describe, it, expect, vi } from 'vitest';
 import { trendingSearches } from '$lib/mock/home';
 import { load } from '../../routes/+page.server';
+import type { PageData } from '../../routes/$types';
 
 vi.mock('$env/dynamic/private', () => ({
 	env: { INGEST_URL: 'http://ingest.test' }
 }));
+
+type HomepageLoad = (event: Parameters<typeof load>[0]) => Promise<PageData>;
+const homepageLoad = load as HomepageLoad;
 
 function homepageLoadArgs(platform: string | null) {
 	const url = new URL('http://localhost/');
@@ -23,7 +27,7 @@ function homepageLoadArgs(platform: string | null) {
 
 describe('homepage load — non-Twitch platforms (docs/09 Phase 3)', () => {
 	it('returns empty rankings and platformUnsupported for platform=kick', async () => {
-		const result = await load(homepageLoadArgs('kick'));
+		const result = await homepageLoad(homepageLoadArgs('kick'));
 
 		expect(result.platform).toBe('kick');
 		expect(result.platformUnsupported).toBe(true);
@@ -33,7 +37,7 @@ describe('homepage load — non-Twitch platforms (docs/09 Phase 3)', () => {
 	});
 
 	it('returns empty rankings and platformUnsupported for platform=youtube', async () => {
-		const result = await load(homepageLoadArgs('youtube'));
+		const result = await homepageLoad(homepageLoadArgs('youtube'));
 
 		expect(result.platform).toBe('youtube');
 		expect(result.platformUnsupported).toBe(true);
@@ -42,7 +46,7 @@ describe('homepage load — non-Twitch platforms (docs/09 Phase 3)', () => {
 	});
 
 	it('defaults to twitch and does not mark platform unsupported', async () => {
-		const result = await load(homepageLoadArgs(null));
+		const result = await homepageLoad(homepageLoadArgs(null));
 
 		expect(result.platform).toBe('twitch');
 		expect(result.platformUnsupported).toBe(false);

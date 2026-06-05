@@ -11,6 +11,7 @@
 		uiPeriods,
 		platforms,
 		searchPlatformId,
+		platformQueryParam,
 		type Period,
 		type PlatformId
 	} from '$lib/mock/home';
@@ -102,24 +103,26 @@
 		</div>
 
 		<ul class="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-			{#each data.overview.stats as stat (stat.label)}
-				<li
-					class="rounded-xl border border-[var(--color-oc-border-subtle)] bg-[var(--color-oc-bg-elevated)] px-4 py-3 oc-glow-accent"
-				>
-					<p class="text-[10px] uppercase tracking-wider text-[var(--color-oc-text-faint)]">
-						{stat.label}
-						{#if stat.source === 'mock'}
-							<span class="ml-1 rounded bg-[var(--color-oc-bg-card)] px-1 py-0.5 text-[9px] font-semibold uppercase text-[var(--color-oc-text-muted)]">
-								demo
-							</span>
-						{/if}
-					</p>
-					<p class="mt-1 font-mono text-2xl font-semibold tabular-nums text-[var(--color-oc-text)]">
-						{stat.value}
-					</p>
-					<p class="mt-0.5 text-xs text-[var(--color-oc-text-muted)]">{stat.hint}</p>
-				</li>
-			{/each}
+			{#if !data.platformUnsupported}
+				{#each data.overview.stats as stat (stat.label)}
+					<li
+						class="rounded-xl border border-[var(--color-oc-border-subtle)] bg-[var(--color-oc-bg-elevated)] px-4 py-3 oc-glow-accent"
+					>
+						<p class="text-[10px] uppercase tracking-wider text-[var(--color-oc-text-faint)]">
+							{stat.label}
+							{#if stat.source === 'mock'}
+								<span class="ml-1 rounded bg-[var(--color-oc-bg-card)] px-1 py-0.5 text-[9px] font-semibold uppercase text-[var(--color-oc-text-muted)]">
+									demo
+								</span>
+							{/if}
+						</p>
+						<p class="mt-1 font-mono text-2xl font-semibold tabular-nums text-[var(--color-oc-text)]">
+							{stat.value}
+						</p>
+						<p class="mt-0.5 text-xs text-[var(--color-oc-text-muted)]">{stat.hint}</p>
+					</li>
+				{/each}
+			{/if}
 		</ul>
 	</div>
 </section>
@@ -163,8 +166,9 @@
 		<SectionHeader title="Top streamers" subtitle="Ranked by hours watched">
 			{#snippet actions()}
 				<a
-					href="/channels?period={data.period}"
+					href="/channels?period={data.period}{platformQueryParam(data.platform)}"
 					class="text-xs font-medium text-[var(--color-oc-accent)] hover:underline"
+				>
 				>
 					View all →
 				</a>
@@ -187,8 +191,9 @@
 		<SectionHeader title="Top categories" subtitle="Ranked by average viewers">
 			{#snippet actions()}
 				<a
-					href="/games?period={data.period}"
+					href="/games?period={data.period}{platformQueryParam(data.platform)}"
 					class="text-xs font-medium text-[var(--color-oc-accent)] hover:underline"
+				>
 				>
 					View all →
 				</a>

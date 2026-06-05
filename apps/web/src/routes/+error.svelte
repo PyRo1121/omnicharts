@@ -4,11 +4,19 @@
 	let { error, status }: { error: App.Error; status: number } = $props();
 
 	const is404 = $derived(status === 404);
-	const title = $derived(is404 ? 'Page not found' : 'Something went wrong');
+	const loaderMessage = $derived(
+		typeof error?.message === 'string' && error.message.trim().length > 0
+			? error.message.trim()
+			: null
+	);
+	const title = $derived(
+		is404 ? (loaderMessage ? 'Not found' : 'Page not found') : 'Something went wrong'
+	);
 	const message = $derived(
 		is404
-			? 'That route is not in OmniCharts yet — check the URL or head back home.'
-			: (error?.message ?? 'An unexpected error occurred.')
+			? (loaderMessage ??
+				'That route is not in OmniCharts yet — check the URL or head back home.')
+			: (loaderMessage ?? 'An unexpected error occurred.')
 	);
 </script>
 

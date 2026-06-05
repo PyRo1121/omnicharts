@@ -8,6 +8,17 @@ import { getD1 } from '$lib/server/d1';
 import { resolveWebRankingEnv } from '$lib/server/ranking-env';
 import type { RequestHandler } from './$types';
 
+function rankingsQueryErrorResponse(error: 'invalid_period' | 'invalid_limit'): Response {
+	const messages = {
+		invalid_period: 'period must be one of 24h, 7d, 30d, 90d',
+		invalid_limit: 'limit must be a positive integer'
+	} as const;
+	return Response.json(
+		{ error: { code: error, message: messages[error] } },
+		{ status: 400, headers: { 'cache-control': 'no-store' } }
+	);
+}
+
 /** Rollup rankings — D1 on Pages; ingest proxy fallback (GET /v1/rankings/games). */
 export const GET: RequestHandler = async ({ url, fetch, platform }) => {
 	const db = getD1(platform);
@@ -29,10 +40,7 @@ export const GET: RequestHandler = async ({ url, fetch, platform }) => {
 	}
 
 	if (parsed.ok === false) {
-		return Response.json(
-			{ error: parsed.error },
-			{ status: 400, headers: { 'cache-control': 'no-store' } }
-		);
+		return rankingsQueryErrorResponse(parsed.error);
 	}
 
 	const target = new URL(`${getIngestBaseUrl()}/v1/rankings/games`);

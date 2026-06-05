@@ -1,9 +1,13 @@
 import { describe, it, expect, vi } from 'vitest';
 import { load } from '../../routes/search/+page.server';
+import type { PageData } from '../../routes/search/$types';
 
 vi.mock('$env/dynamic/private', () => ({
 	env: { INGEST_URL: 'http://ingest.test' }
 }));
+
+type SearchLoad = (event: Parameters<typeof load>[0]) => Promise<PageData>;
+const searchLoad = load as SearchLoad;
 
 function searchLoadArgs(q: string, platform: string) {
 	const url = new URL(`http://localhost/search?q=${encodeURIComponent(q)}&platform=${platform}`);
@@ -50,7 +54,7 @@ describe('search page load — platform=kick', () => {
 		const args = searchLoadArgs('xqc', 'kick');
 		args.fetch = fetchFn;
 
-		const result = await load(args);
+		const result = await searchLoad(args);
 
 		expect(result.platform).toBe('kick');
 		expect(result.q).toBe('xqc');

@@ -10,6 +10,7 @@ import { shouldPromoteDiscoveredToTracked } from './live-sightings';
 import type { SampleArchiveRow } from '../r2/sample-archive';
 import { slugify, slugWithPlatformChannelFallback } from '../twitch/slug';
 import type { KickCategory, KickLivestream } from '../kick/types';
+import { recordKickApiChannelId } from '../kick/api-channel-id';
 import {
 	isKickViewerCountKnown,
 	kickBroadcasterId,
@@ -321,6 +322,9 @@ export async function batchUpsertKickChannelsFromLivestreams(
 		scope: batchOpts?.scope ? `${batchOpts.scope}:channels` : undefined,
 		env: batchOpts?.env
 	});
+	for (const stream of streams) {
+		await recordKickApiChannelId(db, kickBroadcasterId(stream), stream.channel_id);
+	}
 	await runD1Batches(db, sightingStatements, {
 		scope: batchOpts?.scope ? `${batchOpts.scope}:sightings` : undefined,
 		env: batchOpts?.env

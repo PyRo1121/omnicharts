@@ -5,8 +5,7 @@ info:
   description: |
     Public REST API for OmniCharts streaming analytics (implemented subset).
 
-    **Platform:** Twitch ingest only in Phase 2. `kick` and `youtube` return empty leaderboards (`items: []`) until Phase 3.
-    Search rejects unknown platforms with `400` + `invalid_platform`. Channel/game detail returns `404` until Phase 3.
+    **Platform (Phase 3):** Twitch has rollup-backed rankings and channel/game detail. Kick has ingest search + optional webhook session boundaries; Kick rankings return `items: []` until Kick rollup SQL ships. YouTube returns empty leaderboards and search-only UX until ingest exists.
 
     **Periods:** `24h`, `7d`, `30d`, `90d` (rankings and channel detail). Web UI hides `90d` until Phase 4 retention.
 

@@ -3,7 +3,7 @@
 	import SectionHeader from '$lib/components/ui/SectionHeader.svelte';
 	import LeaderboardTable from '$lib/components/ui/LeaderboardTable.svelte';
 	import PeriodSelector from '$lib/components/ui/PeriodSelector.svelte';
-	import { uiPeriods, type Period } from '$lib/mock/home';
+	import { uiPeriods, platformQueryParam, type Period } from '$lib/mock/home';
 
 	let { data } = $props();
 
@@ -21,7 +21,10 @@
 	);
 
 	function onPeriodChange(p: Period) {
-		goto(`/channels?period=${p}`, { keepFocus: true, noScroll: true });
+		goto(`/channels?period=${p}${platformQueryParam(data.platform)}`, {
+			keepFocus: true,
+			noScroll: true
+		});
 	}
 </script>
 
@@ -40,7 +43,12 @@
 				: 'No rollups for this period yet.'}
 />
 
-{#if data.rows.length === 0}
+{#if data.platformUnsupported}
+	<p class="mt-4 text-sm text-[var(--color-oc-text-muted)]">
+		{data.platform === 'kick' ? 'Kick' : 'YouTube'} channel rankings ship in Phase 3. Switch to Twitch for
+		live leaderboards.
+	</p>
+{:else if data.rows.length === 0}
 	<p class="mt-4 text-sm text-[var(--color-oc-text-muted)]">
 		{data.source === 'unavailable'
 			? 'Could not load rankings from ingest.'
@@ -62,5 +70,7 @@
 </div>
 
 <div class="mt-6">
-	<LeaderboardTable {rows} metricHeader="Hours watched" />
+	{#if !data.platformUnsupported && data.rows.length > 0}
+		<LeaderboardTable {rows} metricHeader="Hours watched" />
+	{/if}
 </div>

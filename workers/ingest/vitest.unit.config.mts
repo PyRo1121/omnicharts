@@ -88,7 +88,9 @@ export default defineConfig({
 			'test/kick-discover-edge.spec.ts',
 			'test/kick-api-edge.spec.ts',
 			'test/kick-webhook-verify.spec.ts',
+			'test/kick-webhook-timestamp.spec.ts',
 			'test/kick-webhook-handler.spec.ts',
+			'test/kick-webhook-lifecycle.spec.ts',
 			'test/kick-admin-routes.spec.ts',
 			'test/kick-stream-fields.spec.ts',
 			'test/eventsub-subscriptions.spec.ts',
@@ -102,7 +104,7 @@ export default defineConfig({
 		coverage: {
 			provider: 'v8',
 			reporter: ['text', 'html'],
-			include: ['src/twitch/**/*.ts', 'src/db/**/*.ts'],
+			include: ['src/twitch/**/*.ts', 'src/db/**/*.ts', 'src/kick/**/*.ts'],
 			exclude: ['src/twitch/**/index.ts'],
 			thresholds: {
 				'src/twitch/**': {
@@ -112,6 +114,12 @@ export default defineConfig({
 					statements: 80
 				},
 				'src/db/**': {
+					lines: 80,
+					functions: 80,
+					branches: 80,
+					statements: 80
+				},
+				'src/kick/**': {
 					lines: 80,
 					functions: 80,
 					branches: 80,
