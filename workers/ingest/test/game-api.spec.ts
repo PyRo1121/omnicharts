@@ -167,10 +167,14 @@ describe('buildGameDetailResponse', () => {
 		]);
 	});
 
-	it('buildGameTopChannels returns empty for non-twitch', async () => {
-		const db = { prepare: () => ({ bind: () => ({ all: async () => ({}) }) }) } as unknown as D1Database;
+	it('buildGameTopChannels returns empty for youtube', async () => {
+		const db = {
+			prepare: () => ({
+				bind: () => ({ all: async () => ({ results: [] }) })
+			})
+		} as unknown as D1Database;
 		const rows = await buildGameTopChannels(db, {
-			platform: 'kick',
+			platform: 'youtube',
 			gameSlug: 'valorant',
 			period: '7d'
 		});

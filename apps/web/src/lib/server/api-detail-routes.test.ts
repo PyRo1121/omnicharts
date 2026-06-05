@@ -44,4 +44,19 @@ describe('GET /api/v1/games/[slug]', () => {
 			error: { code: 'not_found', message: 'Game not found' }
 		});
 	});
+
+	it('returns doc-07 error envelope on kick 404', async () => {
+		const db = nullDb();
+		const res = await getGameDetail({
+			params: { slug: 'missing' },
+			url: new URL('http://localhost/api/v1/games/missing?platform=kick'),
+			fetch: vi.fn(),
+			platform: { env: { DB: db } } as App.Platform
+		} as unknown as Parameters<typeof getGameDetail>[0]);
+
+		expect(res.status).toBe(404);
+		expect(await res.json()).toEqual({
+			error: { code: 'not_found', message: 'Game not found' }
+		});
+	});
 });

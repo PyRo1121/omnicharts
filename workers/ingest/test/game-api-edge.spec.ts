@@ -9,8 +9,14 @@ describe('game-api edge cases', () => {
 		expect(q.period).toBe('7d');
 	});
 
-	it('buildGameDetailResponse returns null for non-twitch platform', async () => {
-		const db = {} as D1Database;
+	it('buildGameDetailResponse returns null for unknown game on youtube', async () => {
+		const db = {
+			prepare() {
+				return {
+					bind: () => ({ first: async () => null })
+				};
+			}
+		} as unknown as D1Database;
 		const res = await buildGameDetailResponse(db, {
 			platform: 'youtube',
 			slug: 'valorant',

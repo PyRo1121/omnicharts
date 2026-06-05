@@ -12,7 +12,7 @@ export const GET: RequestHandler = async ({ params, url, fetch, platform }) => {
 	detailUrl.pathname = `/v1/games/${params.slug}`;
 	const query = parseGameDetailQuery(detailUrl);
 
-	if (db && query.platform === 'twitch') {
+	if (db && (query.platform === 'twitch' || query.platform === 'kick')) {
 		const eligibility = webRankingEligibility(platform?.env);
 		const body = await buildGameDetailResponse(
 			db,

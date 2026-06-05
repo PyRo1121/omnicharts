@@ -140,15 +140,19 @@ export async function loadGameDetail(
 	const apiPeriod = parseRankingPeriod(periodForApi(period));
 
 	try {
-		if (ctx.db && platform === 'twitch') {
-			const eligibility = webRankingEligibility(ctx.cfEnv);
-			const body = await buildGameDetailResponse(
-				ctx.db,
-				{ platform, slug, period: apiPeriod },
-				{ minAirtimeMinutes: eligibility.minAirtimeMinutes }
-			);
-			if (!body) return emptyGameLoad('not_found', slug, platform, period);
-			return mapGameBody(body as IngestGameResponse, period);
+		if (ctx.db && (platform === 'twitch' || platform === 'kick')) {
+			try {
+				const eligibility = webRankingEligibility(ctx.cfEnv);
+				const body = await buildGameDetailResponse(
+					ctx.db,
+					{ platform, slug, period: apiPeriod },
+					{ minAirtimeMinutes: eligibility.minAirtimeMinutes }
+				);
+				if (!body) return emptyGameLoad('not_found', slug, platform, period);
+				return mapGameBody(body as IngestGameResponse, period);
+			} catch {
+				/* platformProxy D1 may be empty — fall through to ingest HTTP */
+			}
 		}
 
 		const url = `${getIngestBaseUrl()}/v1/games/${encodeURIComponent(slug)}?platform=${encodeURIComponent(platform)}&period=${periodForApi(period)}`;

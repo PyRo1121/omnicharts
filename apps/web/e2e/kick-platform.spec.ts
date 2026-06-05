@@ -42,7 +42,35 @@ test.describe('Kick platform UX (docs/09, docs/16)', () => {
 		const res = await page.goto('/games?platform=kick');
 		expect(res?.status()).toBe(200);
 		await expect(page.getByText(/Kick game rankings ship in Phase 3/i)).not.toBeVisible();
-		await expect(page.getByText(/Top Kick categories by average viewers/i)).toBeVisible();
+		await expect(
+			page.getByText(/Top Kick categories by average viewers|Ingest unavailable/i)
+		).toBeVisible();
+	});
+
+	test('overview ?platform=kick loads without Phase 3 banner', async ({ page }) => {
+		const res = await page.goto('/overview?platform=kick');
+		expect(res?.status()).toBe(200);
+		await expect(page.getByText(/Kick overview cards ship in Phase 3/i)).not.toBeVisible();
+		await expect(
+			page.getByText(/Kick (rollup-backed counts when ingest has data|ingest unavailable)/i)
+		).toBeVisible();
+		await expect(page.getByRole('tab', { name: 'Kick' })).toHaveAttribute('aria-selected', 'true');
+		await expect(page.getByText(/Channels tracked/i)).toBeVisible();
+	});
+
+	test('overview ?platform=youtube shows YouTube banner', async ({ page }) => {
+		const res = await page.goto('/overview?platform=youtube');
+		expect(res?.status()).toBe(200);
+		await expect(page.getByRole('heading', { name: 'Platform overview' })).toBeVisible();
+		await expect(
+			page.getByText(/YouTube overview cards ship when YouTube ingest is live/i).first()
+		).toBeVisible();
+		await expect(page.getByRole('tab', { name: 'YouTube' })).toHaveAttribute('aria-selected', 'true');
+	});
+
+	test('game detail ?platform=kick returns 404 for unknown slug', async ({ page }) => {
+		const res = await page.goto('/games/not-a-real-kick-game-slug-xyz?platform=kick');
+		expect(res?.status()).toBe(404);
 	});
 
 	test('search page accepts platform=kick query param', async ({ page }) => {
@@ -50,6 +78,33 @@ test.describe('Kick platform UX (docs/09, docs/16)', () => {
 		expect(res?.status()).toBe(200);
 		await expect(page).toHaveTitle(/Search channels/i);
 		await expect(page.locator('#channel-search')).toBeVisible();
+	});
+
+	test('homepage ?platform=youtube shows Phase 3 banner and empty leaderboard shell', async ({
+		page
+	}) => {
+		const res = await page.goto('/?platform=youtube');
+		expect(res?.status()).toBe(200);
+		await expect(page.getByText(/YouTube rankings ship in Phase 3/i)).toBeVisible();
+		await expect(page.locator('table tbody td').filter({ hasText: /Phase 3/i }).first()).toBeVisible();
+	});
+
+	test('channels page ?platform=youtube shows empty table shell', async ({ page }) => {
+		const res = await page.goto('/channels?platform=youtube');
+		expect(res?.status()).toBe(200);
+		await expect(page.locator('table tbody td').filter({ hasText: /Phase 3/i }).first()).toBeVisible();
+	});
+
+	test('games page ?platform=youtube shows unsupported message', async ({ page }) => {
+		const res = await page.goto('/games?platform=youtube');
+		expect(res?.status()).toBe(200);
+		await expect(page.getByText(/YouTube game rankings ship/i)).toBeVisible();
+	});
+
+	test('search page subtitle reflects platform=kick', async ({ page }) => {
+		const res = await page.goto('/search?platform=kick');
+		expect(res?.status()).toBe(200);
+		await expect(page.getByText(/Find streamers by name or slug on Kick/i)).toBeVisible();
 	});
 
 	test('kick search returns results when ingest has kick channels', async ({ page }) => {

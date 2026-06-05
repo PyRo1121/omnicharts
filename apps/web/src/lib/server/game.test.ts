@@ -66,4 +66,41 @@ describe('loadGameDetail', () => {
 		const load = await loadGameDetail(testLoadContext(fetchFn as typeof fetch), 'missing', 'twitch', '7d');
 		expect(load.source).toBe('not_found');
 	});
+
+	it('maps live kick game payload from ingest', async () => {
+		const fetchFn = vi.fn().mockResolvedValue({
+			ok: true,
+			status: 200,
+			json: async () => ({
+				platform: 'kick',
+				slug: 'just-chatting',
+				name: 'Just Chatting',
+				period: '7d',
+				totals: {
+					hours_watched: 500,
+					average_viewers: 250,
+					peak_viewers: 800,
+					airtime_hours: 4,
+					live_channels: 20
+				},
+				daily: [],
+				top_channels: []
+			})
+		});
+
+		const load = await loadGameDetail(
+			testLoadContext(fetchFn as typeof fetch),
+			'just-chatting',
+			'kick',
+			'7d'
+		);
+		expect(load.source).toBe('live');
+		expect(load.platform).toBe('kick');
+		expect(load.name).toBe('Just Chatting');
+		expect(fetchFn).toHaveBeenCalledWith(
+			expect.stringContaining('/v1/games/just-chatting'),
+			expect.any(Object)
+		);
+		expect(String(fetchFn.mock.calls[0]?.[0])).toContain('platform=kick');
+	});
 });

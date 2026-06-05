@@ -84,7 +84,7 @@ export async function buildGameTopChannels(
 		limit?: number;
 	}
 ): Promise<GameTopChannelItem[]> {
-	if (opts.platform !== PLATFORM_TWITCH || !opts.gameSlug) return [];
+	if (!opts.gameSlug) return [];
 
 	const days = periodToDays(opts.period);
 	const minAirtime = opts.minAirtimeMinutes ?? MIN_RANKING_AIRTIME_MINUTES;
@@ -125,7 +125,7 @@ export async function buildGameDetailResponse(
 	opts: { platform: string; slug: string; period: RankingPeriod },
 	detailOpts?: GameDetailBuildOpts
 ): Promise<GameDetailResponse | null> {
-	if (opts.platform !== PLATFORM_TWITCH || !opts.slug) return null;
+	if (!opts.slug) return null;
 
 	const game = await db
 		.prepare(
@@ -133,7 +133,7 @@ export async function buildGameDetailResponse(
        FROM game_categories
        WHERE platform_id = ? AND lower(slug) = lower(?)`
 		)
-		.bind(PLATFORM_TWITCH, opts.slug)
+		.bind(opts.platform, opts.slug)
 		.first<GameRow>();
 
 	if (!game) return null;
