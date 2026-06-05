@@ -15,15 +15,15 @@
 		platforms,
 		rankingLanguages,
 		routeWithPlatform,
-		type Period,
 		type UiPlatformFilter
 	} from '$lib/ui/platform.svelte';
+	import type { RankingPeriod } from '@omnicharts/domain';
 
 	let { data } = $props();
 
 	const rows = $derived(channelLeaderboardRows(data.rows));
 	const subtitle = $derived(channelsPageSubtitle(data.platform, data.source));
-	function routeQuery(period: Period = data.period): Record<string, string> {
+	function routeQuery(period: RankingPeriod = data.period): Record<string, string> {
 		const q: Record<string, string> = { period };
 		if (data.language) q.language = data.language;
 		return q;
@@ -43,7 +43,7 @@
 		return routeWithPlatform('/channels', id, routeQuery());
 	}
 
-	function onPeriodChange(p: Period) {
+	function onPeriodChange(p: RankingPeriod) {
 		goto(routeWithPlatform('/channels', data.platform, routeQuery(p)), {
 			keepFocus: true,
 			noScroll: true

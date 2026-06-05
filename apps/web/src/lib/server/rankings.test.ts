@@ -1,12 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
-import { loadChannelRankings, loadTwitchChannelRankings } from './rankings';
+import { loadChannelRankings } from './rankings';
 import { testLoadContext, testLoadContextWithDb } from './test-helpers';
 
 vi.mock('$env/dynamic/private', () => ({
 	env: { INGEST_URL: 'http://ingest.test' }
 }));
 
-describe('loadTwitchChannelRankings', () => {
+describe('loadChannelRankings (twitch)', () => {
 	it('uses D1 only when binding present (no ingest fallback)', async () => {
 		const fetchFn = vi.fn();
 		const db = {
@@ -29,8 +29,9 @@ describe('loadTwitchChannelRankings', () => {
 			})
 		} as unknown as D1Database;
 
-		const load = await loadTwitchChannelRankings(
+		const load = await loadChannelRankings(
 			testLoadContextWithDb(fetchFn as typeof fetch, db),
+			'twitch',
 			'7d',
 			20
 		);
@@ -59,7 +60,7 @@ describe('loadTwitchChannelRankings', () => {
 			})
 		});
 
-		const load = await loadTwitchChannelRankings(testLoadContext(fetchFn as typeof fetch), '7d', 20);
+		const load = await loadChannelRankings(testLoadContext(fetchFn as typeof fetch), 'twitch', '7d', 20);
 		expect(load.source).toBe('live');
 		expect(load.rows[0]).toMatchObject({
 			slug: 'ninja',
@@ -77,21 +78,21 @@ describe('loadTwitchChannelRankings', () => {
 				items: []
 			})
 		});
-		const load = await loadTwitchChannelRankings(testLoadContext(fetchFn as typeof fetch), '30d');
+		const load = await loadChannelRankings(testLoadContext(fetchFn as typeof fetch), 'twitch', '30d');
 		expect(load.source).toBe('live');
 		expect(load.rows).toHaveLength(0);
 	});
 
 	it('returns unavailable when ingest fails (default)', async () => {
 		const fetchFn = vi.fn().mockResolvedValue({ ok: false, status: 503 });
-		const load = await loadTwitchChannelRankings(testLoadContext(fetchFn as typeof fetch), '7d');
+		const load = await loadChannelRankings(testLoadContext(fetchFn as typeof fetch), 'twitch', '7d');
 		expect(load.source).toBe('unavailable');
 		expect(load.rows).toHaveLength(0);
 	});
 
 	it('returns mock rows when mockEnabled and ingest fails', async () => {
 		const fetchFn = vi.fn().mockResolvedValue({ ok: false, status: 503 });
-		const load = await loadTwitchChannelRankings(testLoadContext(fetchFn as typeof fetch), '7d', 20, true);
+		const load = await loadChannelRankings(testLoadContext(fetchFn as typeof fetch), 'twitch', '7d', 20, true);
 		expect(load.source).toBe('mock');
 		expect(load.rows.length).toBeGreaterThan(0);
 	});

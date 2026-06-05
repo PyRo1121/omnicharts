@@ -7,21 +7,21 @@ import {
 import { getIngestBaseUrl } from '$lib/server/ingest';
 import type { ServerLoadContext } from '$lib/server/load-context';
 import { webRankingEligibility } from '$lib/server/ranking-env';
-import { topChannels, type ChannelRow, type Period } from '$lib/mock/home';
+import { topChannels, type ChannelRow, type RankingPeriod } from '$lib/mock/home';
 import { periodForApi } from '$lib/server/period-api';
 
 export type RankingsSource = 'live' | 'mock' | 'unavailable';
 
 export type ChannelRankingsLoad = {
 	source: RankingsSource;
-	period: Period;
+	period: RankingPeriod;
 	updatedAt: string | null;
 	rows: ChannelRow[];
 };
 
 function mapChannelRankingsBody(
 	body: RankingsChannelsResponse,
-	period: Period,
+	period: RankingPeriod,
 	limit: number,
 	platform: PlatformId
 ): ChannelRankingsLoad {
@@ -53,7 +53,7 @@ function supportsRollupChannelRankings(platform: PlatformId): boolean {
 async function loadFromD1(
 	db: D1Database,
 	platform: PlatformId,
-	period: Period,
+	period: RankingPeriod,
 	limit: number,
 	cfEnv: ServerLoadContext['cfEnv'],
 	language: string | null
@@ -74,7 +74,7 @@ async function loadFromD1(
 async function loadFromIngest(
 	fetchFn: typeof fetch,
 	platform: PlatformId,
-	period: Period,
+	period: RankingPeriod,
 	limit: number,
 	language: string | null
 ): Promise<ChannelRankingsLoad | null> {
@@ -95,7 +95,7 @@ async function loadFromIngest(
 export async function loadChannelRankings(
 	ctx: ServerLoadContext,
 	platform: PlatformId,
-	period: Period,
+	period: RankingPeriod,
 	limit = 20,
 	mockEnabled = false,
 	language: string | null = null
@@ -129,14 +129,4 @@ export async function loadChannelRankings(
 		}
 		return { source: 'unavailable', period, updatedAt: null, rows: [] };
 	}
-}
-
-/** @deprecated Prefer {@link loadChannelRankings} with explicit `platform`. */
-export async function loadTwitchChannelRankings(
-	ctx: ServerLoadContext,
-	period: Period,
-	limit = 20,
-	mockEnabled = false
-): Promise<ChannelRankingsLoad> {
-	return loadChannelRankings(ctx, 'twitch', period, limit, mockEnabled);
 }

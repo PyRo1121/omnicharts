@@ -10,9 +10,9 @@
 		uiPeriods,
 		platforms,
 		routeWithPlatform,
-		type Period,
 		type UiPlatformFilter
 	} from '$lib/ui/platform.svelte';
+	import type { RankingPeriod } from '@omnicharts/domain';
 
 	let { data } = $props();
 
@@ -23,7 +23,7 @@
 		return routeWithPlatform('/games', id, { period: data.period });
 	}
 
-	function onPeriodChange(p: Period) {
+	function onPeriodChange(p: RankingPeriod) {
 		goto(routeWithPlatform('/games', data.platform, { period: p }), {
 			keepFocus: true,
 			noScroll: true

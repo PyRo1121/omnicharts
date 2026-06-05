@@ -7,21 +7,21 @@ import {
 import { getIngestBaseUrl } from '$lib/server/ingest';
 import type { ServerLoadContext } from '$lib/server/load-context';
 import { resolveWebRankingEnv } from '$lib/server/ranking-env';
-import { topGames, type GameRow, type Period } from '$lib/mock/home';
+import { topGames, type GameRow, type RankingPeriod } from '$lib/mock/home';
 import { periodForApi } from '$lib/server/period-api';
 
 export type RankingsSource = 'live' | 'mock' | 'unavailable';
 
 export type GameRankingsLoad = {
 	source: RankingsSource;
-	period: Period;
+	period: RankingPeriod;
 	updatedAt: string | null;
 	rows: GameRow[];
 };
 
 function mapGameRankingsBody(
 	body: RankingsGamesResponse,
-	period: Period,
+	period: RankingPeriod,
 	limit: number,
 	platform: PlatformId
 ): GameRankingsLoad {
@@ -53,7 +53,7 @@ function supportsRollupGameRankings(platform: PlatformId): boolean {
 async function loadFromD1(
 	db: D1Database,
 	platform: PlatformId,
-	period: Period,
+	period: RankingPeriod,
 	limit: number,
 	cfEnv: ServerLoadContext['cfEnv']
 ): Promise<GameRankingsLoad> {
@@ -69,7 +69,7 @@ async function loadFromD1(
 async function loadFromIngest(
 	fetchFn: typeof fetch,
 	platform: PlatformId,
-	period: Period,
+	period: RankingPeriod,
 	limit: number
 ): Promise<GameRankingsLoad | null> {
 	const apiPeriod = periodForApi(period);
@@ -83,7 +83,7 @@ async function loadFromIngest(
 export async function loadGameRankings(
 	ctx: ServerLoadContext,
 	platform: PlatformId,
-	period: Period,
+	period: RankingPeriod,
 	limit = 20,
 	mockEnabled = false
 ): Promise<GameRankingsLoad> {
@@ -116,14 +116,4 @@ export async function loadGameRankings(
 		}
 		return { source: 'unavailable', period, updatedAt: null, rows: [] };
 	}
-}
-
-/** @deprecated Prefer {@link loadGameRankings} with explicit `platform`. */
-export async function loadTwitchGameRankings(
-	ctx: ServerLoadContext,
-	period: Period,
-	limit = 20,
-	mockEnabled = false
-): Promise<GameRankingsLoad> {
-	return loadGameRankings(ctx, 'twitch', period, limit, mockEnabled);
 }

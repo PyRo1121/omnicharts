@@ -6,7 +6,7 @@ import {
 import { getIngestBaseUrl } from '$lib/server/ingest';
 import { periodForApi } from '$lib/server/period-api';
 import type { ServerLoadContext } from '$lib/server/load-context';
-import { parseUiPeriod, type Period } from '$lib/ui/platform.svelte';
+import { parseUiPeriod, type RankingPeriod } from '$lib/ui/platform.svelte';
 
 export type ChannelDailyPoint = {
 	date: string;
@@ -18,7 +18,7 @@ export type ChannelDailyPoint = {
 export type ChannelDetailLoad = {
 	source: 'live' | 'not_found' | 'error';
 	platform: string;
-	period: Period;
+	period: RankingPeriod;
 	slug: string;
 	displayName: string;
 	avatarUrl: string | null;
@@ -79,7 +79,7 @@ function mapDaily(
 	}));
 }
 
-function mapChannelBody(body: IngestChannelResponse, period: Period): ChannelDetailLoad {
+function mapChannelBody(body: IngestChannelResponse, period: RankingPeriod): ChannelDetailLoad {
 	return {
 		source: 'live',
 		platform: body.platform,
@@ -107,7 +107,7 @@ function mapChannelBody(body: IngestChannelResponse, period: Period): ChannelDet
 function notFoundLoad(
 	slug: string,
 	platform: string,
-	period: Period
+	period: RankingPeriod
 ): ChannelDetailLoad {
 	return {
 		source: 'not_found',
@@ -133,7 +133,7 @@ function notFoundLoad(
 	};
 }
 
-function errorLoad(slug: string, platform: string, period: Period): ChannelDetailLoad {
+function errorLoad(slug: string, platform: string, period: RankingPeriod): ChannelDetailLoad {
 	return {
 		source: 'error',
 		platform,
@@ -158,7 +158,7 @@ function errorLoad(slug: string, platform: string, period: Period): ChannelDetai
 	};
 }
 
-export function parseChannelPeriod(raw: string | null): { period: Period; periodNote: string | null } {
+export function parseChannelPeriod(raw: string | null): { period: RankingPeriod; periodNote: string | null } {
 	return parseUiPeriod(raw);
 }
 
@@ -233,7 +233,7 @@ export async function loadChannelDetail(
 	ctx: ServerLoadContext,
 	slug: string,
 	platform: string,
-	period: Period
+	period: RankingPeriod
 ): Promise<ChannelDetailLoad> {
 	const apiPeriod = parseRankingPeriod(periodForApi(period));
 

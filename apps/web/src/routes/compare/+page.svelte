@@ -10,13 +10,35 @@
 
 	let { data } = $props();
 
-	let slugA = $state('');
-	let slugB = $state('');
+	class SyncedSlugInput {
+		#draft = $state<string | null>(null);
+		#seen = $state('');
+		#getServer: () => string;
 
-	$effect(() => {
-		slugA = data.a?.slugParam ?? '';
-		slugB = data.b?.slugParam ?? '';
-	});
+		constructor(getServer: () => string) {
+			this.#getServer = getServer;
+		}
+
+		get value() {
+			const server = this.#getServer();
+			if (server !== this.#seen) {
+				this.#seen = server;
+				this.#draft = null;
+			}
+			return this.#draft ?? server;
+		}
+
+		set value(next: string) {
+			this.#draft = next;
+		}
+	}
+
+	const slugAInput = new SyncedSlugInput(() => data.a?.slugParam ?? '');
+	const slugBInput = new SyncedSlugInput(() => data.b?.slugParam ?? '');
+
+	function slugsForUrl(): { a: string; b: string } {
+		return { a: slugAInput.value.trim(), b: slugBInput.value.trim() };
+	}
 
 	const metricRows = [
 		{ key: 'hoursWatched', label: 'Hours watched' },
@@ -32,8 +54,7 @@
 	};
 
 	function comparePeriodHref(period: ComparePeriod): string {
-		const a = (data.a?.slugParam ?? slugA).trim();
-		const b = (data.b?.slugParam ?? slugB).trim();
+		const { a, b } = slugsForUrl();
 		return comparePageUrl({
 			a: a || null,
 			b: b || null,
@@ -44,8 +65,7 @@
 
 	function submitCompare(event: SubmitEvent) {
 		event.preventDefault();
-		const a = slugA.trim();
-		const b = slugB.trim();
+		const { a, b } = slugsForUrl();
 		if (!a || !b) return;
 		goto(
 			comparePageUrl({
@@ -100,7 +120,7 @@
 		<span class="text-xs font-medium uppercase tracking-wider text-[var(--color-oc-text-faint)]">Channel A</span>
 		<input
 			name="a"
-			bind:value={slugA}
+			bind:value={slugAInput.value}
 			placeholder="slug or handle"
 			class="mt-1 w-full rounded-lg border border-[var(--color-oc-border)] bg-[var(--color-oc-bg-card)] px-3 py-2 text-sm text-[var(--color-oc-text)]"
 		/>
@@ -109,7 +129,7 @@
 		<span class="text-xs font-medium uppercase tracking-wider text-[var(--color-oc-text-faint)]">Channel B</span>
 		<input
 			name="b"
-			bind:value={slugB}
+			bind:value={slugBInput.value}
 			placeholder="slug or handle"
 			class="mt-1 w-full rounded-lg border border-[var(--color-oc-border)] bg-[var(--color-oc-bg-card)] px-3 py-2 text-sm text-[var(--color-oc-text)]"
 		/>

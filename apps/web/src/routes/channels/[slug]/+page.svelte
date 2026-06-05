@@ -6,12 +6,13 @@
 	import ExportCsvLink from '$lib/components/ui/ExportCsvLink.svelte';
 	import { channelDetailCsvUrl } from '$lib/export/csv-url';
 	import { ingestStateLabel } from '$lib/ingest-state-label';
-	import { uiPeriods, type Period } from '$lib/ui/platform.svelte';
+	import { uiPeriods } from '$lib/ui/platform.svelte';
+	import type { RankingPeriod } from '@omnicharts/domain';
 
 	let { data } = $props();
 	const ch = $derived(data.channel);
 
-	const metrics = $derived(() => {
+	const metrics = $derived.by(() => {
 		const base = [
 			{ label: 'Hours watched', value: ch.totals.hoursWatched.toLocaleString() },
 			{ label: 'Avg viewers', value: ch.totals.averageViewers.toLocaleString() },
@@ -34,7 +35,7 @@
 		return base;
 	});
 
-	function onPeriodChange(p: Period) {
+	function onPeriodChange(p: RankingPeriod) {
 		const q = new URLSearchParams();
 		q.set('platform', ch.platform);
 		q.set('period', p);
@@ -156,7 +157,7 @@
 	</div>
 
 	<ul class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-		{#each metrics() as m (m.label)}
+		{#each metrics as m (m.label)}
 			<li class="rounded-xl border border-[var(--color-oc-border)] bg-[var(--color-oc-bg-card)] p-4">
 				<p class="text-xs uppercase tracking-wider text-[var(--color-oc-text-faint)]">{m.label}</p>
 				<p class="mt-1 font-mono text-2xl font-semibold text-[var(--color-oc-text)]">{m.value}</p>

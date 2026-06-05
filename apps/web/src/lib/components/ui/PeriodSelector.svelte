@@ -1,16 +1,16 @@
 <script lang="ts">
+	import type { RankingPeriod } from '@omnicharts/domain';
 	import { cn } from '$lib/utils/cn';
-	import type { Period } from '$lib/ui/platform.svelte';
 
 	interface Props {
-		periods: readonly Period[];
-		value: Period;
-		onPeriodChange?: (p: Period) => void;
+		periods: readonly RankingPeriod[];
+		value: RankingPeriod;
+		onPeriodChange?: (p: RankingPeriod) => void;
 	}
 
 	let { periods, value, onPeriodChange }: Props = $props();
 
-	const labels: Record<Period, string> = {
+	const labels: Record<RankingPeriod, string> = {
 		'24h': '24 hours',
 		'7d': '7 days',
 		'30d': '30 days',

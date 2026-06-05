@@ -18,9 +18,9 @@
 		homeRankingsFootnote,
 		channelRankingsEmptyMessage,
 		gameRankingsEmptyMessage,
-		type Period,
 		type UiPlatformFilter
 	} from '$lib/ui/platform.svelte';
+	import type { RankingPeriod } from '@omnicharts/domain';
 
 	let { data } = $props();
 
@@ -48,7 +48,7 @@
 		gameRankingsEmptyMessage(gameRows.length > 0, data.gameRankings.source, data.period)
 	);
 
-	function homeQuery(platform: UiPlatformFilter, period: Period): string {
+	function homeQuery(platform: UiPlatformFilter, period: RankingPeriod): string {
 		const q = new URLSearchParams();
 		q.set('period', period);
 		if (platform === 'kick' || platform === 'youtube' || platform === 'all') {
@@ -61,7 +61,7 @@
 		return homeQuery(id, data.period);
 	}
 
-	function onPeriodChange(p: Period) {
+	function onPeriodChange(p: RankingPeriod) {
 		goto(homeQuery(data.platform, p), { keepFocus: true, noScroll: true });
 	}
 </script>

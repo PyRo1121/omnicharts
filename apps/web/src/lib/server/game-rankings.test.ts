@@ -1,12 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
-import { loadGameRankings, loadTwitchGameRankings } from './game-rankings';
+import { loadGameRankings } from './game-rankings';
 import { testLoadContext } from './test-helpers';
 
 vi.mock('$env/dynamic/private', () => ({
 	env: { INGEST_URL: 'http://ingest.test' }
 }));
 
-describe('loadTwitchGameRankings', () => {
+describe('loadGameRankings (twitch)', () => {
 	it('maps live game rankings', async () => {
 		const fetchFn = vi.fn().mockResolvedValue({
 			ok: true,
@@ -25,7 +25,7 @@ describe('loadTwitchGameRankings', () => {
 			})
 		});
 
-		const load = await loadTwitchGameRankings(testLoadContext(fetchFn as typeof fetch), '7d', 10);
+		const load = await loadGameRankings(testLoadContext(fetchFn as typeof fetch), 'twitch', '7d', 10);
 		expect(load.source).toBe('live');
 		expect(load.rows[0]?.name).toBe('VALORANT');
 		expect(load.rows[0]?.metricLabel).toBe('Avg viewers');
@@ -33,7 +33,7 @@ describe('loadTwitchGameRankings', () => {
 
 	it('returns unavailable when ingest fails (default)', async () => {
 		const fetchFn = vi.fn().mockResolvedValue({ ok: false, status: 503 });
-		const load = await loadTwitchGameRankings(testLoadContext(fetchFn as typeof fetch), '7d');
+		const load = await loadGameRankings(testLoadContext(fetchFn as typeof fetch), 'twitch', '7d');
 		expect(load.source).toBe('unavailable');
 		expect(load.rows).toHaveLength(0);
 	});

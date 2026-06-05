@@ -17,7 +17,7 @@ import type { ChannelRankingsLoad } from '$lib/server/rankings';
 import type { GameRankingsLoad } from '$lib/server/game-rankings';
 import type { WebRankingEnv } from '$lib/server/ranking-env';
 import { webRankingEligibility } from '$lib/server/ranking-env';
-import type { Period } from '$lib/mock/home';
+import type { RankingPeriod } from '$lib/mock/home';
 import { periodForApi } from '$lib/server/period-api';
 
 /** Homepage: one D1 batch for counts + rollup rankings (docs/11). */
@@ -31,7 +31,7 @@ export type HomepageD1Snapshot = {
 
 export async function loadHomepageFromD1(
 	db: D1Database,
-	period: Period,
+	period: RankingPeriod,
 	channelLimit: number,
 	gameLimit: number,
 	cfEnv: WebRankingEnv | null = null

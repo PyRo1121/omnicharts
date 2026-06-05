@@ -10,9 +10,6 @@ import {
 
 export type { PlatformId, RankingPeriod, UiPlatformFilter };
 
-/** @deprecated Use `RankingPeriod` from `@omnicharts/domain`. */
-export type Period = RankingPeriod;
-
 export type DataSource = 'live' | 'mock' | 'unavailable';
 
 export const platforms: { id: UiPlatformFilter; label: string }[] = [
@@ -21,9 +18,6 @@ export const platforms: { id: UiPlatformFilter; label: string }[] = [
 	{ id: 'kick', label: 'Kick' },
 	{ id: 'youtube', label: 'YouTube' }
 ];
-
-/** @deprecated Use `uiRankingPeriods` from `@omnicharts/domain`. */
-export const periods = uiRankingPeriods;
 
 export const uiPeriods = uiRankingPeriods;
 

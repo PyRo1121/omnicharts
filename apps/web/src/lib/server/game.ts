@@ -9,7 +9,7 @@ import { periodForApi } from '$lib/server/period-api';
 import type { ChannelDailyPoint } from '$lib/server/channel';
 import type { ServerLoadContext } from '$lib/server/load-context';
 import { webRankingEligibility } from '$lib/server/ranking-env';
-import { parseUiPeriod, type Period } from '$lib/ui/platform.svelte';
+import { parseUiPeriod, type RankingPeriod } from '$lib/ui/platform.svelte';
 
 export type GameTopChannelRow = {
 	rank: number;
@@ -22,7 +22,7 @@ export type GameTopChannelRow = {
 export type GameDetailLoad = {
 	source: 'live' | 'not_found' | 'error';
 	platform: string;
-	period: Period;
+	period: RankingPeriod;
 	slug: string;
 	name: string;
 	daily: ChannelDailyPoint[];
@@ -59,7 +59,7 @@ type IngestGameResponse = {
 	top_channels?: GameTopChannelItem[];
 };
 
-export function parseGamePeriod(raw: string | null): { period: Period; periodNote: string | null } {
+export function parseGamePeriod(raw: string | null): { period: RankingPeriod; periodNote: string | null } {
 	return parseUiPeriod(raw);
 }
 
@@ -84,7 +84,7 @@ function mapTopChannels(rows: GameTopChannelItem[] | undefined): GameTopChannelR
 	}));
 }
 
-function mapGameBody(body: IngestGameResponse, period: Period): GameDetailLoad {
+function mapGameBody(body: IngestGameResponse, period: RankingPeriod): GameDetailLoad {
 	return {
 		source: 'live',
 		platform: body.platform,
@@ -107,7 +107,7 @@ function emptyGameLoad(
 	source: 'not_found' | 'error',
 	slug: string,
 	platform: string,
-	period: Period
+	period: RankingPeriod
 ): GameDetailLoad {
 	return {
 		source,
@@ -131,7 +131,7 @@ export async function loadGameDetail(
 	ctx: ServerLoadContext,
 	slug: string,
 	platform: string,
-	period: Period
+	period: RankingPeriod
 ): Promise<GameDetailLoad> {
 	const apiPeriod = parseRankingPeriod(periodForApi(period));
 

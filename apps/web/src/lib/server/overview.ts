@@ -1,9 +1,9 @@
 import { getIngestBaseUrl } from '$lib/server/ingest';
 import type { ServerLoadContext } from '$lib/server/load-context';
 import { loadHomepageFromD1 } from '$lib/server/homepage-d1';
-import { loadChannelRankings, loadTwitchChannelRankings, type ChannelRankingsLoad } from '$lib/server/rankings';
-import { loadGameRankings, loadTwitchGameRankings, type GameRankingsLoad } from '$lib/server/game-rankings';
-import { heroStats, type Period } from '$lib/mock/home';
+import { loadChannelRankings, type ChannelRankingsLoad } from '$lib/server/rankings';
+import { loadGameRankings, type GameRankingsLoad } from '$lib/server/game-rankings';
+import { heroStats, type RankingPeriod } from '$lib/mock/home';
 
 export type OverviewSource = 'live' | 'mock' | 'unavailable';
 
@@ -27,7 +27,7 @@ export type OverviewLoad = {
 };
 
 export type OverviewLoadOptions = {
-	period?: Period;
+	period?: RankingPeriod;
 	channelLimit?: number;
 	gameLimit?: number;
 };
@@ -286,8 +286,8 @@ export async function loadOverview(
 
 		const health = (await healthRes.json()) as IngestHealth;
 		const [channels, games] = await Promise.all([
-			loadTwitchChannelRankings(ctx, period, channelLimit, mockEnabled),
-			loadTwitchGameRankings(ctx, period, gameLimit, mockEnabled)
+			loadChannelRankings(ctx, 'twitch', period, channelLimit, mockEnabled),
+			loadGameRankings(ctx, 'twitch', period, gameLimit, mockEnabled)
 		]);
 
 		const twitchLive =

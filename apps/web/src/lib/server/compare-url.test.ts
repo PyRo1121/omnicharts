@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { comparePageUrl, parseComparePageParams, parseComparePagePeriod } from '$lib/compare/url';
+import { parseComparePeriod } from '@omnicharts/domain';
+import { comparePageUrl, parseComparePageParams } from '$lib/compare/url';
 
 describe('comparePageUrl', () => {
 	it('builds minimal compare URL', () => {
@@ -29,9 +30,9 @@ describe('parseComparePageParams', () => {
 	});
 });
 
-describe('parseComparePagePeriod', () => {
+describe('parseComparePeriod (compare page)', () => {
 	it('rejects 24h for compare', () => {
-		expect(parseComparePagePeriod('24h')).toBe('7d');
-		expect(parseComparePagePeriod('90d')).toBe('90d');
+		expect(parseComparePeriod('24h')).toBe('7d');
+		expect(parseComparePeriod('90d')).toBe('90d');
 	});
 });

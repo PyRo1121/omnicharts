@@ -3,7 +3,8 @@
 	import SectionHeader from '$lib/components/ui/SectionHeader.svelte';
 	import PeriodSelector from '$lib/components/ui/PeriodSelector.svelte';
 	import LeaderboardTable from '$lib/components/ui/LeaderboardTable.svelte';
-	import { uiPeriods, type Period } from '$lib/ui/platform.svelte';
+	import { uiPeriods } from '$lib/ui/platform.svelte';
+	import type { RankingPeriod } from '@omnicharts/domain';
 
 	let { data } = $props();
 	const game = $derived(data.game);
@@ -29,7 +30,7 @@
 		}))
 	);
 
-	function onPeriodChange(p: Period) {
+	function onPeriodChange(p: RankingPeriod) {
 		const q = new URLSearchParams();
 		q.set('platform', game.platform);
 		q.set('period', p);

@@ -35,7 +35,4 @@ export function normalizeCompareSlug(raw: string | null): string | null {
 	return trimmed ? trimmed : null;
 }
 
-/** @deprecated Use `parseComparePeriod` from `@omnicharts/domain`. */
-export const parseComparePagePeriod = parseComparePeriod;
-
 export { comparePeriods };

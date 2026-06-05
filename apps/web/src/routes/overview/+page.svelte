@@ -5,21 +5,18 @@
 		platforms,
 		routeWithPlatform,
 		overviewPageSubtitle,
-		overviewTopGameLabel,
-		type UiPlatformFilter
+		overviewTopGameLabel
 	} from '$lib/ui/platform.svelte';
 
 	let { data } = $props();
 
-	const uiPlatform = $derived(data.platform as UiPlatformFilter);
-
-	function overviewHref(platform: UiPlatformFilter): string {
+	function overviewHref(platform: (typeof platforms)[number]['id']): string {
 		return routeWithPlatform('/overview', platform);
 	}
 
-	const subtitle = $derived(overviewPageSubtitle(uiPlatform, data.source));
-	const rollupPlatformName = $derived(uiPlatform === 'kick' ? 'Kick' : 'YouTube');
-	const topGameLabel = $derived(overviewTopGameLabel(uiPlatform));
+	const subtitle = $derived(overviewPageSubtitle(data.platform, data.source));
+	const rollupPlatformName = $derived(data.platform === 'kick' ? 'Kick' : 'YouTube');
+	const topGameLabel = $derived(overviewTopGameLabel(data.platform));
 </script>
 
 <svelte:head>
@@ -29,7 +26,7 @@
 <SectionHeader title="Platform overview" {subtitle} />
 
 <div class="mt-4">
-	<PlatformFilter {platforms} value={uiPlatform} hrefFor={overviewHref} />
+	<PlatformFilter {platforms} value={data.platform} hrefFor={overviewHref} />
 </div>
 
 {#if data.ingestStatus}
@@ -77,7 +74,7 @@
 			</p>
 		{/if}
 	</div>
-{:else if (uiPlatform === 'kick' || uiPlatform === 'youtube') && data.source === 'unavailable'}
+{:else if (data.platform === 'kick' || data.platform === 'youtube') && data.source === 'unavailable'}
 	<p class="mt-8 text-sm text-[var(--color-oc-text-muted)]">
 		No {rollupPlatformName} rollups yet for this period — run discover and rollup when ingest is up.
 	</p>

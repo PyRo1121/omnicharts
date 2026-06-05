@@ -1,7 +1,6 @@
-import type { PlatformId } from '@omnicharts/domain';
+import type { PlatformId, RankingPeriod } from '@omnicharts/domain';
 
-export type { PlatformId };
-export type { Period } from '$lib/ui/platform.svelte';
+export type { PlatformId, RankingPeriod };
 
 export type ChannelRow = {
 	rank: number;
