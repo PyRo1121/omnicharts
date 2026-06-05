@@ -29,6 +29,20 @@ test.describe('Kick platform UX (docs/09, docs/16)', () => {
 
 		const statusLine = page.getByText(/Live Kick rollups ·|Ingest unavailable/i);
 		await expect(statusLine).toBeVisible();
+
+		await expect(page.getByRole('heading', { name: 'Top categories' })).toBeVisible();
+		const gameEmpty = page.getByText(
+			/No game rollups yet for this period|Game rankings unavailable/i
+		);
+		const gameRow = page.locator('section').filter({ hasText: 'Top categories' }).locator('table tbody tr').first();
+		await expect(gameRow.or(gameEmpty)).toBeVisible({ timeout: 10_000 });
+	});
+
+	test('games page ?platform=kick loads without Phase 3 banner', async ({ page }) => {
+		const res = await page.goto('/games?platform=kick');
+		expect(res?.status()).toBe(200);
+		await expect(page.getByText(/Kick game rankings ship in Phase 3/i)).not.toBeVisible();
+		await expect(page.getByText(/Top Kick categories by average viewers/i)).toBeVisible();
 	});
 
 	test('search page accepts platform=kick query param', async ({ page }) => {

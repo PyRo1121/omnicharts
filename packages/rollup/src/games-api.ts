@@ -1,15 +1,15 @@
 import type { D1Database } from './d1';
 import {
-	PLATFORM_TWITCH,
 	isPlatformId,
 	isRankingPeriod,
 	parseRankingPeriod,
 	periodToDays,
+	PLATFORM_TWITCH,
 	type RankingPeriod
 } from '@omnicharts/domain';
 import { MIN_RANKING_AIRTIME_MINUTES } from './eligibility';
 import { rankingQueryOptionsFromEnv, type RankingEligibilityEnv } from './ranking-env';
-import { getTopTwitchGamesByAverageViewers } from './top-games';
+import { getTopGamesByAverageViewers } from './top-games';
 import type { RankingsQueryError } from './channels-api';
 
 export type RankingsGamesItem = {
@@ -57,20 +57,12 @@ export async function buildRankingsGamesResponse(
 	opts: { platform: string; period: RankingPeriod; limit: number },
 	env?: RankingEligibilityEnv
 ): Promise<RankingsGamesResponse> {
-	if (opts.platform !== PLATFORM_TWITCH) {
-		return {
-			platform: opts.platform,
-			period: opts.period,
-			updated_at: new Date().toISOString(),
-			items: []
-		};
-	}
-
 	const days = periodToDays(opts.period);
 	const eligibility = env
 		? rankingQueryOptionsFromEnv(env)
 		: { minAirtimeMinutes: MIN_RANKING_AIRTIME_MINUTES, minAverageViewers: 0 };
-	const rankings = await getTopTwitchGamesByAverageViewers(db, {
+	const rankings = await getTopGamesByAverageViewers(db, {
+		platformId: opts.platform,
 		days,
 		limit: opts.limit,
 		minAirtimeMinutes: eligibility.minAirtimeMinutes,

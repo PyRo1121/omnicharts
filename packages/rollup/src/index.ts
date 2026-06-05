@@ -35,6 +35,7 @@ export {
 	type TopChannelRanking
 } from './top-channels';
 export {
+	getTopGamesByAverageViewers,
 	getTopTwitchGamesByAverageViewers,
 	rankTopGamesFromRollupRows,
 	type TopGameRanking

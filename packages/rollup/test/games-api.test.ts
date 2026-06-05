@@ -1,9 +1,9 @@
-import { describe, it, expect, vi } from 'vitest';
-import * as rankingQueries from '../../../packages/rollup/src/ranking-queries';
+import { describe, it, expect, vi, afterEach } from 'bun:test';
+import * as topGames from '../src/top-games';
 import {
 	buildRankingsGamesResponse,
 	parseRankingsGamesQuery
-} from '../src/ranking/games-api';
+} from '../src/games-api';
 
 describe('parseRankingsGamesQuery', () => {
 	it('defaults platform twitch and period 7d', () => {
@@ -16,6 +16,14 @@ describe('parseRankingsGamesQuery', () => {
 		expect(q.limit).toBe(20);
 	});
 
+	it('accepts platform=kick', () => {
+		const url = new URL('http://x/v1/rankings/games?platform=kick');
+		const q = parseRankingsGamesQuery(url);
+		expect(q.ok).toBe(true);
+		if (!q.ok) return;
+		expect(q.platform).toBe('kick');
+	});
+
 	it('rejects invalid period', () => {
 		const url = new URL('http://x/v1/rankings/games?period=365d');
 		expect(parseRankingsGamesQuery(url)).toEqual({ ok: false, error: 'invalid_period' });
@@ -23,13 +31,18 @@ describe('parseRankingsGamesQuery', () => {
 });
 
 describe('buildRankingsGamesResponse', () => {
-	it('queries kick game rollups when platform=kick', async () => {
-		const spy = vi.spyOn(rankingQueries, 'queryTopGamesByAverageViewers').mockResolvedValue([
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it('queries kick rollups via platform-agnostic top games', async () => {
+		const spy = vi.spyOn(topGames, 'getTopGamesByAverageViewers').mockResolvedValue([
 			{
+				rank: 1,
 				slug: 'just-chatting',
 				name: 'Just Chatting',
-				hours_watched: 120000,
-				average_viewers: 8500
+				averageViewers: 8500.2,
+				hoursWatched: 120000
 			}
 		]);
 
@@ -51,27 +64,29 @@ describe('buildRankingsGamesResponse', () => {
 			average_viewers: 8500,
 			hours_watched: 120000
 		});
-		vi.restoreAllMocks();
 	});
 
 	it('returns empty items for youtube when no rollups', async () => {
-		vi.spyOn(rankingQueries, 'queryTopGamesByAverageViewers').mockResolvedValue([]);
+		vi.spyOn(topGames, 'getTopGamesByAverageViewers').mockResolvedValue([]);
+
 		const res = await buildRankingsGamesResponse({} as D1Database, {
 			platform: 'youtube',
 			period: '7d',
 			limit: 20
 		});
+
+		expect(res.platform).toBe('youtube');
 		expect(res.items).toEqual([]);
-		vi.restoreAllMocks();
 	});
 
 	it('maps twitch game rankings to API shape sorted by AV', async () => {
-		vi.spyOn(rankingQueries, 'queryTopGamesByAverageViewers').mockResolvedValue([
+		vi.spyOn(topGames, 'getTopGamesByAverageViewers').mockResolvedValue([
 			{
+				rank: 1,
 				slug: 'league-of-legends',
 				name: 'League of Legends',
-				hours_watched: 500000,
-				average_viewers: 12000.7
+				averageViewers: 12000.7,
+				hoursWatched: 500000
 			}
 		]);
 
@@ -89,6 +104,5 @@ describe('buildRankingsGamesResponse', () => {
 			average_viewers: 12001,
 			hours_watched: 500000
 		});
-		vi.restoreAllMocks();
 	});
 });

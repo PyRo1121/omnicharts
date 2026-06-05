@@ -23,6 +23,30 @@ export function rankTopGamesFromRollupRows(
 	}));
 }
 
+export async function getTopGamesByAverageViewers(
+	db: D1Database,
+	opts: {
+		platformId: string;
+		days?: number;
+		limit?: number;
+		minAirtimeMinutes?: number;
+		minAverageViewers?: number;
+	}
+): Promise<TopGameRanking[]> {
+	const days = opts.days ?? 7;
+	const limit = Math.min(opts.limit ?? 20, 100);
+
+	const rows = await queryTopGamesByAverageViewers(db, {
+		platformId: opts.platformId,
+		days,
+		limit,
+		minAirtimeMinutes: opts.minAirtimeMinutes,
+		minAverageViewers: opts.minAverageViewers
+	});
+
+	return rankTopGamesFromRollupRows(rows, limit);
+}
+
 export async function getTopTwitchGamesByAverageViewers(
 	db: D1Database,
 	opts: {
@@ -32,16 +56,5 @@ export async function getTopTwitchGamesByAverageViewers(
 		minAverageViewers?: number;
 	} = {}
 ): Promise<TopGameRanking[]> {
-	const days = opts.days ?? 7;
-	const limit = Math.min(opts.limit ?? 20, 100);
-
-	const rows = await queryTopGamesByAverageViewers(db, {
-		platformId: PLATFORM_TWITCH,
-		days,
-		limit,
-		minAirtimeMinutes: opts.minAirtimeMinutes,
-		minAverageViewers: opts.minAverageViewers
-	});
-
-	return rankTopGamesFromRollupRows(rows, limit);
+	return getTopGamesByAverageViewers(db, { platformId: PLATFORM_TWITCH, ...opts });
 }

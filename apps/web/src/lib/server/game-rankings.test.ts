@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { loadTwitchGameRankings } from './game-rankings';
+import { loadGameRankings, loadTwitchGameRankings } from './game-rankings';
 import { testLoadContext } from './test-helpers';
 
 vi.mock('$env/dynamic/private', () => ({
@@ -36,5 +36,30 @@ describe('loadTwitchGameRankings', () => {
 		const load = await loadTwitchGameRankings(testLoadContext(fetchFn as typeof fetch), '7d');
 		expect(load.source).toBe('unavailable');
 		expect(load.rows).toHaveLength(0);
+	});
+
+	it('passes platform=kick to ingest rankings URL', async () => {
+		const fetchFn = vi.fn().mockResolvedValue({
+			ok: true,
+			json: async () => ({
+				platform: 'kick',
+				period: '7d',
+				updated_at: '2026-06-01T00:00:00Z',
+				items: [
+					{
+						rank: 1,
+						slug: 'just-chatting',
+						name: 'Just Chatting',
+						average_viewers: 8500,
+						hours_watched: 120000,
+						box_art_url: null
+					}
+				]
+			})
+		});
+
+		const load = await loadGameRankings(testLoadContext(fetchFn as typeof fetch), 'kick', '7d', 20);
+		expect(load.rows[0]).toMatchObject({ slug: 'just-chatting', platform: 'kick' });
+		expect(String(fetchFn.mock.calls[0]?.[0])).toContain('platform=kick');
 	});
 });

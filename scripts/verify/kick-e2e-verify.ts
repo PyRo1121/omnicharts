@@ -75,6 +75,68 @@ async function ingestReachable(): Promise<boolean> {
 	}
 }
 
+type RankingsGamesBody = {
+	platform?: string;
+	period?: string;
+	updated_at?: string;
+	items?: unknown;
+};
+
+function isValidRankingsGamesBody(body: RankingsGamesBody): boolean {
+	return (
+		typeof body.platform === 'string' &&
+		typeof body.period === 'string' &&
+		typeof body.updated_at === 'string' &&
+		Array.isArray(body.items)
+	);
+}
+
+async function kickRankingsGamesCheckpoint(): Promise<Step> {
+	try {
+		const res = await fetch(
+			`${INGEST_BASE}/v1/rankings/games?platform=kick&period=7d&limit=5`,
+			{ signal: AbortSignal.timeout(15_000) }
+		);
+		const body = (await res.json()) as RankingsGamesBody;
+		if (!res.ok) {
+			return {
+				name: 'kick rankings games',
+				pass: false,
+				detail: `HTTP ${res.status}: ${JSON.stringify(body).slice(0, 200)}`
+			};
+		}
+		if (!isValidRankingsGamesBody(body)) {
+			return {
+				name: 'kick rankings games',
+				pass: false,
+				detail: `invalid JSON shape: ${JSON.stringify(body).slice(0, 200)}`
+			};
+		}
+		if (body.platform !== 'kick') {
+			return {
+				name: 'kick rankings games',
+				pass: false,
+				detail: `expected platform kick, got ${body.platform}`
+			};
+		}
+		const count = body.items?.length ?? 0;
+		return {
+			name: 'kick rankings games',
+			pass: true,
+			detail:
+				count > 0
+					? `GET /v1/rankings/games ok — ${count} item(s)`
+					: 'GET /v1/rankings/games ok — empty items (no rollups yet)'
+		};
+	} catch (err) {
+		return {
+			name: 'kick rankings games',
+			pass: false,
+			detail: err instanceof Error ? err.message : String(err)
+		};
+	}
+}
+
 async function kickDiscoverCheckpoint(): Promise<Step> {
 	const key = adminApiKey();
 	const headers: Record<string, string> = { 'content-type': 'application/json' };
@@ -133,14 +195,20 @@ async function main() {
 	if (SKIP_LIVE) {
 		const reachable = await ingestReachable();
 		const creds = kickCredentialsConfigured();
+		const skipDetail = reachable
+			? creds
+				? 'skipped (VERIFY_SKIP_KICK_LIVE or CI without VERIFY_KICK_FULL) — ingest was up'
+				: 'skipped — no KICK_* in .dev.vars; unit tests only'
+			: 'skipped — start dev:ingest for live discover; unit tests passed';
 		log({
 			name: 'kick discover (quick)',
 			pass: true,
-			detail: reachable
-				? creds
-					? 'skipped (VERIFY_SKIP_KICK_LIVE or CI without VERIFY_KICK_FULL) — ingest was up'
-					: 'skipped — no KICK_* in .dev.vars; unit tests only'
-				: 'skipped — start dev:ingest for live discover; unit tests passed'
+			detail: skipDetail
+		});
+		log({
+			name: 'kick rankings games',
+			pass: true,
+			detail: skipDetail
 		});
 	} else if (!(await ingestReachable())) {
 		log({
@@ -165,6 +233,13 @@ async function main() {
 		const discover = await kickDiscoverCheckpoint();
 		log(discover);
 		if (!discover.pass) {
+			printSummary();
+			process.exit(1);
+		}
+
+		const games = await kickRankingsGamesCheckpoint();
+		log(games);
+		if (!games.pass) {
 			printSummary();
 			process.exit(1);
 		}

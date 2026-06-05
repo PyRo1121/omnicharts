@@ -1,4 +1,4 @@
-import { parseRankingPeriod } from '@omnicharts/domain';
+import { parseRankingPeriod, type PlatformId } from '@omnicharts/domain';
 import {
 	buildRankingsGamesResponse,
 	formatCompactMetric,
@@ -26,7 +26,8 @@ export type GameRankingsLoad = {
 function mapGameRankingsBody(
 	body: RankingsGamesResponse,
 	period: Period,
-	limit: number
+	limit: number,
+	platform: PlatformId
 ): GameRankingsLoad {
 	if (!body.items?.length) {
 		return { source: 'live', period, updatedAt: body.updated_at, rows: [] };
@@ -39,7 +40,7 @@ function mapGameRankingsBody(
 			rank: item.rank,
 			slug: item.slug,
 			name: item.name,
-			platform: 'twitch',
+			platform,
 			boxArtUrl: item.box_art_url ?? '',
 			metric: formatCompactMetric(item.average_viewers),
 			metricLabel: 'Avg viewers'
@@ -47,8 +48,15 @@ function mapGameRankingsBody(
 	};
 }
 
+const ROLLUP_GAME_PLATFORMS = new Set<PlatformId>(['twitch', 'kick']);
+
+function supportsRollupGameRankings(platform: PlatformId): boolean {
+	return ROLLUP_GAME_PLATFORMS.has(platform);
+}
+
 async function loadFromD1(
 	db: D1Database,
+	platform: PlatformId,
 	period: Period,
 	limit: number,
 	cfEnv: ServerLoadContext['cfEnv']
@@ -56,34 +64,40 @@ async function loadFromD1(
 	const apiPeriod = parseRankingPeriod(periodForApi(period));
 	const body = await buildRankingsGamesResponse(
 		db,
-		{ platform: 'twitch', period: apiPeriod, limit },
+		{ platform, period: apiPeriod, limit },
 		resolveWebRankingEnv(cfEnv)
 	);
-	return mapGameRankingsBody(body, period, limit);
+	return mapGameRankingsBody(body, period, limit, platform);
 }
 
 async function loadFromIngest(
 	fetchFn: typeof fetch,
+	platform: PlatformId,
 	period: Period,
 	limit: number
 ): Promise<GameRankingsLoad | null> {
 	const apiPeriod = periodForApi(period);
-	const url = `${getIngestBaseUrl()}/v1/rankings/games?platform=twitch&period=${apiPeriod}&limit=${limit}`;
+	const url = `${getIngestBaseUrl()}/v1/rankings/games?platform=${encodeURIComponent(platform)}&period=${apiPeriod}&limit=${limit}`;
 	const res = await fetchFn(url, { headers: { accept: 'application/json' } });
 	if (!res.ok) return null;
 	const body = (await res.json()) as RankingsGamesResponse;
-	return mapGameRankingsBody(body, period, limit);
+	return mapGameRankingsBody(body, period, limit, platform);
 }
 
-export async function loadTwitchGameRankings(
+export async function loadGameRankings(
 	ctx: ServerLoadContext,
+	platform: PlatformId,
 	period: Period,
 	limit = 20,
 	mockEnabled = false
 ): Promise<GameRankingsLoad> {
+	if (!supportsRollupGameRankings(platform)) {
+		return { source: 'live', period, updatedAt: null, rows: [] };
+	}
+
 	if (ctx.db) {
 		try {
-			return await loadFromD1(ctx.db, period, limit, ctx.cfEnv);
+			return await loadFromD1(ctx.db, platform, period, limit, ctx.cfEnv);
 		} catch {
 			if (mockEnabled) {
 				return { source: 'mock', period, updatedAt: null, rows: topGames.slice(0, limit) };
@@ -93,7 +107,7 @@ export async function loadTwitchGameRankings(
 	}
 
 	try {
-		const live = await loadFromIngest(ctx.fetch, period, limit);
+		const live = await loadFromIngest(ctx.fetch, platform, period, limit);
 		if (live) return live;
 		throw new Error('rankings unavailable');
 	} catch {
@@ -102,4 +116,14 @@ export async function loadTwitchGameRankings(
 		}
 		return { source: 'unavailable', period, updatedAt: null, rows: [] };
 	}
+}
+
+/** @deprecated Prefer {@link loadGameRankings} with explicit `platform`. */
+export async function loadTwitchGameRankings(
+	ctx: ServerLoadContext,
+	period: Period,
+	limit = 20,
+	mockEnabled = false
+): Promise<GameRankingsLoad> {
+	return loadGameRankings(ctx, 'twitch', period, limit, mockEnabled);
 }

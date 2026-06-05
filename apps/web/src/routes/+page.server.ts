@@ -2,6 +2,7 @@ import { applyRollupPageCache } from '$lib/server/cache';
 import { isDevMockEnabled } from '$lib/server/dev-mock';
 import { serverLoadContext } from '$lib/server/load-context';
 import { loadOverview } from '$lib/server/overview';
+import { loadGameRankings } from '$lib/server/game-rankings';
 import { loadChannelRankings } from '$lib/server/rankings';
 import { trendingFromRankings } from '$lib/server/trending';
 import { parseUiPeriod, parseUiPlatform, type PlatformId } from '$lib/mock/home';
@@ -49,14 +50,17 @@ export const load: PageServerLoad = async ({ fetch, url, setHeaders, platform: c
 	}
 
 	if (platform === 'kick') {
-		const channelRankings = await loadChannelRankings(ctx, 'kick', period, 5, mockEnabled);
+		const [channelRankings, gameRankings] = await Promise.all([
+			loadChannelRankings(ctx, 'kick', period, 5, mockEnabled),
+			loadGameRankings(ctx, 'kick', period, 5, mockEnabled)
+		]);
 		return {
 			period,
 			periodNote,
 			platform,
 			overview,
 			channelRankings,
-			gameRankings: emptyGameRankings,
+			gameRankings,
 			platformUnsupported: false,
 			trending: trendingFromRankings(channelRankings.rows)
 		};

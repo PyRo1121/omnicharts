@@ -35,7 +35,9 @@
 <SectionHeader
 	title="Games"
 	subtitle={data.source === 'live'
-		? 'Top Twitch categories by average viewers (ingest rollups).'
+		? data.platform === 'kick'
+			? 'Top Kick categories by average viewers (ingest rollups).'
+			: 'Top Twitch categories by average viewers (ingest rollups).'
 		: data.source === 'mock'
 			? 'Design preview — sample leaderboard (?demo=1).'
 			: data.source === 'unavailable'
@@ -45,7 +47,7 @@
 
 {#if data.platformUnsupported}
 	<p class="mt-4 text-sm text-[var(--color-oc-text-muted)]">
-		{data.platform === 'kick' ? 'Kick' : 'YouTube'} game rankings ship in Phase 3. Switch to Twitch for live
+		YouTube game rankings ship when YouTube ingest is live. Switch to Twitch or Kick for rollup-backed
 		leaderboards.
 	</p>
 {:else if data.rows.length === 0}

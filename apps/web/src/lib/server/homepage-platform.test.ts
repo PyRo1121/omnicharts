@@ -27,23 +27,37 @@ function homepageLoadArgs(platform: string | null) {
 
 describe('homepage load — non-Twitch platforms (docs/09 Phase 3)', () => {
 	it('loads kick channel rankings without platformUnsupported banner', async () => {
-		const fetchFn = vi.fn().mockResolvedValue({
-			ok: true,
-			json: async () => ({
-				platform: 'kick',
-				period: '7d',
-				updated_at: '2026-06-01T00:00:00Z',
-				items: [
-					{
-						rank: 1,
-						slug: 'xqc',
-						display_name: 'xQc',
-						avatar_url: null,
-						hours_watched: 5000,
-						average_viewers: 200
-					}
-				]
-			})
+		const fetchFn = vi.fn().mockImplementation((input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes('/rankings/games')) {
+				return Promise.resolve({
+					ok: true,
+					json: async () => ({
+						platform: 'kick',
+						period: '7d',
+						updated_at: '2026-06-01T00:00:00Z',
+						items: []
+					})
+				});
+			}
+			return Promise.resolve({
+				ok: true,
+				json: async () => ({
+					platform: 'kick',
+					period: '7d',
+					updated_at: '2026-06-01T00:00:00Z',
+					items: [
+						{
+							rank: 1,
+							slug: 'xqc',
+							display_name: 'xQc',
+							avatar_url: null,
+							hours_watched: 5000,
+							average_viewers: 200
+						}
+					]
+				})
+			});
 		});
 		const args = homepageLoadArgs('kick');
 		args.fetch = fetchFn as typeof fetch;
@@ -57,6 +71,11 @@ describe('homepage load — non-Twitch platforms (docs/09 Phase 3)', () => {
 		expect(
 			fetchFn.mock.calls.some(
 				(c) => String(c[0]).includes('/rankings/channels') && String(c[0]).includes('platform=kick')
+			)
+		).toBe(true);
+		expect(
+			fetchFn.mock.calls.some(
+				(c) => String(c[0]).includes('/rankings/games') && String(c[0]).includes('platform=kick')
 			)
 		).toBe(true);
 	});
