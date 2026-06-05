@@ -3,6 +3,8 @@
 	import AvatarImage from '$lib/components/ui/AvatarImage.svelte';
 	import SectionHeader from '$lib/components/ui/SectionHeader.svelte';
 	import PeriodSelector from '$lib/components/ui/PeriodSelector.svelte';
+	import ExportCsvLink from '$lib/components/ui/ExportCsvLink.svelte';
+	import { channelDetailCsvUrl } from '$lib/export/csv-url';
 	import { ingestStateLabel } from '$lib/ingest-state-label';
 	import { uiPeriods, type Period } from '$lib/ui/platform.svelte';
 
@@ -41,6 +43,11 @@
 
 	const platformTitle = $derived(
 		ch.platform === 'twitch' ? 'Twitch' : ch.platform === 'kick' ? 'Kick' : ch.platform === 'youtube' ? 'YouTube' : ch.platform
+	);
+	const csvHref = $derived(
+		ch.source === 'live' && ch.ingestState !== 'discovered' && ch.daily.length > 0
+			? channelDetailCsvUrl(ch.slug, ch.platform, ch.period)
+			: null
 	);
 </script>
 
@@ -140,6 +147,9 @@
 
 	<div class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
 		<PeriodSelector periods={uiPeriods} value={ch.period} onchange={onPeriodChange} />
+		{#if csvHref}
+			<ExportCsvLink href={csvHref} />
+		{/if}
 		{#if data.periodNote}
 			<p class="text-xs text-[var(--color-oc-text-faint)]">{data.periodNote}</p>
 		{/if}

@@ -5,8 +5,11 @@
 	import PeriodSelector from '$lib/components/ui/PeriodSelector.svelte';
 	import PlatformFilter from '$lib/components/ui/PlatformFilter.svelte';
 	import { channelLeaderboardRows } from '$lib/components/ui/LeaderboardTable.svelte';
+	import ExportCsvLink from '$lib/components/ui/ExportCsvLink.svelte';
+	import { rankingsChannelsCsvUrl } from '$lib/export/csv-url';
 	import {
 		channelsPageSubtitle,
+		searchPlatformId,
 		uiPeriods,
 		platforms,
 		routeWithPlatform,
@@ -18,6 +21,11 @@
 
 	const rows = $derived(channelLeaderboardRows(data.rows));
 	const subtitle = $derived(channelsPageSubtitle(data.platform, data.source));
+	const csvHref = $derived(
+		data.platform !== 'all' && data.rows.length > 0
+			? rankingsChannelsCsvUrl(searchPlatformId(data.platform), data.period)
+			: null
+	);
 
 	function platformHref(id: PlatformId): string {
 		return routeWithPlatform('/channels', id, { period: data.period });
@@ -62,6 +70,9 @@
 
 <div class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
 	<PeriodSelector periods={uiPeriods} value={data.period} onchange={onPeriodChange} />
+	{#if csvHref}
+		<ExportCsvLink href={csvHref} />
+	{/if}
 	{#if data.periodNote}
 		<p class="text-xs text-[var(--color-oc-text-faint)]">{data.periodNote}</p>
 	{/if}

@@ -45,7 +45,13 @@ import {
 } from './health/status';
 import {
 	buildRankingsChannelsResponse,
-	parseRankingsChannelsQuery
+	channelDetailToCsv,
+	channelRankingsToCsv,
+	csvAttachmentHeaders,
+	csvDownloadFilename,
+	gameRankingsToCsv,
+	parseRankingsChannelsQuery,
+	parseResponseFormat
 } from './ranking/channels-api';
 import {
 	buildRankingsGamesResponse,
@@ -398,12 +404,13 @@ async function adminRollupDaily(request: Request, env: Env): Promise<Response> {
 }
 
 function rankingsQueryErrorResponse(
-	error: 'invalid_period' | 'invalid_limit' | 'invalid_platform'
+	error: 'invalid_period' | 'invalid_limit' | 'invalid_platform' | 'invalid_format'
 ): Response {
 	const messages: Record<typeof error, string> = {
 		invalid_period: 'period must be one of 24h, 7d, 30d, 90d',
 		invalid_limit: 'limit must be a positive integer',
-		invalid_platform: 'platform must be twitch, kick, or youtube'
+		invalid_platform: 'platform must be twitch, kick, or youtube',
+		invalid_format: 'format must be json or csv'
 	};
 	return Response.json(
 		{
@@ -432,6 +439,10 @@ function searchQueryErrorResponse(
 
 async function publicRankingsChannels(request: Request, env: Env): Promise<Response> {
 	const url = new URL(request.url);
+	const formatParsed = parseResponseFormat(url);
+	if (!formatParsed.ok) {
+		return rankingsQueryErrorResponse(formatParsed.error);
+	}
 	const parsed = parseRankingsChannelsQuery(url);
 	if (!parsed.ok) {
 		return rankingsQueryErrorResponse(parsed.error);
@@ -444,9 +455,11 @@ async function publicRankingsChannels(request: Request, env: Env): Promise<Respo
 		minAverageViewers: eligibility.minAverageViewers,
 		minAirtimeMinutes: eligibility.minAirtimeMinutes
 	});
-	const cached = getCachedRankingsChannels(cacheKey);
-	if (cached) {
-		return new Response(cached, { headers: rankingsResponseHeaders(request) });
+	if (formatParsed.format === 'json') {
+		const cached = getCachedRankingsChannels(cacheKey);
+		if (cached) {
+			return new Response(cached, { headers: rankingsResponseHeaders(request) });
+		}
 	}
 	const db = requireDb(env);
 	const body = await buildRankingsChannelsResponse(db, {
@@ -456,6 +469,18 @@ async function publicRankingsChannels(request: Request, env: Env): Promise<Respo
 		minAverageViewers: eligibility.minAverageViewers,
 		minAirtimeMinutes: eligibility.minAirtimeMinutes
 	});
+	if (formatParsed.format === 'csv') {
+		const csv = channelRankingsToCsv(body);
+		return new Response(csv, {
+			headers: {
+				...csvAttachmentHeaders(
+					csvDownloadFilename([parsed.platform, 'channels', parsed.period])
+				),
+				...rankingsResponseHeaders(request),
+				'content-type': 'text/csv; charset=utf-8'
+			}
+		});
+	}
 	const json = JSON.stringify(body);
 	setCachedRankingsChannels(cacheKey, json);
 	return new Response(json, { headers: rankingsResponseHeaders(request) });
@@ -463,6 +488,10 @@ async function publicRankingsChannels(request: Request, env: Env): Promise<Respo
 
 async function publicRankingsGames(request: Request, env: Env): Promise<Response> {
 	const url = new URL(request.url);
+	const formatParsed = parseResponseFormat(url);
+	if (!formatParsed.ok) {
+		return rankingsQueryErrorResponse(formatParsed.error);
+	}
 	const parsed = parseRankingsGamesQuery(url);
 	if (!parsed.ok) {
 		return rankingsQueryErrorResponse(parsed.error);
@@ -475,12 +504,24 @@ async function publicRankingsGames(request: Request, env: Env): Promise<Response
 		minAverageViewers: eligibility.minAverageViewers,
 		minAirtimeMinutes: eligibility.minAirtimeMinutes
 	});
-	const cached = getCachedRankingsGames(cacheKey);
-	if (cached) {
-		return new Response(cached, { headers: rankingsResponseHeaders(request) });
+	if (formatParsed.format === 'json') {
+		const cached = getCachedRankingsGames(cacheKey);
+		if (cached) {
+			return new Response(cached, { headers: rankingsResponseHeaders(request) });
+		}
 	}
 	const db = requireDb(env);
 	const body = await buildRankingsGamesResponse(db, parsed, env);
+	if (formatParsed.format === 'csv') {
+		const csv = gameRankingsToCsv(body);
+		return new Response(csv, {
+			headers: {
+				...csvAttachmentHeaders(csvDownloadFilename([parsed.platform, 'games', parsed.period])),
+				...rankingsResponseHeaders(request),
+				'content-type': 'text/csv; charset=utf-8'
+			}
+		});
+	}
 	const json = JSON.stringify(body);
 	setCachedRankingsGames(cacheKey, json);
 	return new Response(json, { headers: rankingsResponseHeaders(request) });
@@ -549,6 +590,10 @@ async function publicChannelDetail(
 	if (!query.ok) {
 		return rankingsQueryErrorResponse(query.error);
 	}
+	const formatParsed = parseResponseFormat(url);
+	if (!formatParsed.ok) {
+		return rankingsQueryErrorResponse(formatParsed.error);
+	}
 	const body = await buildChannelDetailResponse(requireDb(env), {
 		platform: query.platform,
 		slug: query.slug,
@@ -559,6 +604,19 @@ async function publicChannelDetail(
 			{ error: { code: 'not_found', message: 'Channel not found' } },
 			{ status: 404 }
 		);
+	}
+	if (formatParsed.format === 'csv') {
+		const csv = channelDetailToCsv(body);
+		return new Response(csv, {
+			headers: {
+				...csvAttachmentHeaders(
+					csvDownloadFilename([body.platform, body.slug, body.period])
+				),
+				'cache-control': 'public, max-age=120',
+				'content-type': 'text/csv; charset=utf-8',
+				...corsAllowOrigin(request)
+			}
+		});
 	}
 	return Response.json(body, {
 		headers: {

@@ -2,7 +2,7 @@
 
 Living plan aligned with [docs/00-vision-and-principles.md](./docs/00-vision-and-principles.md). Update checkboxes as phases ship.
 
-**Phase 0–3 (MVP):** Shipped (2026-06-05) — three-platform discovery loop.
+**Phase 0–3 (MVP):** Shipped (2026-06-05) — three-platform discovery loop. **Phase 4** in progress — [28-phase4-plan](./docs/28-phase4-plan.md).
 
 ## MVP definition (canonical)
 
@@ -90,6 +90,9 @@ Phase 2 = Twitch-only slice of the same loop. See [02-user-personas](./docs/02-u
 
 ## Phase 4 — Retention & agency (weeks 11–14)
 
+Plan: [28-phase4-plan](./docs/28-phase4-plan.md)
+
+- [x] **CSV export** on channel rankings + channel detail (`format=csv` API + UI links) — slice 4.1 shipped 2026-06-05
 - [ ] 90-day rollups; R2 Parquet cold path
 - [ ] Twitch VOD metadata backfill (tier-limited)
 - [ ] **2-channel compare** (7d/30d) — thin Compare Streamers

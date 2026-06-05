@@ -22,6 +22,7 @@
 | `invalid_period` | 400 | Rankings/detail: unknown `period` |
 | `not_found` | 404 | Channel/game resolve or detail missing |
 | `bad_request` | 400 | Missing required query param |
+| `invalid_format` | 400 | `format` not `json` or `csv` |
 
 ### Platform behavior (Phase 3)
 
@@ -48,6 +49,20 @@ No breaking change for Twitch clients. Same error codes for all platforms (`inva
 | Donor (future) | 1000 | Optional |
 
 No credit system at launch.
+
+---
+
+## CSV export (Phase 4)
+
+Append `format=csv` to supported GET endpoints. Response is RFC 4180 CSV with `Content-Disposition: attachment`.
+
+| Endpoint | CSV contents |
+|----------|----------------|
+| `GET /v1/rankings/channels` | One row per ranked channel (same fields as JSON `items`) |
+| `GET /v1/rankings/games` | One row per ranked game |
+| `GET /v1/channels/{slug}` | Daily rollup series for the selected `period` |
+
+Default `format=json`. No auth required at launch (rate limits Phase 6).
 
 ---
 

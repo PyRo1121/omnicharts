@@ -1,6 +1,10 @@
 import {
 	buildRankingsGamesResponse,
-	parseRankingsGamesQuery
+	csvAttachmentHeaders,
+	csvDownloadFilename,
+	gameRankingsToCsv,
+	parseRankingsGamesQuery,
+	parseResponseFormat
 } from '@omnicharts/rollup';
 import { ROLLUP_CACHE_CONTROL } from '$lib/server/cache';
 import { getIngestBaseUrl } from '$lib/server/ingest';
@@ -9,12 +13,13 @@ import { resolveWebRankingEnv } from '$lib/server/ranking-env';
 import type { RequestHandler } from './$types';
 
 function rankingsQueryErrorResponse(
-	error: 'invalid_period' | 'invalid_limit' | 'invalid_platform'
+	error: 'invalid_period' | 'invalid_limit' | 'invalid_platform' | 'invalid_format'
 ): Response {
 	const messages = {
 		invalid_period: 'period must be one of 24h, 7d, 30d, 90d',
 		invalid_limit: 'limit must be a positive integer',
-		invalid_platform: 'platform must be twitch, kick, or youtube'
+		invalid_platform: 'platform must be twitch, kick, or youtube',
+		invalid_format: 'format must be json or csv'
 	} as const;
 	return Response.json(
 		{ error: { code: error, message: messages[error] } },
@@ -25,6 +30,10 @@ function rankingsQueryErrorResponse(
 /** Rollup rankings — D1 on Pages; ingest proxy fallback (GET /v1/rankings/games). */
 export const GET: RequestHandler = async ({ url, fetch, platform }) => {
 	const db = getD1(platform);
+	const formatParsed = parseResponseFormat(url);
+	if (!formatParsed.ok) {
+		return rankingsQueryErrorResponse(formatParsed.error);
+	}
 	const parsed = parseRankingsGamesQuery(url);
 
 	if (
@@ -41,6 +50,17 @@ export const GET: RequestHandler = async ({ url, fetch, platform }) => {
 			},
 			resolveWebRankingEnv(platform?.env)
 		);
+		if (formatParsed.format === 'csv') {
+			const csv = gameRankingsToCsv(body);
+			return new Response(csv, {
+				headers: {
+					...csvAttachmentHeaders(
+						csvDownloadFilename([parsed.platform, 'games', parsed.period])
+					),
+					'cache-control': ROLLUP_CACHE_CONTROL
+				}
+			});
+		}
 		return Response.json(body, {
 			headers: { 'cache-control': ROLLUP_CACHE_CONTROL }
 		});

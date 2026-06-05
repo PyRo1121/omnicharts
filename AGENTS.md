@@ -7,7 +7,7 @@ Read this file first. **Documentation is the source of truth** — update docs b
 - **Name:** OmniCharts (not “Streams Charts”)
 - **Goal:** Free cross-platform streaming analytics (Twitch, Kick, YouTube)
 - **MVP complete:** Phase 3 shipped **2026-06-05** — three-platform browse + Kick/YouTube ingest ([phase3-signoff](./docs/audits/phase3-signoff.md))
-- **Shipped (2026-06):** Phase 0–2 Twitch discovery loop; Phase 3 multi-platform MVP ([ROADMAP](./ROADMAP.md))
+- **Current:** Phase 4 retention & agency — [28-phase4-plan](./docs/28-phase4-plan.md); CSV export slice 4.1 shipped
 - **Data:** Official platform APIs only — never scrape Streams Charts
 - **Stack:** SvelteKit, Bun monorepo, SQLite (dev) → Cloudflare D1 + R2 (prod)
 - **Ingest:** Separate Worker; Cron → Queues → poll ([ADR-002](./docs/adr/0002-twitch-eventsub-vs-polling.md))

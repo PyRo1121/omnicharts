@@ -27,6 +27,12 @@
 |-----|------|
 | [phase3-signoff](./phase3-signoff.md) | MVP complete checklist — gates, parity matrix, ops deferrals (2026-06-05) |
 
+## Phase 4
+
+| Doc | Role |
+|-----|------|
+| [28-phase4-plan](../28-phase4-plan.md) | Vertical slices — CSV export 4.1 shipped |
+
 ## Phase 3 audit wave 2 deferred
 
 Document only — not blockers for wave 3 re-audit when code gates pass:

@@ -1,6 +1,10 @@
 import {
 	buildRankingsChannelsResponse,
-	parseRankingsChannelsQuery
+	channelRankingsToCsv,
+	csvAttachmentHeaders,
+	csvDownloadFilename,
+	parseRankingsChannelsQuery,
+	parseResponseFormat
 } from '@omnicharts/rollup';
 import { ROLLUP_CACHE_CONTROL } from '$lib/server/cache';
 import { getIngestBaseUrl } from '$lib/server/ingest';
@@ -8,13 +12,18 @@ import { getD1 } from '$lib/server/d1';
 import { webRankingEligibility } from '$lib/server/ranking-env';
 import type { RequestHandler } from './$types';
 
-function rankingsQueryErrorResponse(
-	error: 'invalid_period' | 'invalid_limit' | 'invalid_platform'
-): Response {
+type RankingsQueryError =
+	| 'invalid_period'
+	| 'invalid_limit'
+	| 'invalid_platform'
+	| 'invalid_format';
+
+function rankingsQueryErrorResponse(error: RankingsQueryError): Response {
 	const messages = {
 		invalid_period: 'period must be one of 24h, 7d, 30d, 90d',
 		invalid_limit: 'limit must be a positive integer',
-		invalid_platform: 'platform must be twitch, kick, or youtube'
+		invalid_platform: 'platform must be twitch, kick, or youtube',
+		invalid_format: 'format must be json or csv'
 	} as const;
 	return Response.json(
 		{ error: { code: error, message: messages[error] } },
@@ -25,6 +34,10 @@ function rankingsQueryErrorResponse(
 /** Rollup rankings — D1 on Pages; ingest proxy fallback (openapi GET /v1/rankings/channels). */
 export const GET: RequestHandler = async ({ url, fetch, platform }) => {
 	const db = getD1(platform);
+	const formatParsed = parseResponseFormat(url);
+	if (!formatParsed.ok) {
+		return rankingsQueryErrorResponse(formatParsed.error);
+	}
 	const parsed = parseRankingsChannelsQuery(url);
 
 	if (
@@ -40,6 +53,17 @@ export const GET: RequestHandler = async ({ url, fetch, platform }) => {
 			minAirtimeMinutes: eligibility.minAirtimeMinutes,
 			minAverageViewers: eligibility.minAverageViewers
 		});
+		if (formatParsed.format === 'csv') {
+			const csv = channelRankingsToCsv(body);
+			return new Response(csv, {
+				headers: {
+					...csvAttachmentHeaders(
+						csvDownloadFilename([parsed.platform, 'channels', parsed.period])
+					),
+					'cache-control': ROLLUP_CACHE_CONTROL
+				}
+			});
+		}
 		return Response.json(body, {
 			headers: { 'cache-control': ROLLUP_CACHE_CONTROL }
 		});
