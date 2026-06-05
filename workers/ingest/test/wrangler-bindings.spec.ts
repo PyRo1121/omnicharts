@@ -43,10 +43,10 @@ describe('wrangler ingest bindings (lane 4)', () => {
 		expect(consumers[0]?.max_retries).toBe(2);
 	});
 
-	it('staging uses */5 cron and shards_only', () => {
+	it('staging uses */5 twitch, */2 kick+youtube cron, and shards_only', () => {
 		const staging = (config.env as Record<string, Record<string, unknown>>).staging;
 		expect(staging.triggers).toEqual({
-			crons: ['*/5 * * * *', '15 0 * * *', '0 */6 * * *']
+			crons: ['*/5 * * * *', '*/2 * * * *', '15 0 * * *', '0 */6 * * *']
 		});
 		expect((staging.vars as Record<string, string>).INGEST_COVERAGE_MODE).toBe('shards_only');
 	});

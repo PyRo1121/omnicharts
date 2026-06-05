@@ -70,6 +70,7 @@ Root `package.json` scripts — **do not duplicate bash blocks** in docs 23/24/2
 |--------|------|----------|
 | `bun run test` | Fast unit gate (ingest + web) | — |
 | `bun run verify:twitch` | Full Twitch gate before claiming ingest/web work done; freeze **G1** | Local: `dev:ingest` for checkpoint; CI: `VERIFY_SKIP_CHECKPOINT=1` unless `VERIFY_FULL=1` |
+| `bun run verify:kick` | Kick Phase 3 gate (ingest unit tests + optional live discover) | Local: `dev:ingest` + `KICK_*` in `.dev.vars`; CI: `VERIFY_SKIP_KICK_LIVE=1` unless `VERIFY_KICK_FULL=1` |
 | `bun run twitch:freeze-proof` | M1 operational proof matrix (health → schema → cron → checkpoint → optional EventSub) | `dev:ingest` with `--test-scheduled` |
 | `bun run twitch:checkpoint --no-start-ingest` | Deep ingest pipeline smoke (subset of verify) | `dev:ingest` + `ADMIN_API_KEY` in `.dev.vars` |
 | `bun run twitch:checkpoint:full` | Slow coverage poll path | Same as checkpoint |
@@ -79,7 +80,20 @@ Root `package.json` scripts — **do not duplicate bash blocks** in docs 23/24/2
 | `bun run check:web` | Wrangler types + svelte-check | — |
 | `bun run build:web` | Production Pages build | — |
 
-Implementation: `scripts/verify/twitch-e2e-verify.ts` (`verify:twitch` and `twitch:freeze-proof` share one script; `--proof-matrix` selects M1 path). All verify scripts: [`scripts/verify/`](../scripts/verify/) · [`scripts/README.md`](../scripts/README.md).
+Implementation: `scripts/verify/twitch-e2e-verify.ts` (`verify:twitch` and `twitch:freeze-proof` share one script; `--proof-matrix` selects M1 path). Kick: `scripts/verify/kick-e2e-verify.ts`. All verify scripts: [`scripts/verify/`](../scripts/verify/) · [`scripts/README.md`](../scripts/README.md).
+
+### `verify:kick` (agents)
+
+From repo root:
+
+1. `bun run test:ingest` — ingest Vitest (Kick poll/discover/webhook/api edge cases included)
+2. Optional live: `bun run dev:ingest` then `bun run verify:kick` runs `POST /admin/kick/discover` `{ "quick": true }` when `KICK_CLIENT_ID` + `KICK_CLIENT_SECRET` are in `workers/ingest/.dev.vars`
+
+| Env | Effect |
+|-----|--------|
+| `VERIFY_SKIP_KICK_LIVE=1` | Unit tests only |
+| `CI=true` without `VERIFY_KICK_FULL=1` | Same as skip (default in CI) |
+| `VERIFY_KICK_FULL=1` | Run kick discover checkpoint when ingest is reachable |
 
 ### `verify:twitch` (agents)
 
@@ -125,6 +139,7 @@ Pre–Kick freeze: [23 §2](./23-audit-remediation-plan.md#2-freeze-gate-twitch-
 | Gate | Command |
 |------|---------|
 | Full Twitch smoke | `bun run verify:twitch` |
+| Kick Phase 3 gate | `bun run verify:kick` |
 | M1 proof matrix | `bun run twitch:freeze-proof` |
 | D1 schema (local) | `bun run d1:verify-schema` (after `d1:migrate:local`) — migrations **0001–0008** |
 | D1 schema (pre-deploy) | `bun run d1:verify-schema:remote` — freeze G2; indexes **0007–0008** |

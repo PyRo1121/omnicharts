@@ -19,4 +19,6 @@ declare interface Env {
 	KICK_CLIENT_SECRET?: string;
 	KICK_MAX_TRACKED?: string;
 	KICK_MIN_VIEWERS?: string;
+	/** RSA PEM from GET /public/v1/public-key — webhook signature verify (ADR-003). */
+	KICK_WEBHOOK_PUBLIC_KEY?: string;
 }

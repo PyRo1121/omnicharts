@@ -109,4 +109,41 @@ describe('kick poll', () => {
 		expect(result.samplesWritten).toBe(0);
 		expect(recordSpy).toHaveBeenCalledWith(expect.anything(), [], expect.anything());
 	});
+
+	it('skips samples when viewer_count below minViewers threshold', async () => {
+		vi.spyOn(KickPublicApiClient.prototype, 'getLivestreamsByBroadcasterIds').mockResolvedValue([
+			{
+				broadcaster_user_id: 10,
+				channel_id: 100,
+				slug: 'ten',
+				stream_title: 'T',
+				started_at: '2026-06-01T00:00:00Z',
+				viewer_count: 3
+			}
+		]);
+		vi.spyOn(kickDb, 'batchUpsertKickGameCategories').mockResolvedValue(new Map());
+		vi.spyOn(kickDb, 'batchUpsertKickChannelsFromLivestreams').mockResolvedValue(
+			new Map([['10', 'ch-1']])
+		);
+		const recordSpy = vi.spyOn(kickDb, 'batchRecordKickLiveSamples').mockResolvedValue([]);
+
+		const db = {
+			prepare: () => ({ bind: () => ({ run: async () => ({}) }) }),
+			batch: async () => []
+		} as unknown as D1Database;
+
+		const result = await runKickPollBatch(
+			{
+				KICK_CLIENT_ID: 'id',
+				KICK_CLIENT_SECRET: 'secret',
+				KICK_MIN_VIEWERS: '5',
+				DB: db
+			} as Env,
+			['10']
+		);
+
+		expect(result.liveStreams).toBe(1);
+		expect(result.samplesWritten).toBe(0);
+		expect(recordSpy).toHaveBeenCalledWith(expect.anything(), [], expect.anything());
+	});
 });

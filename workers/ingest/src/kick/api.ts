@@ -4,6 +4,7 @@ import { KickRateBudget, kickRetryAfterMs, sleepMs } from './rate-limit';
 import type {
 	KickApiListResponse,
 	KickCategoryWithTags,
+	KickChannel,
 	KickLivestream,
 	KickPaginatedResponse
 } from './types';
@@ -49,6 +50,17 @@ export class KickPublicApiClient {
 			'/public/v1/livestreams',
 			params
 		);
+		return json.data ?? [];
+	}
+
+	async getChannelsBySlug(slug: string): Promise<KickChannel[]> {
+		const trimmed = slug.trim();
+		if (!trimmed) return [];
+
+		const params = new URLSearchParams();
+		params.set('slug', trimmed);
+
+		const json = await this.get<KickApiListResponse<KickChannel>>('/public/v1/channels', params);
 		return json.data ?? [];
 	}
 

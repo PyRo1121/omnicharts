@@ -4,7 +4,7 @@
 
 Accepted (2026-06-01) — supersedes “Kick may be blocked” notes  
 **Amended:** 2026-06-01 — OAuth hosts, batching, webhooks, compliance  
-**Implementation (2026-06-05):** Tracked poll + category discovery — `workers/ingest/src/kick/{auth,api,poll,discover}.ts`; queue `poll_kick_tracked` + `discover_kick` wired; `NEEDS_API` when secrets absent.
+**Implementation (2026-06-05):** Tracked poll + category discovery — `workers/ingest/src/kick/{auth,api,poll,discover,webhook}.ts`; queue `poll_kick_tracked` + `discover_kick` wired; `NEEDS_API` when secrets absent. Webhook handler: `POST /webhooks/kick/events` verifies RSA signature (`KICK_WEBHOOK_PUBLIC_KEY`), handles `livestream.status.updated` v1 for session open/close only.
 
 ## Context
 

@@ -32,6 +32,7 @@ import {
 import { ENRICH_MAX_CHANNELS_PER_RUN } from './twitch/config';
 import { runTwitchProfileEnrichment } from './twitch/enrich-profiles';
 import { handleTwitchEventSubWebhook } from './twitch/eventsub/handler';
+import { handleKickWebhook } from './kick/webhook/handler';
 import { syncTwitchEventSubSubscriptions } from './twitch/eventsub/sync';
 import { runDailyRollup } from './rollup/daily-job';
 import {
@@ -110,6 +111,10 @@ export default {
 
 		if (url.pathname === '/webhooks/twitch/eventsub' && request.method === 'POST') {
 			return handleTwitchEventSubWebhook(request, env, ctx);
+		}
+
+		if (url.pathname === '/webhooks/kick/events' && request.method === 'POST') {
+			return handleKickWebhook(request, env, ctx);
 		}
 
 		if (url.pathname === '/admin/twitch/eventsub/sync' && request.method === 'POST') {

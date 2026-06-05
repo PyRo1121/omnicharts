@@ -21,6 +21,7 @@ TWITCH_EVENTSUB_CALLBACK_URL=
 # KICK_CLIENT_SECRET=
 # KICK_MAX_TRACKED=800
 # KICK_MIN_VIEWERS=2
+# KICK_WEBHOOK_PUBLIC_KEY=   # PEM from GET /public/v1/public-key — POST /webhooks/kick/events
 
 # --- Optional local overrides (omit for wrangler auto-defaults) ---
 # INGEST_COVERAGE_MODE=shards_only

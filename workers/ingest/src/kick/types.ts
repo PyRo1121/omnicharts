@@ -38,3 +38,12 @@ export type KickPaginatedResponse<T> = {
 	message?: string;
 	pagination?: { next_cursor?: string };
 };
+
+/** GET /public/v1/channels — slug or broadcaster_user_id lookup */
+export type KickChannel = {
+	broadcaster_user_id: number;
+	channel_id: number;
+	slug: string;
+	stream_title?: string;
+	viewer_count?: number | null;
+};

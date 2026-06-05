@@ -11,6 +11,7 @@ const DIR = import.meta.dir;
 
 const COMMANDS: Record<string, string> = {
 	twitch: 'twitch-e2e-verify.ts',
+	kick: 'kick-e2e-verify.ts',
 	'freeze-proof': 'twitch-e2e-verify.ts',
 	autoresearch: 'autoresearch-phases02-verify.ts',
 	lighthouse: 'lighthouse-smoke.ts',

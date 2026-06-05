@@ -8,7 +8,7 @@ import {
 } from 'cloudflare:test';
 import { describe, it, expect, vi } from 'vitest';
 import worker from '../src/index';
-import { TWITCH_CRON } from '../src/cron-messages';
+import { TWITCH_CRON, MULTI_PLATFORM_CRON } from '../src/cron-messages';
 import * as ingestLog from '../src/log';
 
 const IncomingRequest = Request<unknown, IncomingRequestCfProperties>;
@@ -58,6 +58,23 @@ describe('ingest worker', () => {
 			'poll_twitch_sweep',
 			'poll_twitch_reconcile'
 		]);
+		sendBatch.mockRestore();
+	});
+
+	it('scheduled */2 sendBatch enqueues kick+youtube tracked poll', async () => {
+		const sendBatch = vi
+			.spyOn(env.INGEST_QUEUE, 'sendBatch')
+			.mockResolvedValue({ messages: [] } as Awaited<ReturnType<Env['INGEST_QUEUE']['sendBatch']>>);
+		const ctrl = createScheduledController({
+			scheduledTime: new Date(1_000),
+			cron: MULTI_PLATFORM_CRON
+		});
+		const ctx = createExecutionContext();
+		await worker.scheduled(ctrl, env, ctx);
+		await waitOnExecutionContext(ctx);
+		expect(sendBatch).toHaveBeenCalledOnce();
+		const batch = sendBatch.mock.calls[0]?.[0] as { body: { type: string } }[];
+		expect(batch.map((m) => m.body.type)).toEqual(['poll_kick_tracked', 'poll_youtube_tracked']);
 		sendBatch.mockRestore();
 	});
 

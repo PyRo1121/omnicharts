@@ -129,7 +129,7 @@ Default **800 points/min per client ID**; most Helix calls = 1 point. Use `Ratel
 
 Official **Kick Dev Public API** only — no site scraping ([ADR-003](./adr/0003-kick-ingest-strategy.md)). Register at [dev.kick.com](https://dev.kick.com/); accept [Developer ToS](https://dev.kick.com/terms-of-service). Docs: [docs.kick.com](https://docs.kick.com/), [KickDevDocs](https://github.com/KickEngineering/KickDevDocs), OpenAPI: `https://api.kick.com/swagger/doc.yaml`.
 
-**Phase 3 ingest (2026-06):** Tracked-catalog poll + category discovery shipped in `workers/ingest/src/kick/` — `poll_kick_tracked` → `GET /public/v1/livestreams` (≤50 `broadcaster_user_id`/req); `discover_kick` (6h cron) → `GET /public/v2/categories` + category-scoped livestreams (`limit=100`, `sort=viewer_count`). Without `KICK_CLIENT_ID` / `KICK_CLIENT_SECRET`, handlers no-op with `NEEDS_API`. Webhooks remain optional follow-up.
+**Phase 3 ingest (2026-06):** Tracked-catalog poll + category discovery shipped in `workers/ingest/src/kick/` — `poll_kick_tracked` → `GET /public/v1/livestreams` (≤50 `broadcaster_user_id`/req); `discover_kick` (6h cron) → `GET /public/v2/categories` + category-scoped livestreams (`limit=100`, `sort=viewer_count`). Without `KICK_CLIENT_ID` / `KICK_CLIENT_SECRET`, handlers no-op with `NEEDS_API`. Optional webhook `POST /webhooks/kick/events` for `livestream.status.updated` session boundaries (polling remains HW/AV source of truth).
 
 **Research grounding (2026-06-05):** Exa → [docs.kick.com/apis/livestreams](https://docs.kick.com/apis/livestreams), [docs.kick.com/apis/categories](https://docs.kick.com/apis/categories) (`GET /public/v2/categories` cursor pagination), [KickDevDocs livestreams](https://github.com/KickEngineering/KickDevDocs/blob/main/apis/livestreams.md), [KickDevDocs categories](https://github.com/KickEngineering/KickDevDocs/blob/main/apis/categories.md), [OAuth flow](https://github.com/KickEngineering/KickDevDocs/blob/main/getting-started/generating-tokens-oauth2-flow.md). Context7 quota exceeded — no official npm SDK in repo; ingest uses direct `fetch` (Helix-parity). Rate limits still unpublished; default throttle `KICK_REQUESTS_PER_MIN_BUDGET=60` (~1 req/s); **429** → honour `Retry-After` backoff.
 
@@ -179,8 +179,9 @@ No published RPM. ToS requires reasonable volume. Default **~1 req/s** per app; 
 
 `livestream.status.updated` / `livestream.metadata.updated` — session boundaries only ([event types](https://github.com/KickEngineering/KickDevDocs/blob/main/events/event-types.md)).
 
-1. Set webhook URL: [kick.com/settings/developer](https://kick.com/settings/developer).
-2. Subscribe:
+1. Set webhook URL: [kick.com/settings/developer](https://kick.com/settings/developer) → `https://ingest.example/webhooks/kick/events`.
+2. Store RSA public key PEM as `KICK_WEBHOOK_PUBLIC_KEY` (from `GET /public/v1/public-key` or Developer settings).
+3. Subscribe:
 
 ```bash
 curl -sS -X POST 'https://api.kick.com/public/v1/events/subscriptions' \

@@ -68,7 +68,8 @@
 	"env": {
 		"staging": {
 			"triggers": {
-				"crons": ["*/5 * * * *", "15 0 * * *", "0 */6 * * *"]
+				// */2 kick+youtube tracked poll — safe on staging shards_only twitch budget (docs/23 §6)
+				"crons": ["*/5 * * * *", "*/2 * * * *", "15 0 * * *", "0 */6 * * *"]
 			},
 			"vars": {
 				"ENVIRONMENT": "staging",
