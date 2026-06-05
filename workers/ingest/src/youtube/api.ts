@@ -1,6 +1,7 @@
 import { chunkArray } from '../db/d1-batch';
 import { YOUTUBE_API_BASE, YOUTUBE_VIDEOS_BATCH_SIZE, youtubeApiKeyConfigured } from './config';
 import type {
+	YoutubeChannelItem,
 	YoutubeChannelListResponse,
 	YoutubePlaylistItemsResponse,
 	YoutubeVideoItem,
@@ -48,6 +49,55 @@ export class YoutubeDataApiClient {
 
 		const json = (await res.json()) as YoutubeVideoListResponse;
 		return json.items ?? [];
+	}
+
+	async getChannelsByIds(channelIds: string[]): Promise<YoutubeChannelItem[]> {
+		const ids = channelIds.map((id) => id.trim()).filter(Boolean);
+		if (ids.length === 0) return [];
+		if (!youtubeApiKeyConfigured(this.env)) {
+			throw new Error('Missing YOUTUBE_API_KEY');
+		}
+
+		const key = this.requireApiKey();
+		const params = new URLSearchParams();
+		params.set('part', 'id,snippet');
+		params.set('id', ids.join(','));
+		params.set('key', key);
+
+		const url = `${YOUTUBE_API_BASE}/channels?${params.toString()}`;
+		const res = await fetch(url);
+		if (!res.ok) {
+			const body = await res.text();
+			throw new Error(`YouTube channels.list ${res.status}: ${body.slice(0, 200)}`);
+		}
+
+		const json = (await res.json()) as YoutubeChannelListResponse;
+		return json.items ?? [];
+	}
+
+	/** Handle → channel (1 quota unit). @see docs/05 channels.list forHandle */
+	async getChannelByForHandle(handle: string): Promise<YoutubeChannelItem | null> {
+		const normalized = handle.trim().replace(/^@+/, '');
+		if (!normalized) return null;
+		if (!youtubeApiKeyConfigured(this.env)) {
+			throw new Error('Missing YOUTUBE_API_KEY');
+		}
+
+		const key = this.requireApiKey();
+		const params = new URLSearchParams();
+		params.set('part', 'id,snippet');
+		params.set('forHandle', normalized);
+		params.set('key', key);
+
+		const url = `${YOUTUBE_API_BASE}/channels?${params.toString()}`;
+		const res = await fetch(url);
+		if (!res.ok) {
+			const body = await res.text();
+			throw new Error(`YouTube channels.list ${res.status}: ${body.slice(0, 200)}`);
+		}
+
+		const json = (await res.json()) as YoutubeChannelListResponse;
+		return json.items?.[0] ?? null;
 	}
 
 	async getUploadsPlaylistId(channelId: string): Promise<string | null> {

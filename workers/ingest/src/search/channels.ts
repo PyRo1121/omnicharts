@@ -2,7 +2,9 @@
  * Channel search — docs/16-search-and-resolution.md (FTS deferred; prefix LIKE fallback)
  */
 
-import { isPlatformId, PLATFORM_TWITCH } from '@omnicharts/domain';
+import { isPlatformId, PLATFORM_TWITCH, PLATFORM_YOUTUBE } from '@omnicharts/domain';
+import { shouldTryYoutubeApiSeed } from '../youtube/channel-id';
+import { seedYoutubeChannelByQuery } from '../youtube/seed';
 
 export type ChannelSearchRow = {
 	id: string;
@@ -86,4 +88,18 @@ export async function searchChannels(
 		.all<ChannelSearchRow>();
 
 	return results ?? [];
+}
+
+/** DB search; on-demand YouTube channels.list seed for exact handle / UC id (docs/05). */
+export async function searchChannelsWithYoutubeSeed(
+	db: D1Database,
+	env: Env,
+	opts: { platformId: string; query: string; limit?: number }
+): Promise<ChannelSearchRow[]> {
+	const results = await searchChannels(db, opts);
+	if (results.length > 0 || opts.platformId !== PLATFORM_YOUTUBE) return results;
+	if (!shouldTryYoutubeApiSeed(opts.query)) return results;
+
+	const seeded = await seedYoutubeChannelByQuery(env, opts.query);
+	return seeded ? [seeded] : results;
 }

@@ -20,11 +20,18 @@ export type YoutubeVideoListResponse = {
 	items?: YoutubeVideoItem[];
 };
 
+export type YoutubeChannelItem = {
+	id: string;
+	snippet?: {
+		title?: string;
+		customUrl?: string;
+		thumbnails?: { default?: { url?: string } };
+	};
+	contentDetails?: { relatedPlaylists?: { uploads?: string } };
+};
+
 export type YoutubeChannelListResponse = {
-	items?: {
-		id: string;
-		contentDetails?: { relatedPlaylists?: { uploads?: string } };
-	}[];
+	items?: YoutubeChannelItem[];
 };
 
 export type YoutubePlaylistItem = {

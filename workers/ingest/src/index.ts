@@ -19,6 +19,8 @@ import { runTwitchPollPlatform } from './twitch/poll-platform';
 import { runKickDiscovery } from './kick/discover';
 import { runKickPollPlatform } from './kick/poll-platform';
 import { runYoutubePollPlatform } from './youtube/poll-platform';
+import { runYoutubeCatalogPoll } from './youtube/poll';
+import { seedYoutubeChannelByQuery, seedYoutubeChannels } from './youtube/seed';
 import { checkPublicRateLimit } from './http/rate-limit';
 import { corsAllowOrigin } from './http/cors';
 import {
@@ -58,7 +60,7 @@ import {
 	buildGameDetailResponse,
 	parseGameDetailQuery
 } from './ranking/game-api';
-import { parseSearchChannelsQuery, searchChannels } from './search/channels';
+import { parseSearchChannelsQuery, searchChannelsWithYoutubeSeed } from './search/channels';
 import { PLATFORM_TWITCH } from '@omnicharts/domain';
 import { hasTwitchAppCredentials, twitchAppCredentialsErrorResponse } from './twitch/credentials';
 import { isDevAdminRouteAllowed } from './dev/admin-guard';
@@ -96,6 +98,10 @@ export default {
 
 		if (url.pathname === '/admin/kick/discover' && request.method === 'POST') {
 			return adminKickDiscover(request, env);
+		}
+
+		if (url.pathname === '/admin/youtube/poll' && request.method === 'POST') {
+			return adminYoutubePoll(request, env);
 		}
 
 		if (url.pathname === '/admin/twitch/poll' && request.method === 'POST') {
@@ -300,6 +306,25 @@ async function adminTwitchDiscover(request: Request, env: Env): Promise<Response
 	return Response.json({ ok: true, stats, quick });
 }
 
+async function adminYoutubePoll(request: Request, env: Env): Promise<Response> {
+	let seedHandles: string[] = [];
+	try {
+		const body = (await request.json()) as { seed?: string[] };
+		if (Array.isArray(body.seed)) {
+			seedHandles = body.seed.filter((h): h is string => typeof h === 'string');
+		}
+	} catch {
+		/* empty body */
+	}
+
+	const poll = await runYoutubeCatalogPoll(env);
+	const seed =
+		seedHandles.length > 0 ? await seedYoutubeChannels(env, seedHandles) : { seeded: 0, skipped: 0, errors: 0 };
+	const skipped = poll.skipped === 'NEEDS_API' && seed.seeded === 0;
+
+	return Response.json({ ok: true, poll, seed, skipped });
+}
+
 async function adminKickDiscover(request: Request, env: Env): Promise<Response> {
 	let quick = false;
 	try {
@@ -488,7 +513,14 @@ async function publicChannelResolve(request: Request, env: Env): Promise<Respons
 			{ status: 400 }
 		);
 	}
-	const resolved = await resolveChannelSlug(requireDb(env), { platform, slug });
+	const db = requireDb(env);
+	let resolved = await resolveChannelSlug(db, { platform, slug });
+	if (!resolved && platform === 'youtube') {
+		const seeded = await seedYoutubeChannelByQuery(env, slug);
+		if (seeded) {
+			resolved = { slug: seeded.slug, from_history: false };
+		}
+	}
 	if (!resolved) {
 		return Response.json(
 			{ error: { code: 'not_found', message: 'Channel not found' } },
@@ -577,7 +609,7 @@ async function publicSearchChannels(request: Request, env: Env): Promise<Respons
 	if (!parsed.ok) {
 		return searchQueryErrorResponse(parsed.error);
 	}
-	const results = await searchChannels(requireDb(env), {
+	const results = await searchChannelsWithYoutubeSeed(requireDb(env), env, {
 		platformId: parsed.platformId,
 		query: parsed.query,
 		limit: parsed.limit

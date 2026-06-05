@@ -51,4 +51,29 @@ describe('YoutubeDataApiClient', () => {
 		const client = new YoutubeDataApiClient({} as Env);
 		await expect(client.getVideosByIds(['vid1'])).rejects.toThrow(/YOUTUBE_API_KEY/);
 	});
+
+	it('getChannelByForHandle calls channels.list forHandle', async () => {
+		const fetchMock = vi.fn().mockResolvedValue(
+			new Response(
+				JSON.stringify({
+					items: [
+						{
+							id: 'UCabcdefghijklmnopqrstuv',
+							snippet: { title: 'MrBeast', customUrl: '@MrBeast' }
+						}
+					]
+				}),
+				{ status: 200 }
+			)
+		);
+		vi.stubGlobal('fetch', fetchMock);
+
+		const client = new YoutubeDataApiClient({ YOUTUBE_API_KEY: 'test-key' } as Env);
+		const channel = await client.getChannelByForHandle('mrbeast');
+
+		expect(channel?.id).toBe('UCabcdefghijklmnopqrstuv');
+		const url = String(fetchMock.mock.calls[0]?.[0]);
+		expect(url).toContain('forHandle=mrbeast');
+		expect(url).toContain('part=id%2Csnippet');
+	});
 });

@@ -219,7 +219,7 @@ See [12-channel-discovery](./12-channel-discovery-and-tracking.md#kick-discovery
 
 Official: [YouTube Data API v3](https://developers.google.com/youtube/v3) · [Quota](https://developers.google.com/youtube/v3/determine_quota_cost) · [API Services Terms](https://developers.google.com/youtube/terms/api-services-terms-of-service)
 
-**Phase 3 ingest (2026-06):** Tracked live-video poll shipped in `workers/ingest/src/youtube/` — `poll_youtube_tracked` → `GET /youtube/v3/videos` (`part=liveStreamingDetails,snippet`, ≤50 `id`/req) on `channels.youtube_live_video_id` for tracked `UC…` rows. Without `YOUTUBE_API_KEY`, handler no-ops with `NEEDS_API`. Never cron `search.list`.
+**Phase 3 ingest (2026-06):** Tracked live-video poll + on-demand channel seed/resolve shipped in `workers/ingest/src/youtube/` — `poll_youtube_tracked` → `GET /youtube/v3/videos` (`part=liveStreamingDetails,snippet`, ≤50 `id`/req) on `channels.youtube_live_video_id` for tracked `UC…` rows; search/resolve (`GET /v1/search/channels`, `GET /v1/channels/resolve`) and admin `POST /admin/youtube/poll` seed via `channels.list` (`forHandle` or `id=`, 1 unit each). Without `YOUTUBE_API_KEY`, poll/seed no-op with `NEEDS_API`. Never cron `search.list`.
 
 **Research grounding (2026-06-05):** Exa → [videos.list](https://developers.google.com/youtube/v3/docs/videos/list) (≤50 comma-separated `id`, 1 quota unit/request), [videos resource](https://developers.google.com/youtube/v3/docs/videos) (`snippet.liveBroadcastContent`, `liveStreamingDetails.concurrentViewers` hidden when broadcaster disables view count). Steady-state: track `youtube_live_video_id` per channel; refresh stale id via `playlistItems.list` (on-demand, not cron).
 
@@ -294,6 +294,14 @@ MVP cap: **40–120 live** @ 120s. Scale past ~150 live → quota extension or 1
 | Live tracked (batches ≤50 video ids) | 120s (`*/2 * * * *`) | `poll_youtube_tracked` |
 | Metadata | 12–24h | — |
 | Dormant | 24h | — |
+
+**Admin / on-demand (not cron):**
+
+| Route | Purpose |
+|-------|---------|
+| `POST /admin/youtube/poll` | Inline `poll_youtube_tracked` cycle; optional body `{ "seed": ["handle", "UC…"] }` |
+| `GET /v1/channels/resolve?platform=youtube&slug=` | DB slug/history, else `channels.list?forHandle=` or `id=` → upsert `discovered` |
+| `GET /v1/search/channels?platform=youtube&q=` | DB prefix search; exact handle / `UC…` miss → same on-demand seed |
 
 Store `YOUTUBE_API_KEY` in ingest Worker secrets only ([18-legal](./18-legal-and-compliance-checklist.md)).
 
