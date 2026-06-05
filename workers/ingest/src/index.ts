@@ -18,6 +18,7 @@ import { runTwitchReconcileRecent } from './twitch/reconcile';
 import { runTwitchPollPlatform } from './twitch/poll-platform';
 import { runKickDiscovery } from './kick/discover';
 import { runKickPollPlatform } from './kick/poll-platform';
+import { runYoutubePollPlatform } from './youtube/poll-platform';
 import { checkPublicRateLimit } from './http/rate-limit';
 import { corsAllowOrigin } from './http/cors';
 import {
@@ -205,7 +206,7 @@ async function handleQueueMessage(payload: IngestQueueMessage, env: Env): Promis
 			await runKickPollPlatform(env);
 			break;
 		case 'poll_youtube_tracked':
-			// Phase 3: YouTube tracked catalog poll — not yet implemented.
+			await runYoutubePollPlatform(env);
 			break;
 		case 'poll_twitch_sweep':
 			await runTwitchSweepAndGamePass(env);

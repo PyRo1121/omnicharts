@@ -219,6 +219,10 @@ See [12-channel-discovery](./12-channel-discovery-and-tracking.md#kick-discovery
 
 Official: [YouTube Data API v3](https://developers.google.com/youtube/v3) · [Quota](https://developers.google.com/youtube/v3/determine_quota_cost) · [API Services Terms](https://developers.google.com/youtube/terms/api-services-terms-of-service)
 
+**Phase 3 ingest (2026-06):** Tracked live-video poll shipped in `workers/ingest/src/youtube/` — `poll_youtube_tracked` → `GET /youtube/v3/videos` (`part=liveStreamingDetails,snippet`, ≤50 `id`/req) on `channels.youtube_live_video_id` for tracked `UC…` rows. Without `YOUTUBE_API_KEY`, handler no-ops with `NEEDS_API`. Never cron `search.list`.
+
+**Research grounding (2026-06-05):** Exa → [videos.list](https://developers.google.com/youtube/v3/docs/videos/list) (≤50 comma-separated `id`, 1 quota unit/request), [videos resource](https://developers.google.com/youtube/v3/docs/videos) (`snippet.liveBroadcastContent`, `liveStreamingDetails.concurrentViewers` hidden when broadcaster disables view count). Steady-state: track `youtube_live_video_id` per channel; refresh stale id via `playlistItems.list` (on-demand, not cron).
+
 ### APIs
 
 | Use | API | Cost | Cron? |
@@ -285,11 +289,13 @@ MVP cap: **40–120 live** @ 120s. Scale past ~150 live → quota extension or 1
 
 ### Polling cadence
 
-| Job | Interval |
-|-----|----------|
-| Live tracked | 120s (`videos.list` batched) |
-| Metadata | 12–24h |
-| Dormant | 24h |
+| Job | Interval | Queue message |
+|-----|----------|---------------|
+| Live tracked (batches ≤50 video ids) | 120s (`*/2 * * * *`) | `poll_youtube_tracked` |
+| Metadata | 12–24h | — |
+| Dormant | 24h | — |
+
+Store `YOUTUBE_API_KEY` in ingest Worker secrets only ([18-legal](./18-legal-and-compliance-checklist.md)).
 
 ### Channel IDs and UI
 

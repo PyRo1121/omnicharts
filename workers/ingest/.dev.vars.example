@@ -23,6 +23,12 @@ TWITCH_EVENTSUB_CALLBACK_URL=
 # KICK_MIN_VIEWERS=2
 # KICK_WEBHOOK_PUBLIC_KEY=   # PEM from GET /public/v1/public-key — POST /webhooks/kick/events
 
+# --- YouTube (Phase 3) — Google Cloud YouTube Data API v3 (docs/05) ---
+# Omit until API key exists; poll_youtube_tracked no-ops with NEEDS_API.
+# YOUTUBE_API_KEY=
+# YOUTUBE_MAX_TRACKED=80
+# YOUTUBE_MIN_VIEWERS=2
+
 # --- Optional local overrides (omit for wrangler auto-defaults) ---
 # INGEST_COVERAGE_MODE=shards_only
 # LIVE_SWEEP_MAX_PAGES=3

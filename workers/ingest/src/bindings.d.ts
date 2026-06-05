@@ -21,4 +21,8 @@ declare interface Env {
 	KICK_MIN_VIEWERS?: string;
 	/** RSA PEM from GET /public/v1/public-key — webhook signature verify (ADR-003). */
 	KICK_WEBHOOK_PUBLIC_KEY?: string;
+	/** YouTube Data API key — Phase 3 (docs/05). Omit locally until GCP project registered. */
+	YOUTUBE_API_KEY?: string;
+	YOUTUBE_MAX_TRACKED?: string;
+	YOUTUBE_MIN_VIEWERS?: string;
 }
