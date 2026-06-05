@@ -95,6 +95,8 @@ From repo root:
 | `CI=true` without `VERIFY_KICK_FULL=1` | Same as skip (default in CI) |
 | `VERIFY_KICK_FULL=1` | Run kick discover checkpoint when ingest is reachable |
 
+**Known gap (defer):** `verify:kick` passes when ingest unit tests pass even if Kick rollup rankings / web BFF are untested end-to-end — a future gate should assert `GET /v1/rankings/channels?platform=kick` non-empty after discover + `rollup_daily` (same pattern as Twitch checkpoint).
+
 ### `verify:twitch` (agents)
 
 From repo root (ingest must be running for checkpoint: `bun run dev:ingest`):

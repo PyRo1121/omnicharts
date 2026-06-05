@@ -1,4 +1,4 @@
-import { parseRankingPeriod } from '@omnicharts/domain';
+import { parseRankingPeriod, type PlatformId } from '@omnicharts/domain';
 import {
 	buildRankingsChannelsResponse,
 	formatHoursWatched,
@@ -26,7 +26,8 @@ export type ChannelRankingsLoad = {
 function mapChannelRankingsBody(
 	body: RankingsChannelsResponse,
 	period: Period,
-	limit: number
+	limit: number,
+	platform: PlatformId
 ): ChannelRankingsLoad {
 	if (!body.items?.length) {
 		return { source: 'live', period, updatedAt: body.updated_at, rows: [] };
@@ -39,7 +40,7 @@ function mapChannelRankingsBody(
 			rank: item.rank,
 			slug: item.slug,
 			displayName: item.display_name,
-			platform: 'twitch',
+			platform,
 			avatarUrl: item.avatar_url ?? '',
 			metric: formatHoursWatched(item.hours_watched),
 			metricLabel: 'Hours watched'
@@ -47,8 +48,15 @@ function mapChannelRankingsBody(
 	};
 }
 
+const ROLLUP_CHANNEL_PLATFORMS = new Set<PlatformId>(['twitch', 'kick']);
+
+function supportsRollupChannelRankings(platform: PlatformId): boolean {
+	return ROLLUP_CHANNEL_PLATFORMS.has(platform);
+}
+
 async function loadFromD1(
 	db: D1Database,
+	platform: PlatformId,
 	period: Period,
 	limit: number,
 	cfEnv: ServerLoadContext['cfEnv']
@@ -56,37 +64,43 @@ async function loadFromD1(
 	const apiPeriod = parseRankingPeriod(periodForApi(period));
 	const eligibility = webRankingEligibility(cfEnv);
 	const body = await buildRankingsChannelsResponse(db, {
-		platform: 'twitch',
+		platform,
 		period: apiPeriod,
 		limit,
 		minAirtimeMinutes: eligibility.minAirtimeMinutes,
 		minAverageViewers: eligibility.minAverageViewers
 	});
-	return mapChannelRankingsBody(body, period, limit);
+	return mapChannelRankingsBody(body, period, limit, platform);
 }
 
 async function loadFromIngest(
 	fetchFn: typeof fetch,
+	platform: PlatformId,
 	period: Period,
 	limit: number
 ): Promise<ChannelRankingsLoad | null> {
 	const apiPeriod = periodForApi(period);
-	const url = `${getIngestBaseUrl()}/v1/rankings/channels?platform=twitch&period=${apiPeriod}&limit=${limit}`;
+	const url = `${getIngestBaseUrl()}/v1/rankings/channels?platform=${encodeURIComponent(platform)}&period=${apiPeriod}&limit=${limit}`;
 	const res = await fetchFn(url, { headers: { accept: 'application/json' } });
 	if (!res.ok) return null;
 	const body = (await res.json()) as RankingsChannelsResponse;
-	return mapChannelRankingsBody(body, period, limit);
+	return mapChannelRankingsBody(body, period, limit, platform);
 }
 
-export async function loadTwitchChannelRankings(
+export async function loadChannelRankings(
 	ctx: ServerLoadContext,
+	platform: PlatformId,
 	period: Period,
 	limit = 20,
 	mockEnabled = false
 ): Promise<ChannelRankingsLoad> {
+	if (!supportsRollupChannelRankings(platform)) {
+		return { source: 'live', period, updatedAt: null, rows: [] };
+	}
+
 	if (ctx.db) {
 		try {
-			return await loadFromD1(ctx.db, period, limit, ctx.cfEnv);
+			return await loadFromD1(ctx.db, platform, period, limit, ctx.cfEnv);
 		} catch {
 			if (mockEnabled) {
 				return { source: 'mock', period, updatedAt: null, rows: topChannels.slice(0, limit) };
@@ -96,7 +110,7 @@ export async function loadTwitchChannelRankings(
 	}
 
 	try {
-		const live = await loadFromIngest(ctx.fetch, period, limit);
+		const live = await loadFromIngest(ctx.fetch, platform, period, limit);
 		if (live) return live;
 		throw new Error('rankings unavailable');
 	} catch {
@@ -105,4 +119,14 @@ export async function loadTwitchChannelRankings(
 		}
 		return { source: 'unavailable', period, updatedAt: null, rows: [] };
 	}
+}
+
+/** @deprecated Prefer {@link loadChannelRankings} with explicit `platform`. */
+export async function loadTwitchChannelRankings(
+	ctx: ServerLoadContext,
+	period: Period,
+	limit = 20,
+	mockEnabled = false
+): Promise<ChannelRankingsLoad> {
+	return loadChannelRankings(ctx, 'twitch', period, limit, mockEnabled);
 }

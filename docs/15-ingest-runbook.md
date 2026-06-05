@@ -231,9 +231,11 @@ bun run twitch:discover   # POST /admin/twitch/discover — top games scan + dis
    - [ ] `GET /v1/rankings/channels?platform=twitch&period=7d&limit=5` — non-empty when ingest healthy
    - [ ] No `POST /admin/dev/*` in production (404 unless `ALLOW_DEV_SEED=1`)
 
-### Kick / YouTube cron (pre–Phase 3)
+### Kick / YouTube cron
 
-`*/2 * * * *` is scheduled but **`cronToMessages` returns no queue messages** for Kick/YouTube until Phase 3 handlers exist (`workers/ingest/src/index.ts`). Production is safe: no silent poll no-ops. When Phase 3 ships, update this section and re-enable enqueue.
+`MULTI_PLATFORM_CRON` (`*/2 * * * *`) enqueues **`poll_kick_tracked`** and **`poll_youtube_tracked`** via `multiPlatformCronMessages()` (`workers/ingest/src/cron-messages.ts`, `workers/ingest/src/ingest-budget.ts`). Kick poll/discover handlers are live; YouTube poll is still a stub.
+
+**Deferred (budget gate):** production `wrangler.jsonc` may keep the `*/2` trigger commented until the 14-day ingest budget review passes — staging/local dev can run the cron. Re-enable production schedule only after `ingest-budget` sign-off ([23-paid-tier-zero-overage-playbook](./23-paid-tier-zero-overage-playbook.md)).
 
 ---
 

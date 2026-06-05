@@ -1,7 +1,7 @@
 import { applyRollupPageCache } from '$lib/server/cache';
 import { isDevMockEnabled } from '$lib/server/dev-mock';
 import { serverLoadContext } from '$lib/server/load-context';
-import { loadTwitchChannelRankings } from '$lib/server/rankings';
+import { loadChannelRankings } from '$lib/server/rankings';
 import { parseUiPeriod, parseUiPlatform, type PlatformId } from '$lib/mock/home';
 import type { PageServerLoad } from './$types';
 
@@ -13,7 +13,7 @@ export const load: PageServerLoad = async ({ fetch, url, setHeaders, platform: c
 	const platform = parseUiPlatform(url.searchParams.get('platform'));
 	const mockEnabled = isDevMockEnabled(url.searchParams.get('demo'));
 
-	if (platform !== 'twitch' && platform !== 'all') {
+	if (platform === 'youtube') {
 		return {
 			source: 'live' as const,
 			period,
@@ -25,12 +25,13 @@ export const load: PageServerLoad = async ({ fetch, url, setHeaders, platform: c
 		};
 	}
 
-	const rankings = await loadTwitchChannelRankings(ctx, period, 20, mockEnabled);
+	const rankingsPlatform: PlatformId = platform === 'all' ? 'twitch' : platform;
+	const rankings = await loadChannelRankings(ctx, rankingsPlatform, period, 20, mockEnabled);
 	return {
 		...rankings,
 		period,
 		periodNote,
-		platform: 'twitch' as PlatformId,
+		platform: rankingsPlatform,
 		platformUnsupported: false
 	};
 };

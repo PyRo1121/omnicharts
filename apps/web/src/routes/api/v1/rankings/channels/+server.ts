@@ -8,10 +8,13 @@ import { getD1 } from '$lib/server/d1';
 import { webRankingEligibility } from '$lib/server/ranking-env';
 import type { RequestHandler } from './$types';
 
-function rankingsQueryErrorResponse(error: 'invalid_period' | 'invalid_limit'): Response {
+function rankingsQueryErrorResponse(
+	error: 'invalid_period' | 'invalid_limit' | 'invalid_platform'
+): Response {
 	const messages = {
 		invalid_period: 'period must be one of 24h, 7d, 30d, 90d',
-		invalid_limit: 'limit must be a positive integer'
+		invalid_limit: 'limit must be a positive integer',
+		invalid_platform: 'platform must be twitch, kick, or youtube'
 	} as const;
 	return Response.json(
 		{ error: { code: error, message: messages[error] } },
@@ -24,7 +27,7 @@ export const GET: RequestHandler = async ({ url, fetch, platform }) => {
 	const db = getD1(platform);
 	const parsed = parseRankingsChannelsQuery(url);
 
-	if (parsed.ok && db && parsed.platform === 'twitch') {
+	if (parsed.ok && db && (parsed.platform === 'twitch' || parsed.platform === 'kick')) {
 		const eligibility = webRankingEligibility(platform?.env);
 		const body = await buildRankingsChannelsResponse(db, {
 			platform: parsed.platform,
@@ -38,7 +41,7 @@ export const GET: RequestHandler = async ({ url, fetch, platform }) => {
 		});
 	}
 
-	if (parsed.ok === false) {
+	if (!parsed.ok) {
 		return rankingsQueryErrorResponse(parsed.error);
 	}
 

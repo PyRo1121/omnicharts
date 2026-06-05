@@ -1,4 +1,10 @@
-import { PLATFORM_TWITCH, parseRankingPeriod, periodToDays, type RankingPeriod } from '@omnicharts/domain';
+import {
+	PLATFORM_TWITCH,
+	isPlatformId,
+	parseRankingPeriod,
+	periodToDays,
+	type RankingPeriod
+} from '@omnicharts/domain';
 import type { D1Database } from './d1';
 
 export type ChannelDetailDaily = {
@@ -83,23 +89,28 @@ export async function resolveChannelSlug(
 	return null;
 }
 
-export function parseChannelDetailQuery(url: URL): {
-	platform: string;
-	period: RankingPeriod;
-	slug: string;
-} {
-	const platform = url.searchParams.get('platform') ?? PLATFORM_TWITCH;
+export type ChannelDetailQueryError = 'invalid_platform';
+
+export type ParsedChannelDetailQuery =
+	| { ok: true; platform: string; period: RankingPeriod; slug: string }
+	| { ok: false; error: ChannelDetailQueryError };
+
+export function parseChannelDetailQuery(url: URL): ParsedChannelDetailQuery {
+	const platformRaw = url.searchParams.get('platform') ?? PLATFORM_TWITCH;
+	if (!isPlatformId(platformRaw)) {
+		return { ok: false, error: 'invalid_platform' };
+	}
 	const period = parseRankingPeriod(url.searchParams.get('period'));
 	const parts = url.pathname.split('/').filter(Boolean);
 	const slug = decodeURIComponent(parts[parts.length - 1] ?? '');
-	return { platform, period, slug };
+	return { ok: true, platform: platformRaw, period, slug };
 }
 
 export async function buildChannelDetailResponse(
 	db: D1Database,
 	opts: { platform: string; slug: string; period: RankingPeriod }
 ): Promise<ChannelDetailResponse | null> {
-	if (opts.platform !== PLATFORM_TWITCH || !opts.slug) return null;
+	if (!opts.slug) return null;
 
 	const resolved = await resolveChannelSlug(db, {
 		platform: opts.platform,
@@ -114,7 +125,7 @@ export async function buildChannelDetailResponse(
        FROM channels
        WHERE platform_id = ? AND slug = ?`
 		)
-		.bind(PLATFORM_TWITCH, resolved.slug)
+		.bind(opts.platform, resolved.slug)
 		.first<ChannelRow>();
 
 	if (!channel) return null;

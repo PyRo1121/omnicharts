@@ -1,6 +1,7 @@
 import type { D1Database } from './d1';
 import {
 	PLATFORM_TWITCH,
+	isPlatformId,
 	isRankingPeriod,
 	parseRankingPeriod,
 	periodToDays,
@@ -32,7 +33,11 @@ export type ParsedRankingsGamesQuery =
 	| { ok: false; error: RankingsQueryError };
 
 export function parseRankingsGamesQuery(url: URL): ParsedRankingsGamesQuery {
-	const platform = url.searchParams.get('platform') ?? PLATFORM_TWITCH;
+	const platformRaw = url.searchParams.get('platform') ?? PLATFORM_TWITCH;
+	if (!isPlatformId(platformRaw)) {
+		return { ok: false, error: 'invalid_platform' };
+	}
+	const platform = platformRaw;
 	const periodRaw = url.searchParams.get('period');
 	if (periodRaw != null && periodRaw !== '' && !isRankingPeriod(periodRaw)) {
 		return { ok: false, error: 'invalid_period' };

@@ -24,17 +24,38 @@ describe('parseRankingsChannelsQuery', () => {
 		const q = parseRankingsChannelsQuery(url);
 		expect(q).toEqual({ ok: false, error: 'invalid_limit' });
 	});
+
+	it('rejects invalid platform', () => {
+		const url = new URL('http://x/v1/rankings/channels?platform=facebook');
+		expect(parseRankingsChannelsQuery(url)).toEqual({ ok: false, error: 'invalid_platform' });
+	});
 });
 
 describe('buildRankingsChannelsResponse', () => {
-	it('returns empty items for non-twitch platforms', async () => {
+	it('maps kick rankings via platform-agnostic query', async () => {
+		vi.spyOn(rankingQueries, 'queryTopChannelsByHoursWatched').mockResolvedValue([
+			{
+				slug: 'xqc',
+				display_name: 'xQc',
+				avatar_url: null,
+				first_observed_at: '2026-04-01T00:00:00.000Z',
+				hours_watched: 5000,
+				average_viewers: 200,
+				airtime_minutes: 1500,
+				peak_viewers: 1000,
+				stream_count: 4
+			}
+		]);
+
 		const res = await buildRankingsChannelsResponse({} as D1Database, {
 			platform: 'kick',
 			period: '7d',
 			limit: 20
 		});
-		expect(res.items).toEqual([]);
+
 		expect(res.platform).toBe('kick');
+		expect(res.items[0]?.slug).toBe('xqc');
+		vi.restoreAllMocks();
 	});
 
 	it('maps twitch rankings to API shape', async () => {

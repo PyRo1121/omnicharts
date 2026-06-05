@@ -29,6 +29,7 @@ export {
 } from './ranking-env';
 export { sortChannelsByHoursWatched, type RankedChannelRow } from './sort';
 export {
+	getTopChannelsByHoursWatched,
 	getTopTwitchChannelsByHoursWatched,
 	rankTopChannelsFromRollupRows,
 	type TopChannelRanking
@@ -58,7 +59,9 @@ export {
 	parseChannelDetailQuery,
 	resolveChannelSlug,
 	type ChannelDetailDaily,
-	type ChannelDetailResponse
+	type ChannelDetailQueryError,
+	type ChannelDetailResponse,
+	type ParsedChannelDetailQuery
 } from './channel-api';
 export {
 	buildGameDetailResponse,

@@ -1,12 +1,13 @@
 import type { D1Database } from './d1';
 import {
 	PLATFORM_TWITCH,
+	isPlatformId,
 	isRankingPeriod,
 	parseRankingPeriod,
 	periodToDays,
 	type RankingPeriod
 } from '@omnicharts/domain';
-import { getTopTwitchChannelsByHoursWatched } from './top-channels';
+import { getTopChannelsByHoursWatched } from './top-channels';
 
 export type RankingsChannelsItem = {
 	rank: number;
@@ -28,14 +29,18 @@ export type RankingsChannelsResponse = {
 	items: RankingsChannelsItem[];
 };
 
-export type RankingsQueryError = 'invalid_period' | 'invalid_limit';
+export type RankingsQueryError = 'invalid_period' | 'invalid_limit' | 'invalid_platform';
 
 export type ParsedRankingsChannelsQuery =
 	| { ok: true; platform: string; period: RankingPeriod; limit: number }
 	| { ok: false; error: RankingsQueryError };
 
 export function parseRankingsChannelsQuery(url: URL): ParsedRankingsChannelsQuery {
-	const platform = url.searchParams.get('platform') ?? PLATFORM_TWITCH;
+	const platformRaw = url.searchParams.get('platform') ?? PLATFORM_TWITCH;
+	if (!isPlatformId(platformRaw)) {
+		return { ok: false, error: 'invalid_platform' };
+	}
+	const platform = platformRaw;
 	const periodRaw = url.searchParams.get('period');
 	if (periodRaw != null && periodRaw !== '' && !isRankingPeriod(periodRaw)) {
 		return { ok: false, error: 'invalid_period' };
@@ -60,17 +65,9 @@ export async function buildRankingsChannelsResponse(
 		minAirtimeMinutes?: number;
 	}
 ): Promise<RankingsChannelsResponse> {
-	if (opts.platform !== PLATFORM_TWITCH) {
-		return {
-			platform: opts.platform,
-			period: opts.period,
-			updated_at: new Date().toISOString(),
-			items: []
-		};
-	}
-
 	const days = periodToDays(opts.period);
-	const rankings = await getTopTwitchChannelsByHoursWatched(db, {
+	const rankings = await getTopChannelsByHoursWatched(db, {
+		platformId: opts.platform,
 		days,
 		limit: opts.limit,
 		minAverageViewers: opts.minAverageViewers ?? 0,

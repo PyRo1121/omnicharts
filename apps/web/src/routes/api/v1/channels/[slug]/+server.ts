@@ -7,6 +7,18 @@ import { getIngestBaseUrl } from '$lib/server/ingest';
 import { getD1 } from '$lib/server/d1';
 import type { RequestHandler } from './$types';
 
+function channelQueryErrorResponse(error: 'invalid_platform'): Response {
+	return Response.json(
+		{
+			error: {
+				code: error,
+				message: 'platform must be twitch, kick, or youtube'
+			}
+		},
+		{ status: 400, headers: { 'cache-control': 'no-store' } }
+	);
+}
+
 /** Channel rollup detail — D1 on Pages; ingest proxy fallback (openapi GET /v1/channels/{slug}). */
 export const GET: RequestHandler = async ({ params, url, fetch, platform }) => {
 	const db = getD1(platform);
@@ -14,7 +26,11 @@ export const GET: RequestHandler = async ({ params, url, fetch, platform }) => {
 	detailUrl.pathname = `/v1/channels/${params.slug}`;
 	const query = parseChannelDetailQuery(detailUrl);
 
-	if (db && query.platform === 'twitch') {
+	if (!query.ok) {
+		return channelQueryErrorResponse(query.error);
+	}
+
+	if (db && (query.platform === 'twitch' || query.platform === 'kick')) {
 		const body = await buildChannelDetailResponse(db, {
 			platform: query.platform,
 			slug: query.slug,

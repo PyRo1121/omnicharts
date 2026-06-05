@@ -8,10 +8,13 @@ import { getD1 } from '$lib/server/d1';
 import { resolveWebRankingEnv } from '$lib/server/ranking-env';
 import type { RequestHandler } from './$types';
 
-function rankingsQueryErrorResponse(error: 'invalid_period' | 'invalid_limit'): Response {
+function rankingsQueryErrorResponse(
+	error: 'invalid_period' | 'invalid_limit' | 'invalid_platform'
+): Response {
 	const messages = {
 		invalid_period: 'period must be one of 24h, 7d, 30d, 90d',
-		invalid_limit: 'limit must be a positive integer'
+		invalid_limit: 'limit must be a positive integer',
+		invalid_platform: 'platform must be twitch, kick, or youtube'
 	} as const;
 	return Response.json(
 		{ error: { code: error, message: messages[error] } },

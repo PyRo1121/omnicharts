@@ -48,6 +48,31 @@ export function rankTopChannelsFromRollupRows(
 	});
 }
 
+export async function getTopChannelsByHoursWatched(
+	db: D1Database,
+	opts: {
+		platformId: string;
+		days?: number;
+		limit?: number;
+		minAverageViewers?: number;
+		minAirtimeMinutes?: number;
+	}
+): Promise<TopChannelRanking[]> {
+	const days = opts.days ?? 7;
+	const limit = Math.min(opts.limit ?? 20, 100);
+
+	const rows = await queryTopChannelsByHoursWatched(db, {
+		platformId: opts.platformId,
+		days,
+		limit: limit * 2,
+		minAirtimeMinutes: opts.minAirtimeMinutes,
+		minAverageViewers: opts.minAverageViewers ?? 0
+	});
+
+	return rankTopChannelsFromRollupRows(rows, limit);
+}
+
+/** @deprecated Prefer {@link getTopChannelsByHoursWatched} with `platformId: 'twitch'`. */
 export async function getTopTwitchChannelsByHoursWatched(
 	db: D1Database,
 	opts: {
@@ -57,16 +82,5 @@ export async function getTopTwitchChannelsByHoursWatched(
 		minAirtimeMinutes?: number;
 	} = {}
 ): Promise<TopChannelRanking[]> {
-	const days = opts.days ?? 7;
-	const limit = Math.min(opts.limit ?? 20, 100);
-
-	const rows = await queryTopChannelsByHoursWatched(db, {
-		platformId: PLATFORM_TWITCH,
-		days,
-		limit: limit * 2,
-		minAirtimeMinutes: opts.minAirtimeMinutes,
-		minAverageViewers: opts.minAverageViewers ?? 0
-	});
-
-	return rankTopChannelsFromRollupRows(rows, limit);
+	return getTopChannelsByHoursWatched(db, { ...opts, platformId: PLATFORM_TWITCH });
 }

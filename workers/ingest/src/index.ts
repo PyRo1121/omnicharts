@@ -367,15 +367,19 @@ async function adminRollupDaily(request: Request, env: Env): Promise<Response> {
 	return Response.json({ ok: true, stats });
 }
 
-function rankingsQueryErrorResponse(error: 'invalid_period' | 'invalid_limit'): Response {
+function rankingsQueryErrorResponse(
+	error: 'invalid_period' | 'invalid_limit' | 'invalid_platform'
+): Response {
+	const messages: Record<typeof error, string> = {
+		invalid_period: 'period must be one of 24h, 7d, 30d, 90d',
+		invalid_limit: 'limit must be a positive integer',
+		invalid_platform: 'platform must be twitch, kick, or youtube'
+	};
 	return Response.json(
 		{
 			error: {
 				code: error,
-				message:
-					error === 'invalid_period'
-						? 'period must be one of 24h, 7d, 30d, 90d'
-						: 'limit must be a positive integer'
+				message: messages[error]
 			}
 		},
 		{ status: 400 }
@@ -505,6 +509,9 @@ async function publicChannelDetail(
 	const url = new URL(request.url);
 	url.pathname = `/v1/channels/${slug}`;
 	const query = parseChannelDetailQuery(url);
+	if (!query.ok) {
+		return rankingsQueryErrorResponse(query.error);
+	}
 	const body = await buildChannelDetailResponse(requireDb(env), {
 		platform: query.platform,
 		slug: query.slug,

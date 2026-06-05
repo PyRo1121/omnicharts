@@ -26,14 +26,39 @@ function homepageLoadArgs(platform: string | null) {
 }
 
 describe('homepage load — non-Twitch platforms (docs/09 Phase 3)', () => {
-	it('returns empty rankings and platformUnsupported for platform=kick', async () => {
-		const result = await homepageLoad(homepageLoadArgs('kick'));
+	it('loads kick channel rankings without platformUnsupported banner', async () => {
+		const fetchFn = vi.fn().mockResolvedValue({
+			ok: true,
+			json: async () => ({
+				platform: 'kick',
+				period: '7d',
+				updated_at: '2026-06-01T00:00:00Z',
+				items: [
+					{
+						rank: 1,
+						slug: 'xqc',
+						display_name: 'xQc',
+						avatar_url: null,
+						hours_watched: 5000,
+						average_viewers: 200
+					}
+				]
+			})
+		});
+		const args = homepageLoadArgs('kick');
+		args.fetch = fetchFn as typeof fetch;
+
+		const result = await homepageLoad(args);
 
 		expect(result.platform).toBe('kick');
-		expect(result.platformUnsupported).toBe(true);
-		expect(result.channelRankings).toMatchObject({ source: 'live', rows: [] });
+		expect(result.platformUnsupported).toBe(false);
+		expect(result.channelRankings.rows[0]?.slug).toBe('xqc');
 		expect(result.gameRankings).toMatchObject({ source: 'live', rows: [] });
-		expect(result.trending).toEqual([...trendingSearches]);
+		expect(
+			fetchFn.mock.calls.some(
+				(c) => String(c[0]).includes('/rankings/channels') && String(c[0]).includes('platform=kick')
+			)
+		).toBe(true);
 	});
 
 	it('returns empty rankings and platformUnsupported for platform=youtube', async () => {

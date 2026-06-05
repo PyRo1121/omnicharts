@@ -5,6 +5,8 @@ describe('parseChannelDetailQuery', () => {
 	it('parses slug from path and defaults', () => {
 		const url = new URL('http://x/v1/channels/ninja?platform=twitch&period=30d');
 		const q = parseChannelDetailQuery(url);
+		expect(q.ok).toBe(true);
+		if (!q.ok) return;
 		expect(q.slug).toBe('ninja');
 		expect(q.platform).toBe('twitch');
 		expect(q.period).toBe('30d');
