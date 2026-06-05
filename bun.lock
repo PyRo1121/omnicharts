@@ -50,6 +50,7 @@
       "dependencies": {
         "@omnicharts/domain": "workspace:*",
         "@omnicharts/rollup": "workspace:*",
+        "hyparquet-writer": "^0.15.6",
       },
       "devDependencies": {
         "@cloudflare/vitest-pool-workers": "^0.12.4",
@@ -475,6 +476,10 @@
     "has-flag": ["has-flag@4.0.0", "", {}, "sha512-EykJT/Q1KjTWctppgIAgfSO0tKVuZUjhgMr17kqTumMl6Afv3EISleU7qZUzoXDFTAHTDC4NOoG/ZxU3EvlMPQ=="],
 
     "html-escaper": ["html-escaper@2.0.2", "", {}, "sha512-H2iMtd0I4Mt5eYiapRdIDjp+XzelXQ0tFE4JS7YFwFevXXMmOp9myNrUvCg0D6ws8iqkRPBfKHgbwig1SmlLfg=="],
+
+    "hyparquet": ["hyparquet@1.26.0", "", {}, "sha512-yxUiViPZ+z5h+xdX4rA1G+k30jXoEsG9I2xEpjaM84imGznbKjZzxuZFsdzqg6C4LxNnnAlDFvzpk4uxQWTbTQ=="],
+
+    "hyparquet-writer": ["hyparquet-writer@0.15.6", "", { "dependencies": { "hyparquet": "1.26.0" } }, "sha512-fRjEEePceAwowCTX8p/CTDdsAzLFbfDhCAoLK5s1H+V54RGcQMuscfH/MFMy7S3bXRdkGsbe3fqImG/mdlz9cg=="],
 
     "ingest": ["ingest@workspace:workers/ingest"],
 

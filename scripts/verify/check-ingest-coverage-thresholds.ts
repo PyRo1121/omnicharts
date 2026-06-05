@@ -15,7 +15,8 @@ const GATED_GLOBS = [
 	'src/twitch/',
 	'src/db/',
 	'src/kick/',
-	'src/youtube/'
+	'src/youtube/',
+	'src/r2/'
 ] as const;
 
 type Metric = 'lines' | 'statements' | 'functions' | 'branches';

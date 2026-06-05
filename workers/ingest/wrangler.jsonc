@@ -31,7 +31,9 @@
 		"TWITCH_MAX_TRACKED": "3000",
 		"TWITCH_RANKING_MIN_AIRTIME_MINUTES": "1",
 		// Row gate when archive on — src/r2/sample-archive.ts (default 10 if unset)
-		"SAMPLE_ARCHIVE_MIN_ROWS": "10"
+		"SAMPLE_ARCHIVE_MIN_ROWS": "10",
+		// Parquet cold archive for pruned rows — src/r2/cold-archive.ts (default off)
+		"COLD_ARCHIVE_ENABLED": "0"
 	},
 	"d1_databases": [
 		{
@@ -43,7 +45,7 @@
 	],
 	"r2_buckets": [
 		{
-			// NDJSON cold archive — src/r2/sample-archive.ts (SAMPLE_ARCHIVE_ENABLED=1)
+			// R2: live NDJSON (SAMPLE_ARCHIVE_ENABLED) + cold Parquet (COLD_ARCHIVE_ENABLED)
 			"binding": "SAMPLES",
 			"bucket_name": "omnicharts-samples"
 		}
@@ -80,7 +82,8 @@
 				"TWITCH_MAX_TRACKED": "200",
 				"TWITCH_RANKING_MIN_AIRTIME_MINUTES": "60",
 				"SAMPLE_ARCHIVE_ENABLED": "0",
-				"SAMPLE_ARCHIVE_MIN_ROWS": "10"
+				"SAMPLE_ARCHIVE_MIN_ROWS": "10",
+				"COLD_ARCHIVE_ENABLED": "0"
 			}
 		},
 		"production": {
@@ -101,6 +104,7 @@
 				"TWITCH_RANKING_MIN_AIRTIME_MINUTES": "60",
 				"SAMPLE_ARCHIVE_ENABLED": "0",
 				"SAMPLE_ARCHIVE_MIN_ROWS": "10",
+				"COLD_ARCHIVE_ENABLED": "0",
 				"EVENTSUB_SYNC_MAX_CHANNELS_PER_RUN": "125"
 			},
 			"queues": {

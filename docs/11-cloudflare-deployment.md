@@ -99,10 +99,24 @@ Log `meta.rows_read` / `rows_written` from D1 results in ingest ([observability]
 
 ## R2 patterns
 
-- Keys: `samples/year=YYYY/month=MM/day=DD/platform=twitch/part-{uuid}.parquet`
-- Writes: ingest consumer only
+- **Live poll NDJSON** (optional): `samples/.../part-{uuid}.ndjson` when `SAMPLE_ARCHIVE_ENABLED=1` — [`sample-archive.ts`](../workers/ingest/src/r2/sample-archive.ts)
+- **Cold Parquet** (Phase 4.3): pruned D1 rows → Parquet when `COLD_ARCHIVE_ENABLED=1` — [`cold-archive.ts`](../workers/ingest/src/r2/cold-archive.ts)
+  - Samples: `samples/year=YYYY/month=MM/day=DD/platform={platform}/part-{uuid}.parquet`
+  - Rollups: `rollups/year=YYYY/month=MM/kind=channel_daily|game_daily/part-{uuid}.parquet`
+- Writes: ingest Worker only (rollup_daily retention step + optional live poll batches)
 - Reads: offline DuckDB on laptop — **not** Workers request path
 - Egress to Internet: $0; Class B GETs metered after free tier
+
+### Local dev (R2)
+
+`wrangler dev` simulates the `SAMPLES` bucket locally (`.wrangler/state/v3/r2/`). To exercise cold archive:
+
+1. `bun run dev:ingest`
+2. Set `COLD_ARCHIVE_ENABLED=1` in `workers/ingest/.dev.vars` (create from `.dev.vars.example` if needed)
+3. Trigger rollup: `bun run rollup:daily`
+4. Inspect objects: `wrangler r2 object list omnicharts-samples --local` from `workers/ingest`
+
+Production default: `COLD_ARCHIVE_ENABLED=0` — enable only after hot-window prune is stable ([23-paid-tier](./23-paid-tier-zero-overage-playbook.md)).
 
 ---
 

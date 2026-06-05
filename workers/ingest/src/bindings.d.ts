@@ -12,6 +12,8 @@ declare interface Env {
 	SAMPLE_ARCHIVE_ENABLED?: string;
 	/** Min rows per batch before one R2 PutObject (default 10). Ignored when SAMPLE_ARCHIVE_ENABLED≠1. */
 	SAMPLE_ARCHIVE_MIN_ROWS?: string;
+	/** Parquet cold archive for pruned samples/rollups (default off). Uses SAMPLES R2 binding. */
+	COLD_ARCHIVE_ENABLED?: string;
 	/** Max EventSub lifecycle subs to create per sync run (default 125). See wrangler.jsonc. */
 	EVENTSUB_SYNC_MAX_CHANNELS_PER_RUN?: string;
 	/** Kick Dev Public API — Phase 3 (ADR-003). Omit locally until dev.kick.com app registered. */

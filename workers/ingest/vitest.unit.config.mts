@@ -40,6 +40,8 @@ export default defineConfig({
 			'test/wrangler-staging-env.spec.ts',
 			'test/wrangler-bindings.spec.ts',
 			'test/sample-archive.spec.ts',
+			'test/cold-archive.spec.ts',
+			'test/cold-archive-retention.spec.ts',
 			'test/channel-state.spec.ts',
 			'test/health-metrics.spec.ts',
 			'test/seed-rankings.spec.ts',
@@ -129,7 +131,8 @@ export default defineConfig({
 				'src/twitch/**/*.ts',
 				'src/db/**/*.ts',
 				'src/kick/**/*.ts',
-				'src/youtube/**/*.ts'
+				'src/youtube/**/*.ts',
+				'src/r2/**/*.ts'
 			],
 			exclude: ['src/twitch/**/index.ts', '**/types.ts', 'src/db/d1-meta.ts'],
 			thresholds: {
@@ -152,6 +155,12 @@ export default defineConfig({
 					statements: 80
 				},
 				'src/youtube/**': {
+					lines: 80,
+					functions: 80,
+					branches: 80,
+					statements: 80
+				},
+				'src/r2/**': {
 					lines: 80,
 					functions: 80,
 					branches: 80,

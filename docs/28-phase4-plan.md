@@ -19,7 +19,7 @@
 |---|-------|--------------|---------|
 | **4.1** | **CSV export** on rankings + channel detail | CSV export (moved from Phase 6) | Phase 3 rollups |
 | **4.2** | **90-day rollups + UI `90d` toggle** | 90-day retention | D1 rollup job |
-| 4.3 | R2 Parquet sample archive export | R2 cold path | 4.2 |
+| **4.3** | **R2 Parquet cold archive** | R2 cold path | 4.2 |
 | 4.4 | 2-channel compare (7d/30d) | Compare Streamers | Browse MVP |
 | 4.5 | Agency CSV watchlist import | Agency CSV import | Admin auth |
 | 4.6 | Twitch VOD metadata backfill | VOD backfill | Helix tier limits |
@@ -64,6 +64,15 @@ Same query params as JSON. Error `invalid_format` when not `json` or `csv`. See 
 - Rankings + channel/game detail APIs already accept `period=90d`; web `PeriodSelector` exposes `90d`
 - Honest `periodNote` when rollup coverage is shorter than the selected window (`periodCoverageNote` + `getRollupCoverageDays`)
 
-## Next after 4.2
+## Slice 4.3 — R2 Parquet cold archive (shipped 2026-06-05)
 
-**4.3 — R2 Parquet sample archive:** cold path for pruned samples/rollups per [06-storage](./06-storage-and-rollup-design.md).
+- After each `rollup_daily`, `runRetentionWithColdArchive` archives rows past the hot window to R2 **Parquet** before delete (`workers/ingest/src/db/cold-archive.ts`, `workers/ingest/src/r2/cold-archive.ts`)
+- **Samples:** 14d hot in D1 → `samples/year=YYYY/month=MM/day=DD/platform={platform}/part-{uuid}.parquet`
+- **Rollups:** 90d hot in D1 → `rollups/year=YYYY/month=MM/kind=channel_daily|game_daily/part-{uuid}.parquet`
+- Master switch: `COLD_ARCHIVE_ENABLED=1` (default **0** in wrangler); uses existing `SAMPLES` R2 binding
+- Live poll NDJSON archive (`SAMPLE_ARCHIVE_ENABLED`) unchanged — orthogonal path
+- Offline reads: DuckDB `read_parquet` on laptop — not Workers request path
+
+## Next after 4.3
+
+**4.4 — 2-channel compare:** side-by-side 7d/30d metrics on browse MVP per [09-ui](./09-ui-routes-and-components.md).

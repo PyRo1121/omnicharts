@@ -187,8 +187,8 @@ D1 limits: watch row size and DB size on free tier; prune `viewer_samples` aggre
 - `ingest_state` only — no duplicate `is_tracked` flag.
 - Add `slug_history` before public beta ([12-channel-discovery](./12-channel-discovery-and-tracking.md)).
 - Defer `channel_period_rollups` until “today so far” cache is needed.
-- Hot `viewer_samples`: **14 days** in D1; older → R2 Parquet.
-- Hot `channel_daily_rollups` / `game_daily_rollups`: **90 days** in D1 (Phase 4); older pruned after each `rollup_daily`; cold archive → R2 Parquet (Phase 4.3).
+- Hot `viewer_samples`: **14 days** in D1; older → R2 Parquet via `runRetentionWithColdArchive` when `COLD_ARCHIVE_ENABLED=1` ([`cold-archive.ts`](../workers/ingest/src/db/cold-archive.ts)).
+- Hot `channel_daily_rollups` / `game_daily_rollups`: **90 days** in D1 (Phase 4); older archived to R2 Parquet then pruned after each `rollup_daily` (Phase 4.3).
 
 ---
 

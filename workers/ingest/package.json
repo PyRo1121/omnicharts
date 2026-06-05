@@ -19,7 +19,8 @@
 	},
 	"dependencies": {
 		"@omnicharts/domain": "workspace:*",
-		"@omnicharts/rollup": "workspace:*"
+		"@omnicharts/rollup": "workspace:*",
+		"hyparquet-writer": "^0.15.6"
 	},
 	"devDependencies": {
 		"@cloudflare/vitest-pool-workers": "^0.12.4",
