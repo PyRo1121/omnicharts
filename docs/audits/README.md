@@ -21,6 +21,12 @@
 
 **Quick gate:** `bun run dev:ingest` → `bun run verify:twitch` (local) · `bun run twitch:freeze-proof` (M1 matrix).
 
+## Phase 3 sign-off
+
+| Doc | Role |
+|-----|------|
+| [phase3-signoff](./phase3-signoff.md) | MVP complete checklist — gates, parity matrix, ops deferrals (2026-06-05) |
+
 ## Phase 3 audit wave 2 deferred
 
 Document only — not blockers for wave 3 re-audit when code gates pass:

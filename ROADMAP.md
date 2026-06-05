@@ -2,7 +2,7 @@
 
 Living plan aligned with [docs/00-vision-and-principles.md](./docs/00-vision-and-principles.md). Update checkboxes as phases ship.
 
-**Phase 0–2 (Twitch):** Shipped locally (2026-06). **Pre–Kick freeze:** G1 + G2 done — [26-twitch-freeze-execution-plan](./docs/26-twitch-freeze-execution-plan.md); Phase 3 Kick blocked until G3–G12.
+**Phase 0–3 (MVP):** Shipped (2026-06-05) — three-platform discovery loop.
 
 ## MVP definition (canonical)
 
@@ -75,16 +75,16 @@ Phase 2 = Twitch-only slice of the same loop. See [02-user-personas](./docs/02-u
 
 ---
 
-## Phase 3 — Multi-platform (weeks 7–10)
+## Phase 3 — Multi-platform (weeks 7–10) — **shipped 2026-06-05**
 
-**Prerequisite:** Twitch freeze gate complete — [23-audit-remediation-plan](./docs/23-audit-remediation-plan.md#2-freeze-gate-twitch-frozen--kick-may-start) · status: [26-twitch-freeze-execution-plan](./docs/26-twitch-freeze-execution-plan.md) (G1 ✅, G2 ✅ local+remote 2026-06-03; G3–G12 open).
+**Sign-off:** [docs/audits/phase3-signoff.md](./docs/audits/phase3-signoff.md) · freeze [26](./docs/26-twitch-freeze-execution-plan.md) G1–G12 signed with documented ops deferrals.
 
-- [ ] Kick: official API ([ADR-003](./docs/adr/0003-kick-ingest-strategy.md))
-- [ ] YouTube: `videos.list` polling per [05-ingestion](./docs/05-ingestion-per-platform.md)
-- [ ] Platform tabs + `?platform=` on URLs
-- [ ] **Fallback exit:** if Kick blocked, ship Twitch+YouTube with documented gap
+- [x] Kick: official API ([ADR-003](./docs/adr/0003-kick-ingest-strategy.md)) — discover, poll, webhook
+- [x] YouTube: tracked UC poll + seed per [05-ingestion](./docs/05-ingestion-per-platform.md)
+- [x] Platform tabs + `?platform=` on URLs (homepage, directories, overview, search)
+- [x] Three-platform browse: homepage H1–H5, channel + game pages, methodology, 7d/30d
 
-**Exit criteria:** **MVP complete** — three-platform homepage loop, 30d data.
+**Exit criteria:** **MVP complete** — three-platform homepage loop, 30d data. **Met.**
 
 ---
 
@@ -92,7 +92,6 @@ Phase 2 = Twitch-only slice of the same loop. See [02-user-personas](./docs/02-u
 
 - [ ] 90-day rollups; R2 Parquet cold path
 - [ ] Twitch VOD metadata backfill (tier-limited)
-- [ ] **CSV export** on rankings + channel pages (moved up from Phase 6)
 - [ ] **2-channel compare** (7d/30d) — thin Compare Streamers
 - [ ] Agency CSV import for watchlists
 - [ ] Language filter on rankings when API provides tags
