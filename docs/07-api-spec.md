@@ -23,6 +23,7 @@
 | `not_found` | 404 | Channel/game resolve or detail missing |
 | `bad_request` | 400 | Missing required query param |
 | `invalid_format` | 400 | `format` not `json` or `csv` |
+| `missing_slugs` | 400 | Compare: `a` and/or `b` slug query params missing |
 
 ### Platform behavior (Phase 3)
 
@@ -123,6 +124,21 @@ Channel summary for one platform.
 | `period` | no (`7d`, `30d`, `90d`) |
 
 **Response:** totals + daily series array for charts.
+
+---
+
+### `GET /v1/compare/channels` (Phase 4)
+
+Side-by-side rollup metrics for two channels on one platform. Rollup reads only — no request-time sample scans.
+
+| Param | Required |
+|-------|----------|
+| `a` | yes — first channel slug |
+| `b` | yes — second channel slug |
+| `platform` | yes |
+| `period` | no (`7d` default; `30d`, `90d` only — no `24h`) |
+
+**Response:** `{ platform, period, updated_at, a: { slug, found, channel }, b: { ... } }`. `channel` is null when `found` is false. Web UI: `/compare?a=&b=&platform=&period=`. Pages proxy: `/api/v1/compare/channels`.
 
 ---
 

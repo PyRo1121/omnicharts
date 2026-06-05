@@ -96,4 +96,12 @@ export {
 	type ResponseFormat,
 	type ResponseFormatError
 } from './response-format';
+export {
+	buildCompareChannelsResponse,
+	parseCompareChannelsQuery,
+	type CompareChannelSide,
+	type CompareChannelsQueryError,
+	type CompareChannelsResponse,
+	type ParsedCompareChannelsQuery
+} from './compare-api';
 export { getRollupCoverageDays } from './rollup-coverage';

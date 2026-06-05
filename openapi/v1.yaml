@@ -97,6 +97,39 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /compare/channels:
+    get:
+      tags: [channels]
+      summary: Side-by-side two-channel rollup compare
+      operationId: compareChannels
+      description: |
+        Rollup reads only — composes two channel detail responses. Web UI at `/compare?a=&b=`.
+        Implemented on Pages at `/api/v1/compare/channels`; ingest HTTP fallback uses two `GET /v1/channels/{slug}` calls.
+      parameters:
+        - name: a
+          in: query
+          required: true
+          schema:
+            type: string
+          description: First channel slug
+        - name: b
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Second channel slug
+        - $ref: '#/components/parameters/platform'
+        - $ref: '#/components/parameters/comparePeriod'
+      responses:
+        '200':
+          description: Compare payload with found flags per side
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompareChannelsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
   /channels/resolve:
     get:
       tags: [channels]
@@ -193,6 +226,12 @@ components:
       in: query
       schema:
         $ref: '#/components/schemas/Period'
+    comparePeriod:
+      name: period
+      in: query
+      schema:
+        $ref: '#/components/schemas/ComparePeriod'
+      description: Compare windows — `7d`, `30d`, or `90d` only (defaults `7d`).
     slug:
       name: slug
       in: path
@@ -226,6 +265,11 @@ components:
     Period:
       type: string
       enum: [24h, 7d, 30d, 90d]
+      default: 7d
+
+    ComparePeriod:
+      type: string
+      enum: [7d, 30d, 90d]
       default: 7d
 
     Error:
@@ -498,6 +542,36 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ChannelSearchHit'
+
+    CompareChannelSide:
+      type: object
+      required: [slug, found, channel]
+      properties:
+        slug:
+          type: string
+        found:
+          type: boolean
+          description: false when channel row missing on platform
+        channel:
+          oneOf:
+            - $ref: '#/components/schemas/ChannelDetailResponse'
+            - type: 'null'
+
+    CompareChannelsResponse:
+      type: object
+      required: [platform, period, updated_at, a, b]
+      properties:
+        platform:
+          $ref: '#/components/schemas/Platform'
+        period:
+          $ref: '#/components/schemas/ComparePeriod'
+        updated_at:
+          type: string
+          format: date-time
+        a:
+          $ref: '#/components/schemas/CompareChannelSide'
+        b:
+          $ref: '#/components/schemas/CompareChannelSide'
 
   responses:
     BadRequest:

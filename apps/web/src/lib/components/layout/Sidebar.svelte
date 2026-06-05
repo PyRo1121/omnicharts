@@ -8,6 +8,7 @@
 		{ href: '/', label: 'Home', icon: 'home' },
 		{ href: '/overview', label: 'Overview', icon: 'overview' },
 		{ href: '/channels', label: 'Channels', icon: 'channels' },
+		{ href: '/compare', label: 'Compare', icon: 'compare' },
 		{ href: '/games', label: 'Games', icon: 'games' },
 		{ href: '/methodology', label: 'Methodology', icon: 'methodology' }
 	] as const;

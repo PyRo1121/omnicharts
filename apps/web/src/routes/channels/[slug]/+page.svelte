@@ -146,7 +146,7 @@
 	</header>
 
 	<div class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-		<PeriodSelector periods={uiPeriods} value={ch.period} onchange={onPeriodChange} />
+		<PeriodSelector periods={uiPeriods} value={ch.period} onPeriodChange={onPeriodChange} />
 		{#if csvHref}
 			<ExportCsvLink href={csvHref} />
 		{/if}

@@ -5,10 +5,10 @@
 	interface Props {
 		periods: readonly Period[];
 		value: Period;
-		onchange?: (p: Period) => void;
+		onPeriodChange?: (p: Period) => void;
 	}
 
-	let { periods, value, onchange }: Props = $props();
+	let { periods, value, onPeriodChange }: Props = $props();
 
 	const labels: Record<Period, string> = {
 		'24h': '24 hours',
@@ -33,7 +33,7 @@
 					: 'text-[var(--color-oc-text-muted)] hover:text-[var(--color-oc-text)]'
 			)}
 			aria-pressed={value === p}
-			onclick={() => onchange?.(p)}
+			onclick={() => onPeriodChange?.(p)}
 		>
 			{labels[p]}
 		</button>

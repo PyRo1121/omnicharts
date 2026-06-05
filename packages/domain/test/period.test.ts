@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 import {
+	comparePeriods,
 	isRankingPeriod,
+	parseComparePeriod,
 	parseRankingPeriod,
 	periodCoverageNote,
 	periodToDays,
@@ -33,6 +35,16 @@ describe('ranking periods', () => {
 
 	test('uiRankingPeriods exposes 90d in Phase 4', () => {
 		expect(uiRankingPeriods).toEqual(['24h', '7d', '30d', '90d']);
+	});
+
+	test('comparePeriods excludes 24h', () => {
+		expect(comparePeriods).toEqual(['7d', '30d', '90d']);
+	});
+
+	test('parseComparePeriod defaults invalid input to 7d', () => {
+		expect(parseComparePeriod(null)).toBe('7d');
+		expect(parseComparePeriod('24h')).toBe('7d');
+		expect(parseComparePeriod('90d')).toBe('90d');
 	});
 
 	test('periodCoverageNote when history shorter than requested window', () => {

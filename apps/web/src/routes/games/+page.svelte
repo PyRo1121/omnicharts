@@ -63,7 +63,7 @@
 {/if}
 
 <div class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-	<PeriodSelector periods={uiPeriods} value={data.period} onchange={onPeriodChange} />
+	<PeriodSelector periods={uiPeriods} value={data.period} onPeriodChange={onPeriodChange} />
 	{#if data.periodNote}
 		<p class="text-xs text-[var(--color-oc-text-faint)]">{data.periodNote}</p>
 	{/if}

@@ -6,6 +6,19 @@ export const rankingPeriods = ['24h', '7d', '30d', '90d'] as const satisfies rea
 /** Shown in UI period selectors — Phase 4 adds `90d`. */
 export const uiRankingPeriods = ['24h', '7d', '30d', '90d'] as const satisfies readonly RankingPeriod[];
 
+/** Two-channel compare — docs/28-phase4-plan slice 4.4 (no 24h). */
+export const comparePeriods = ['7d', '30d', '90d'] as const satisfies readonly RankingPeriod[];
+export type ComparePeriod = (typeof comparePeriods)[number];
+
+export function isComparePeriod(raw: string): raw is ComparePeriod {
+	return (comparePeriods as readonly string[]).includes(raw);
+}
+
+export function parseComparePeriod(raw: string | null): ComparePeriod {
+	if (raw && isComparePeriod(raw)) return raw;
+	return '7d';
+}
+
 export const DEFAULT_RANKING_PERIOD: RankingPeriod = '7d';
 
 const ALLOWED: RankingPeriod[] = [...rankingPeriods];

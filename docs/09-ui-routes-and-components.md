@@ -12,6 +12,7 @@
 |-------|------|-----------|
 | `/` | Homepage | 2 |
 | `/overview` | Platform stats dashboard | 2–3 |
+| `/compare` | Two-channel compare (7d/30d/90d) | 4 |
 | `/platforms` | Cross-platform compare | 4 |
 | `/channels` | Directory + filters | 3 |
 | `/channels/[slug]` | Channel profile | 2 |
@@ -29,6 +30,30 @@
 Query params:
 
 - `?platform=twitch|kick|youtube` on channel, game, overview, homepage tables.
+- `/compare?a={slug}&b={slug}&platform=twitch|kick|youtube&period=7d|30d|90d` — two-channel rollup compare (Phase 4).
+
+---
+
+## Compare (`/compare`) — Phase 4 slice 4.4
+
+```
+ComparePage
+├── CompareSlugForm           # a + b slug inputs, submit → same route
+├── PeriodSelector            # 7d | 30d | 90d (no 24h)
+├── CompareSideCard × 2       # avatar, name, metric list, honest empty states
+└── CompareMetricsTable       # accessible side-by-side table fallback
+```
+
+**Data loading:** `+page.server.ts` loads two channel rollup summaries via `loadChannelCompare` (parallel `loadChannelDetail` / D1 rollup reads). `Cache-Control: public, max-age=60`.
+
+**Empty states:**
+
+- Missing `a` or `b` — picker copy + search link
+- `not_found` — “Channel not found”
+- `discovered` — not promoted to tracked sampling yet
+- Tracked but zero rollup rows in period — honest partial totals note
+
+**API:** `GET /api/v1/compare/channels?a=&b=&platform=&period=` (rollup-only composite; OpenAPI `GET /v1/compare/channels`).
 
 ---
 

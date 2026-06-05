@@ -1,0 +1,44 @@
+import { comparePeriods, type ComparePeriod } from '@omnicharts/domain';
+import { parseUiPlatform, type PlatformId } from '$lib/ui/platform.svelte';
+
+export type ComparePageParams = {
+	a: string | null;
+	b: string | null;
+	platform: PlatformId;
+	period: ComparePeriod;
+};
+
+export function comparePageUrl(params: ComparePageParams): string {
+	const q = new URLSearchParams();
+	if (params.a) q.set('a', params.a);
+	if (params.b) q.set('b', params.b);
+	if (params.platform === 'kick' || params.platform === 'youtube') {
+		q.set('platform', params.platform);
+	}
+	if (params.period !== '7d') q.set('period', params.period);
+	const qs = q.toString();
+	return qs ? `/compare?${qs}` : '/compare';
+}
+
+export function parseComparePageParams(url: URL): ComparePageParams {
+	return {
+		a: normalizeCompareSlug(url.searchParams.get('a')),
+		b: normalizeCompareSlug(url.searchParams.get('b')),
+		platform: parseUiPlatform(url.searchParams.get('platform')),
+		period: parseComparePagePeriod(url.searchParams.get('period'))
+	};
+}
+
+export function normalizeCompareSlug(raw: string | null): string | null {
+	const trimmed = raw?.trim();
+	return trimmed ? trimmed : null;
+}
+
+export function parseComparePagePeriod(raw: string | null): ComparePeriod {
+	if (raw && (comparePeriods as readonly string[]).includes(raw)) {
+		return raw as ComparePeriod;
+	}
+	return '7d';
+}
+
+export { comparePeriods };

@@ -96,7 +96,7 @@ Plan: [28-phase4-plan](./docs/28-phase4-plan.md)
 - [x] 90-day rollups (Phase 4 slice 4.2)
 - [x] R2 Parquet cold path (Phase 4 slice 4.3)
 - [ ] Twitch VOD metadata backfill (tier-limited)
-- [ ] **2-channel compare** (7d/30d) — thin Compare Streamers
+- [x] **2-channel compare** (7d/30d/90d) — `/compare` + API (slice 4.4 shipped 2026-06-05)
 - [ ] Agency CSV import for watchlists
 - [ ] Language filter on rankings when API provides tags
 
