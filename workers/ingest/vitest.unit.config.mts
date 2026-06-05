@@ -122,7 +122,11 @@ export default defineConfig({
 			'test/kick-api-channel-id.spec.ts',
 			'test/youtube-channel-slug.spec.ts',
 			'test/youtube-stream-fields.spec.ts',
-			'test/db-twitch-helpers.spec.ts'
+			'test/db-twitch-helpers.spec.ts',
+			'test/watchlist-csv-parse.spec.ts',
+			'test/watchlist-import.spec.ts',
+			'test/watchlist-admin-routes.spec.ts',
+			'test/watchlist-upsert.spec.ts'
 		],
 		coverage: {
 			provider: 'v8',

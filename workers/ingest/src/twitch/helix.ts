@@ -140,6 +140,17 @@ export class TwitchHelixClient {
 		return out;
 	}
 
+	/** Batch GET /users?login=… (max 100 per request, 1 point). */
+	async getUsersByLogins(logins: string[]): Promise<HelixUser[]> {
+		if (logins.length === 0) return [];
+		const chunks = chunkArray(logins, STREAMS_BATCH_SIZE);
+		const out: HelixUser[] = [];
+		for (const batch of chunks) {
+			out.push(...(await this.getUsersByLoginsBatch(batch)));
+		}
+		return out;
+	}
+
 	/**
 	 * Public follower total per broadcaster (app token → `total` only).
 	 * @see https://dev.twitch.tv/docs/api/reference#get-channel-followers
@@ -205,6 +216,10 @@ export class TwitchHelixClient {
 
 	private async getUsersBatch(userIds: string[]): Promise<HelixUser[]> {
 		return this.getIdListBatch<HelixUser>('/users', 'id', userIds);
+	}
+
+	private async getUsersByLoginsBatch(logins: string[]): Promise<HelixUser[]> {
+		return this.getIdListBatch<HelixUser>('/users', 'login', logins);
 	}
 
 	private async getChannelsBatch(broadcasterIds: string[]): Promise<HelixChannel[]> {

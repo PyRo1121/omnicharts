@@ -12,11 +12,12 @@ export type UpsertYoutubeChannelResult = {
 export async function upsertYoutubeChannel(
 	db: D1Database,
 	lookup: YoutubeChannelLookup,
-	opts: { ingestState?: 'discovered' | 'tracked' } = {}
+	opts: { ingestState?: 'discovered' | 'tracked'; promoteToTracked?: boolean } = {}
 ): Promise<UpsertYoutubeChannelResult> {
 	const now = nowIso();
 	const id = `youtube-ch-${lookup.platformChannelId}`;
 	const ingestState = opts.ingestState ?? 'discovered';
+	const promoteToTracked = opts.promoteToTracked === true;
 
 	const existing = await db
 		.prepare(
@@ -33,7 +34,12 @@ export async function upsertYoutubeChannel(
            slug = ?,
            display_name = ?,
            avatar_url = ?,
-           last_seen_at = ?
+           last_seen_at = ?,
+           ingest_state = CASE
+             WHEN channels.ingest_state = 'retired' THEN channels.ingest_state
+             WHEN ? THEN 'tracked'
+             ELSE channels.ingest_state
+           END
          WHERE id = ? AND platform_id = ?`
 			)
 			.bind(
@@ -41,6 +47,7 @@ export async function upsertYoutubeChannel(
 				lookup.displayName,
 				lookup.avatarUrl,
 				now,
+				promoteToTracked ? 1 : 0,
 				existing.id,
 				PLATFORM_YOUTUBE
 			)

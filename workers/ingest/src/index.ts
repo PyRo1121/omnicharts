@@ -75,6 +75,7 @@ import { seedDevRankings } from './dev/seed-rankings';
 import { recordDiscoverySeed, recordKickDiscoverySeed } from './discovery/seed';
 import { rankingQueryOptionsForPlatform } from './ranking/rollup-queries';
 import { isAdminPostPath, isAdminRankingsGetPath, requireAdminApiKey } from './admin/auth';
+import { importWatchlistCsv } from './watchlist/import';
 import { ingestNonFatalError, ingestWarn } from './log';
 import { cronToMessages } from './cron-messages';
 import { requireDb, requireIngestQueue } from './worker-bindings';
@@ -136,6 +137,10 @@ export default {
 
 		if (url.pathname === '/admin/rollup/daily' && request.method === 'POST') {
 			return adminRollupDaily(request, env);
+		}
+
+		if (url.pathname === '/admin/watchlist/import' && request.method === 'POST') {
+			return adminWatchlistImport(request, env);
 		}
 
 		if (url.pathname === '/v1/rankings/channels' && request.method === 'GET') {
@@ -401,6 +406,49 @@ async function adminRollupDaily(request: Request, env: Env): Promise<Response> {
 	}
 	const stats = await runDailyRollup(env, date);
 	return Response.json({ ok: true, stats });
+}
+
+async function adminWatchlistImport(request: Request, env: Env): Promise<Response> {
+	const contentType = request.headers.get('content-type')?.toLowerCase() ?? '';
+	let csvText = '';
+
+	if (contentType.includes('application/json')) {
+		let body: { csv?: string };
+		try {
+			body = (await request.json()) as { csv?: string };
+		} catch {
+			return Response.json(
+				{ error: { code: 'invalid_csv', message: 'Request body must be JSON with csv field' } },
+				{ status: 400 }
+			);
+		}
+		csvText = body.csv?.trim() ?? '';
+	} else {
+		csvText = (await request.text()).trim();
+	}
+
+	if (!csvText) {
+		return Response.json(
+			{ error: { code: 'invalid_csv', message: 'CSV body is required' } },
+			{ status: 400 }
+		);
+	}
+
+	const stats = await importWatchlistCsv(env, csvText);
+	if (stats.parse.rows.length === 0) {
+		return Response.json(
+			{
+				error: {
+					code: 'invalid_csv',
+					message: 'No valid watchlist rows',
+					parse_errors: stats.parse.errors
+				}
+			},
+			{ status: 400 }
+		);
+	}
+
+	return Response.json(stats);
 }
 
 function rankingsQueryErrorResponse(

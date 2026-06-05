@@ -67,6 +67,38 @@ Default `format=json`. No auth required at launch (rate limits Phase 6).
 
 ---
 
+## Agency watchlist import (Phase 4, admin)
+
+Ingest Worker only — not on public `api.omnicharts.com` until Phase 6 keys ship.
+
+`POST /admin/watchlist/import`
+
+| Auth | `X-Admin-Api-Key` or `Authorization: Bearer <ADMIN_API_KEY>` |
+| Body | `text/csv` raw upload **or** JSON `{ "csv": "platform,slug\\n..." }` |
+
+**CSV format**
+
+```csv
+platform,slug
+twitch,ninja
+kick,xqc
+youtube,mrbeast
+```
+
+- Header row optional (`platform,slug` or `platform,handle`)
+- `platform` must be `twitch`, `kick`, or `youtube`
+- `slug` normalized (trim, lowercase, strip leading `@`)
+- Duplicate `platform+slug` rows in one file → parse error on later duplicates
+- Comments (`# …`) and blank lines ignored
+
+**Row result `status`:** `imported` (new tracked row), `promoted` (existing → `tracked`), `skipped` (already tracked), `not_found` (API resolve miss), `needs_api` (platform credentials absent), `error`.
+
+**HTTP:** `400 invalid_csv` when body empty or no valid rows; `401` without admin key; `200` with `{ ok, imported, promoted, skipped_rows, not_found, errors, parse_errors, parse, results[] }`.
+
+Platform credentials: Twitch app token, Kick client credentials, `YOUTUBE_API_KEY` — same as discover/poll ([15-ingest-runbook](./15-ingest-runbook.md)).
+
+---
+
 ## Endpoints
 
 ### `GET /v1/rankings/channels`

@@ -194,6 +194,21 @@ Rankings apply [eligibility rules](./12-channel-discovery-and-tracking.md#rankin
 bun run twitch:discover   # POST /admin/twitch/discover — top games scan + discovery_seed_at metadata
 ```
 
+### Agency watchlist import (Phase 4)
+
+Bulk promote channels to `ingest_state = tracked` for agency watchlists.
+
+```bash
+curl -sS -X POST http://127.0.0.1:8787/admin/watchlist/import \
+  -H "X-Admin-Api-Key: $ADMIN_API_KEY" \
+  -H "content-type: text/csv" \
+  --data-binary $'platform,slug\ntwitch,ninja\nkick,xqc'
+```
+
+JSON body alternative: `{ "csv": "platform,slug\ntwitch,ninja" }`.
+
+Per-row `needs_api` when platform secrets missing (same `NEEDS_API` gates as discover/poll). Re-run after credentials configured. See [07-api-spec](./07-api-spec.md#agency-watchlist-import-phase-4-admin).
+
 ---
 
 ## Incident: rankings stale

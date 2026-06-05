@@ -73,4 +73,15 @@ describe('TwitchHelixClient users/channels batches', () => {
 		const chUrl = String(fetchMock.mock.calls[0]![0]);
 		expect(chUrl).toContain('broadcaster_id=545050196');
 	});
+
+	it('GET /users appends login query params', async () => {
+		const client = new TwitchHelixClient(env);
+		const users = await client.getUsersByLogins(['shroud', 'ninja']);
+		expect(users.length).toBeGreaterThan(0);
+
+		const fetchMock = vi.mocked(fetch);
+		const usersUrl = String(fetchMock.mock.calls[0]![0]);
+		expect(usersUrl).toContain('login=shroud');
+		expect(usersUrl).toContain('login=ninja');
+	});
 });

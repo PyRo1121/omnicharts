@@ -81,6 +81,15 @@ Same query params as JSON. Error `invalid_format` when not `json` or `csv`. See 
 - API: `GET /api/v1/compare/channels` (+ OpenAPI `GET /v1/compare/channels`); ingest HTTP fallback composes two channel detail calls
 - Tests: `@omnicharts/domain` compare periods, `@omnicharts/rollup` compare-api, web server + API route Vitest, Playwright `e2e/compare.spec.ts`
 
-## Next after 4.4
+## Slice 4.5 — Agency CSV watchlist import (shipped 2026-06-05)
 
-**4.5 — Agency CSV watchlist import:** bulk channel tracking for agencies per [28-phase4-plan](./28-phase4-plan.md).
+- `POST /admin/watchlist/import` — admin-authed bulk promote/import (`ingest_state = tracked`)
+- CSV columns: `platform,slug` (or `platform,handle`); comments (`#`) and blank lines ignored
+- Per-row resolution: Twitch Helix `GET /users?login=`, Kick `GET /public/v1/channels?slug=`, YouTube on-demand `channels.list` seed
+- Row outcomes: `imported`, `promoted`, `skipped`, `not_found`, `needs_api`, `error`; parse errors for invalid platform, duplicate slug, malformed rows
+- Body: `text/csv` raw upload or JSON `{ "csv": "..." }`; `X-Admin-Api-Key` / Bearer per [15-ingest-runbook](./15-ingest-runbook.md)
+- Tests: `watchlist-csv-parse`, `watchlist-import`, `watchlist-upsert`, `watchlist-admin-routes`, Helix `getUsersByLogins`
+
+## Next after 4.5
+
+**4.6 — Twitch VOD metadata backfill:** tier-limited Helix VOD enrichment per roadmap.

@@ -22,6 +22,7 @@ tags:
   - name: channels
   - name: games
   - name: search
+  - name: admin
 
 paths:
   /rankings/channels:
@@ -129,6 +130,50 @@ paths:
                 $ref: '#/components/schemas/CompareChannelsResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
+
+  /admin/watchlist/import:
+    post:
+      tags: [admin]
+      summary: Bulk import agency watchlist channels (admin)
+      operationId: importWatchlistCsv
+      servers:
+        - url: https://ingest.omnicharts.com
+          description: Ingest Worker root (production TBD)
+        - url: http://127.0.0.1:8787
+          description: Local wrangler dev (ingest root)
+      description: |
+        Promotes or creates `ingest_state = tracked` rows from CSV (`platform,slug`).
+        Requires `X-Admin-Api-Key` or `Authorization: Bearer` admin secret. Phase 4 agency workflow.
+      security:
+        - AdminApiKey: []
+      requestBody:
+        required: true
+        content:
+          text/csv:
+            schema:
+              type: string
+            example: |
+              platform,slug
+              twitch,ninja
+              kick,xqc
+          application/json:
+            schema:
+              type: object
+              required: [csv]
+              properties:
+                csv:
+                  type: string
+      responses:
+        '200':
+          description: Import summary with per-row results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WatchlistImportResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: Missing or invalid admin API key
 
   /channels/resolve:
     get:
@@ -572,6 +617,59 @@ components:
           $ref: '#/components/schemas/CompareChannelSide'
         b:
           $ref: '#/components/schemas/CompareChannelSide'
+
+    WatchlistImportRowResult:
+      type: object
+      required: [line, platform, slug, status]
+      properties:
+        line:
+          type: integer
+        platform:
+          $ref: '#/components/schemas/Platform'
+        slug:
+          type: string
+        status:
+          type: string
+          enum: [imported, promoted, skipped, not_found, needs_api, error]
+        channel_id:
+          type: string
+        message:
+          type: string
+
+    WatchlistImportResponse:
+      type: object
+      required: [ok, skipped, imported, promoted, skipped_rows, not_found, errors, parse_errors, results]
+      properties:
+        ok:
+          type: boolean
+        skipped:
+          type: boolean
+          description: True when every row returned needs_api
+        needs_api:
+          type: string
+        imported:
+          type: integer
+        promoted:
+          type: integer
+        skipped_rows:
+          type: integer
+        not_found:
+          type: integer
+        errors:
+          type: integer
+        parse_errors:
+          type: integer
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/WatchlistImportRowResult'
+
+  securitySchemes:
+    AdminApiKey:
+      type: apiKey
+      in: header
+      name: X-Admin-Api-Key
+      description: Ingest Worker admin secret (Bearer token also accepted)
 
   responses:
     BadRequest:
