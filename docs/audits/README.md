@@ -32,6 +32,8 @@
 | Doc | Role |
 |-----|------|
 | [28-phase4-plan](../28-phase4-plan.md) | Vertical slices — CSV export 4.1 shipped |
+| [phase4-remediation](./phase4-remediation.md) | P0/P1 fixes post-audit (2026-06-05) |
+| [gitnexus-phase2-4-audit](./gitnexus-phase2-4-audit.md) | GitNexus trace audit Phase 2–4 flows + gates (2026-06-05) |
 
 ## Phase 3 audit wave 2 deferred
 
