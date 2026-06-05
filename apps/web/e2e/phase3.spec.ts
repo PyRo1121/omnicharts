@@ -1,9 +1,12 @@
 import { test, expect } from '@playwright/test';
 import {
+	clickPlatform,
+	expectPlatformSelected,
 	findKickOnlyChannelSlug,
 	firstRankedSlug,
 	ingestReachable,
 	INGEST_URL,
+	platformNav,
 	slugRedirectFromEnv,
 	verifySlugHistoryRedirect
 } from './helpers';
@@ -11,16 +14,17 @@ import {
 test.describe('Phase 3 E2E (docs/13 backlog)', () => {
 	test('platform tab clicks update homepage URL', async ({ page }) => {
 		await page.goto('/');
-		const tabs = page.getByRole('tablist', { name: 'Platform' });
+		await expect(platformNav(page)).toBeVisible();
 
-		await tabs.getByRole('tab', { name: 'Kick' }).click();
+		await clickPlatform(page, 'Kick');
 		await expect(page).toHaveURL(/\?.*platform=kick/);
 
-		await tabs.getByRole('tab', { name: 'YouTube' }).click();
+		await clickPlatform(page, 'YouTube');
 		await expect(page).toHaveURL(/\?.*platform=youtube/);
 
-		await tabs.getByRole('tab', { name: 'Twitch' }).click();
+		await clickPlatform(page, 'Twitch');
 		await expect(page).not.toHaveURL(/\?.*platform=/);
+		await expectPlatformSelected(page, 'Twitch');
 	});
 
 	test('kick channel detail loads when ingest has rankings', async ({ page }) => {

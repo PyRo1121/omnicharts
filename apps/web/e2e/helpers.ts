@@ -1,4 +1,23 @@
+import type { Page } from '@playwright/test';
+import { expect } from '@playwright/test';
+
 export const INGEST_URL = process.env.INGEST_URL ?? 'http://127.0.0.1:8787';
+
+/** PlatformFilter — nav links with aria-current (docs/09). */
+export function platformNav(page: Page) {
+	return page.getByRole('navigation', { name: 'Platform' });
+}
+
+export async function expectPlatformSelected(page: Page, name: string) {
+	await expect(platformNav(page).getByRole('link', { name, exact: true })).toHaveAttribute(
+		'aria-current',
+		'page'
+	);
+}
+
+export async function clickPlatform(page: Page, name: string) {
+	await platformNav(page).getByRole('link', { name, exact: true }).click();
+}
 
 export async function ingestReachable(): Promise<boolean> {
 	try {

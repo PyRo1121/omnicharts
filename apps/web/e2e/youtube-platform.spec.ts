@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { expectPlatformSelected } from './helpers';
 
 test.describe('YouTube platform UX (docs/09, docs/05)', () => {
 	test('homepage ?platform=youtube shows rankings UI without Phase 3 banner', async ({ page }) => {
@@ -35,7 +36,7 @@ test.describe('YouTube platform UX (docs/09, docs/05)', () => {
 		await expect(
 			page.getByText(/YouTube rollup-backed counts when ingest has data|YouTube ingest unavailable/i)
 		).toBeVisible();
-		await expect(page.getByRole('tab', { name: 'YouTube' })).toHaveAttribute('aria-selected', 'true');
+		await expectPlatformSelected(page, 'YouTube');
 		await expect(page.getByText(/Channels tracked/i)).toBeVisible();
 	});
 
