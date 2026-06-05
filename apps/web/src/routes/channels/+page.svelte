@@ -70,7 +70,15 @@
 </div>
 
 <div class="mt-6">
-	{#if !data.platformUnsupported && data.rows.length > 0}
-		<LeaderboardTable {rows} metricHeader="Hours watched" />
-	{/if}
+	<LeaderboardTable
+		{rows}
+		metricHeader="Hours watched"
+		emptyMessage={data.platformUnsupported
+			? `${data.platform === 'kick' ? 'Kick' : 'YouTube'} channel rankings ship in Phase 3. Switch to Twitch for live leaderboards.`
+			: data.rows.length === 0
+				? data.source === 'unavailable'
+					? 'Could not load rankings from ingest.'
+					: 'No channels ranked for this period yet.'
+				: null}
+	/>
 </div>

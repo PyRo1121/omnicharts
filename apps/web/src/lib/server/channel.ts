@@ -161,6 +161,44 @@ export function parseChannelPeriod(raw: string | null): { period: Period; period
 	return parseUiPeriod(raw);
 }
 
+export type ChannelPlatformSuggestion = {
+	slug: string;
+	platform: string;
+	displayName: string;
+};
+
+const CHANNEL_LOOKUP_PLATFORMS = ['twitch', 'kick', 'youtube'] as const;
+
+export async function findChannelOnOtherPlatforms(
+	ctx: ServerLoadContext,
+	slug: string,
+	currentPlatform: string
+): Promise<ChannelPlatformSuggestion[]> {
+	const others = CHANNEL_LOOKUP_PLATFORMS.filter((platform) => platform !== currentPlatform);
+	const matches = await Promise.all(
+		others.map(async (platform) => {
+			try {
+				const url = `${getIngestBaseUrl()}/v1/channels/${encodeURIComponent(slug)}?platform=${encodeURIComponent(platform)}&period=7d`;
+				const res = await ctx.fetch(url, { headers: { accept: 'application/json' } });
+				if (!res.ok) return null;
+				const body = (await res.json()) as {
+					slug: string;
+					display_name: string;
+					platform?: string;
+				};
+				return {
+					slug: body.slug,
+					platform: body.platform ?? platform,
+					displayName: body.display_name
+				};
+			} catch {
+				return null;
+			}
+		})
+	);
+	return matches.filter((row): row is ChannelPlatformSuggestion => row != null);
+}
+
 export async function resolveChannelSlugFromHistory(
 	ctx: ServerLoadContext,
 	slug: string,

@@ -2,7 +2,7 @@
 	import AvatarImage from '$lib/components/ui/AvatarImage.svelte';
 	import SectionHeader from '$lib/components/ui/SectionHeader.svelte';
 	import SearchChannels from '$lib/components/ui/SearchChannels.svelte';
-	import { searchPlatformId } from '$lib/mock/home';
+	import { searchPageSubtitle, searchPlatformId } from '$lib/mock/home';
 
 	let { data } = $props();
 
@@ -17,7 +17,7 @@
 	<title>Search channels · OmniCharts</title>
 </svelte:head>
 
-<SectionHeader title="Search channels" subtitle="Find streamers by name or slug on Twitch." />
+<SectionHeader title="Search channels" subtitle={searchPageSubtitle(data.platform)} />
 
 <div class="mt-6 max-w-xl">
 	{#key data.q}

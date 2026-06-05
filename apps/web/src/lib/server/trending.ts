@@ -11,8 +11,17 @@ export type TrendingSearch = {
 };
 
 /** Top-N channel rankings for search chips; static mock when ingest has no rollups yet. */
-export function trendingFromRankings(rows: ChannelRow[]): TrendingSearch[] {
-	if (!rows.length) return [...fallbackTrendingSearches];
+export function trendingFromRankings(
+	rows: ChannelRow[],
+	options?: { platform?: Exclude<PlatformId, 'all'> }
+): TrendingSearch[] {
+	if (!rows.length) {
+		const platform = options?.platform;
+		const scoped = platform
+			? fallbackTrendingSearches.filter((entry) => entry.platform === platform)
+			: [...fallbackTrendingSearches];
+		return scoped.length > 0 ? scoped : [...fallbackTrendingSearches];
+	}
 	return rows.slice(0, 5).map((row) => ({
 		slug: row.slug,
 		name: row.displayName,

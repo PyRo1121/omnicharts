@@ -72,7 +72,15 @@
 </div>
 
 <div class="mt-6">
-	{#if !data.platformUnsupported && data.rows.length > 0}
-		<LeaderboardTable rows={rows} metricHeader="Avg viewers" />
-	{/if}
+	<LeaderboardTable
+		rows={rows}
+		metricHeader="Avg viewers"
+		emptyMessage={data.platformUnsupported
+			? 'YouTube game rankings ship when YouTube ingest is live. Switch to Twitch or Kick for rollup-backed leaderboards.'
+			: data.rows.length === 0
+				? data.source === 'unavailable'
+					? 'Could not load rankings from ingest.'
+					: 'No games ranked for this period yet.'
+				: null}
+	/>
 </div>

@@ -66,4 +66,58 @@ describe('search page load — platform=kick', () => {
 			hoursWatched7d: null
 		});
 	});
+
+	it('rejects invalid platform query and defaults to twitch', async () => {
+		const fetchFn = vi.fn().mockImplementation((input: string | URL) => {
+			const url = String(input);
+			if (url.includes('/v1/search/channels')) {
+				expect(url).toContain('platform=twitch');
+				return Promise.resolve({ ok: true, json: async () => ({ results: [] }) });
+			}
+			if (url.includes('/v1/rankings/channels')) {
+				return Promise.resolve({ ok: true, json: async () => ({ items: [] }) });
+			}
+			return Promise.resolve({ ok: false, status: 503 });
+		});
+
+		const args = searchLoadArgs('ab', 'not-a-platform');
+		args.fetch = fetchFn;
+
+		const result = await searchLoad(args);
+		expect(result.platform).toBe('twitch');
+	});
+
+	it('loads kick trending chips from kick rankings', async () => {
+		const fetchFn = vi.fn().mockImplementation((input: string | URL) => {
+			const url = String(input);
+			if (url.includes('/v1/search/channels')) {
+				return Promise.resolve({ ok: true, json: async () => ({ results: [] }) });
+			}
+			if (url.includes('/v1/rankings/channels') && url.includes('platform=kick')) {
+				return Promise.resolve({
+					ok: true,
+					json: async () => ({
+						updated_at: '2026-06-01T00:00:00Z',
+						items: [
+							{
+								rank: 1,
+								slug: 'xqc',
+								display_name: 'xQc',
+								avatar_url: null,
+								hours_watched: 1,
+								average_viewers: 1
+							}
+						]
+					})
+				});
+			}
+			return Promise.resolve({ ok: false, status: 503 });
+		});
+
+		const args = searchLoadArgs('', 'kick');
+		args.fetch = fetchFn;
+
+		const result = await searchLoad(args);
+		expect(result.trending[0]).toMatchObject({ slug: 'xqc', platform: 'kick' });
+	});
 });

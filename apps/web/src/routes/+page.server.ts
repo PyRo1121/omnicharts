@@ -45,7 +45,7 @@ export const load: PageServerLoad = async ({ fetch, url, setHeaders, platform: c
 			channelRankings: emptyChannelRankings,
 			gameRankings: emptyGameRankings,
 			platformUnsupported: true,
-			trending: trendingFromRankings([])
+			trending: trendingFromRankings([], { platform: 'youtube' })
 		};
 	}
 

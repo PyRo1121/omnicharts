@@ -18,9 +18,11 @@
 	interface Props {
 		rows: LeaderboardRow[];
 		metricHeader: string;
+		/** Shown as a single row when `rows` is empty (unsupported platform, no rollups, etc.). */
+		emptyMessage?: string | null;
 	}
 
-	let { rows, metricHeader }: Props = $props();
+	let { rows, metricHeader, emptyMessage = null }: Props = $props();
 
 	const platformLabel: Record<Exclude<PlatformId, 'all'>, string> = {
 		twitch: 'Twitch',
@@ -40,6 +42,13 @@
 			</tr>
 		</thead>
 		<tbody>
+			{#if rows.length === 0}
+				<tr>
+					<td colspan="4" class="px-4 py-8 text-center text-sm text-[var(--color-oc-text-muted)]">
+						{emptyMessage ?? 'No results for this period.'}
+					</td>
+				</tr>
+			{:else}
 			{#each rows as row (row.href)}
 				<tr
 					class="group border-b border-[var(--color-oc-border-subtle)] last:border-0 transition-colors hover:bg-[var(--color-oc-bg-hover)]"
@@ -58,7 +67,7 @@
 					</td>
 					<td class="px-4 py-3">
 						<a href={row.href} class="flex items-center gap-3 min-w-0">
-							<AvatarImage src={row.imageUrl} alt="" size={40} />
+							<AvatarImage src={row.imageUrl} alt={row.imageAlt} size={40} />
 							<span class="min-w-0">
 								<span class="block truncate font-medium text-[var(--color-oc-text)] group-hover:text-[var(--color-oc-accent)]">
 									{row.primary}
@@ -82,6 +91,7 @@
 					</td>
 				</tr>
 			{/each}
+			{/if}
 		</tbody>
 	</table>
 </div>

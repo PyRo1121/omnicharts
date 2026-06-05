@@ -16,6 +16,12 @@ describe('trendingFromRankings', () => {
 		expect(trendingFromRankings([])).toEqual([...trendingSearches]);
 	});
 
+	it('scopes static fallback to requested platform when rollups empty', () => {
+		const kickOnly = trendingFromRankings([], { platform: 'kick' });
+		expect(kickOnly.every((t) => t.platform === 'kick')).toBe(true);
+		expect(kickOnly.length).toBeGreaterThan(0);
+	});
+
 	it('caps at five entries', () => {
 		expect(trendingFromRankings(topChannels)).toHaveLength(5);
 	});

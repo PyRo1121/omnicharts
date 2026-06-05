@@ -1,5 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
-import { loadChannelDetail, parseChannelPeriod, resolveChannelSlugFromHistory } from './channel';
+import {
+	findChannelOnOtherPlatforms,
+	loadChannelDetail,
+	parseChannelPeriod,
+	resolveChannelSlugFromHistory
+} from './channel';
 import { testLoadContext } from './test-helpers';
 
 vi.mock('$env/dynamic/private', () => ({
@@ -74,5 +79,32 @@ describe('loadChannelDetail', () => {
 		const fetchFn = vi.fn().mockRejectedValue(new Error('network'));
 		const load = await loadChannelDetail(testLoadContext(fetchFn as typeof fetch), 'ninja', 'twitch', '7d');
 		expect(load.source).toBe('error');
+	});
+});
+
+describe('findChannelOnOtherPlatforms', () => {
+	it('returns matches on platforms other than the requested tab', async () => {
+		const fetchFn = vi.fn().mockImplementation((input: string | URL) => {
+			const url = String(input);
+			if (url.includes('/v1/channels/xqc?platform=kick')) {
+				return Promise.resolve({
+					ok: true,
+					status: 200,
+					json: async () => ({
+						platform: 'kick',
+						slug: 'xqc',
+						display_name: 'xQc'
+					})
+				});
+			}
+			return Promise.resolve({ ok: false, status: 404 });
+		});
+
+		const suggestions = await findChannelOnOtherPlatforms(
+			testLoadContext(fetchFn as typeof fetch),
+			'xqc',
+			'twitch'
+		);
+		expect(suggestions).toEqual([{ slug: 'xqc', platform: 'kick', displayName: 'xQc' }]);
 	});
 });

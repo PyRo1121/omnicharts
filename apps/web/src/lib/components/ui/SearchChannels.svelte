@@ -139,10 +139,13 @@
 			id="channel-search"
 			type="search"
 			role="combobox"
+			aria-haspopup="listbox"
 			aria-expanded={showListbox && (searching || searchError || hits.length > 0)}
-			aria-controls={listboxId}
+			aria-controls={showListbox ? listboxId : undefined}
 			aria-autocomplete="list"
-			aria-activedescendant={activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined}
+			aria-activedescendant={activeIndex >= 0 && showListbox && hits.length > 0
+				? `${listboxId}-option-${activeIndex}`
+				: undefined}
 			placeholder="Search streamers, games, categories…"
 			class="min-w-0 flex-1 bg-transparent text-sm text-[var(--color-oc-text)] placeholder:text-[var(--color-oc-text-faint)] outline-none"
 			bind:value={query}

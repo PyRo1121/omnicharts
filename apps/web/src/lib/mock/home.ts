@@ -27,8 +27,21 @@ export function searchPlatformId(platform: PlatformId): Exclude<PlatformId, 'all
 }
 
 export function parseUiPlatform(raw: string | null): PlatformId {
-	if (raw && platforms.some((p) => p.id === raw)) return raw as PlatformId;
+	const normalized = raw?.trim().toLowerCase() ?? '';
+	if (normalized && platforms.some((p) => p.id === normalized)) return normalized as PlatformId;
 	return 'twitch';
+}
+
+export function platformLabel(platform: PlatformId): string {
+	return platforms.find((p) => p.id === platform)?.label ?? 'Twitch';
+}
+
+/** Copy for `/search` hero — scoped to active platform tab. */
+export function searchPageSubtitle(platform: PlatformId): string {
+	if (platform === 'all') {
+		return 'Find streamers by name or slug across Twitch, Kick, and YouTube.';
+	}
+	return `Find streamers by name or slug on ${platformLabel(platform)}.`;
 }
 
 export function platformQueryParam(platform: PlatformId): string {

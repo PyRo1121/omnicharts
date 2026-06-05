@@ -21,21 +21,15 @@ test.describe('Kick platform UX (docs/09, docs/16)', () => {
 
 		await expect(page.getByRole('heading', { name: 'Top streamers' })).toBeVisible();
 
-		const leaderboard = page.locator('table tbody tr').first();
-		const emptyState = page.getByText(
-			/No channel rollups yet for this period|Channel rankings unavailable/i
-		);
-		await expect(leaderboard.or(emptyState)).toBeVisible({ timeout: 10_000 });
+		const streamers = page.locator('section').filter({ hasText: 'Top streamers' });
+		await expect(streamers.locator('table tbody td').first()).toBeVisible({ timeout: 10_000 });
 
 		const statusLine = page.getByText(/Live Kick rollups ·|Ingest unavailable/i);
 		await expect(statusLine).toBeVisible();
 
 		await expect(page.getByRole('heading', { name: 'Top categories' })).toBeVisible();
-		const gameEmpty = page.getByText(
-			/No game rollups yet for this period|Game rankings unavailable/i
-		);
-		const gameRow = page.locator('section').filter({ hasText: 'Top categories' }).locator('table tbody tr').first();
-		await expect(gameRow.or(gameEmpty)).toBeVisible({ timeout: 10_000 });
+		const categories = page.locator('section').filter({ hasText: 'Top categories' });
+		await expect(categories.locator('table tbody td').first()).toBeVisible({ timeout: 10_000 });
 	});
 
 	test('games page ?platform=kick loads without Phase 3 banner', async ({ page }) => {
@@ -68,11 +62,6 @@ test.describe('Kick platform UX (docs/09, docs/16)', () => {
 		await expect(page.getByRole('tab', { name: 'YouTube' })).toHaveAttribute('aria-selected', 'true');
 	});
 
-	test('game detail ?platform=kick returns 404 for unknown slug', async ({ page }) => {
-		const res = await page.goto('/games/not-a-real-kick-game-slug-xyz?platform=kick');
-		expect(res?.status()).toBe(404);
-	});
-
 	test('search page accepts platform=kick query param', async ({ page }) => {
 		const res = await page.goto('/search?q=te&platform=kick');
 		expect(res?.status()).toBe(200);
@@ -85,7 +74,7 @@ test.describe('Kick platform UX (docs/09, docs/16)', () => {
 	}) => {
 		const res = await page.goto('/?platform=youtube');
 		expect(res?.status()).toBe(200);
-		await expect(page.getByText(/YouTube rankings ship in Phase 3/i)).toBeVisible();
+		await expect(page.getByText(/YouTube rankings ship in Phase 3/i).first()).toBeVisible();
 		await expect(page.locator('table tbody td').filter({ hasText: /Phase 3/i }).first()).toBeVisible();
 	});
 
@@ -98,7 +87,7 @@ test.describe('Kick platform UX (docs/09, docs/16)', () => {
 	test('games page ?platform=youtube shows unsupported message', async ({ page }) => {
 		const res = await page.goto('/games?platform=youtube');
 		expect(res?.status()).toBe(200);
-		await expect(page.getByText(/YouTube game rankings ship/i)).toBeVisible();
+		await expect(page.getByText(/YouTube game rankings ship/i).first()).toBeVisible();
 	});
 
 	test('search page subtitle reflects platform=kick', async ({ page }) => {

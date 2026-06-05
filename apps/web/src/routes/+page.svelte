@@ -179,15 +179,17 @@
 			{/snippet}
 		</SectionHeader>
 		<div class="mt-4">
-			{#if channelRows.length === 0 && !data.platformUnsupported}
-				<p class="text-sm text-[var(--color-oc-text-muted)]">
-					{data.channelRankings.source === 'unavailable'
-						? 'Channel rankings unavailable — ingest not reachable.'
-						: 'No channel rollups yet for this period.'}
-				</p>
-			{:else}
-				<LeaderboardTable rows={channelRows} metricHeader="Hours watched" />
-			{/if}
+			<LeaderboardTable
+				rows={channelRows}
+				metricHeader="Hours watched"
+				emptyMessage={data.platformUnsupported
+					? `${data.platform === 'kick' ? 'Kick' : 'YouTube'} rankings ship in Phase 3. Switch to Twitch for live leaderboards.`
+					: channelRows.length === 0
+						? data.channelRankings.source === 'unavailable'
+							? 'Channel rankings unavailable — ingest not reachable.'
+							: 'No channel rollups yet for this period.'
+						: null}
+			/>
 		</div>
 	</section>
 
@@ -204,15 +206,17 @@
 			{/snippet}
 		</SectionHeader>
 		<div class="mt-4">
-			{#if gameRows.length === 0 && !data.platformUnsupported}
-				<p class="text-sm text-[var(--color-oc-text-muted)]">
-					{data.gameRankings.source === 'unavailable'
-						? 'Game rankings unavailable — ingest not reachable.'
-						: 'No game rollups yet for this period.'}
-				</p>
-			{:else}
-				<LeaderboardTable rows={gameRows} metricHeader="Avg viewers" />
-			{/if}
+			<LeaderboardTable
+				rows={gameRows}
+				metricHeader="Avg viewers"
+				emptyMessage={data.platformUnsupported
+					? `${data.platform === 'kick' ? 'Kick' : 'YouTube'} rankings ship in Phase 3. Switch to Twitch for live leaderboards.`
+					: gameRows.length === 0
+						? data.gameRankings.source === 'unavailable'
+							? 'Game rankings unavailable — ingest not reachable.'
+							: 'No game rollups yet for this period.'
+						: null}
+			/>
 		</div>
 	</section>
 </div>
