@@ -8,6 +8,7 @@ import {
 } from '@omnicharts/rollup';
 import { ROLLUP_CACHE_CONTROL } from '$lib/server/cache';
 import { getIngestBaseUrl } from '$lib/server/ingest';
+import { proxyIngestResponse } from '$lib/server/proxy-ingest';
 import { getD1 } from '$lib/server/d1';
 import { resolveWebRankingEnv } from '$lib/server/ranking-env';
 import type { RequestHandler } from './$types';
@@ -77,11 +78,5 @@ export const GET: RequestHandler = async ({ url, fetch, platform }) => {
 		headers: { accept: 'application/json' }
 	});
 
-	return new Response(res.body, {
-		status: res.status,
-		headers: {
-			'content-type': res.headers.get('content-type') ?? 'application/json',
-			'cache-control': res.headers.get('cache-control') ?? ROLLUP_CACHE_CONTROL
-		}
-	});
+	return proxyIngestResponse(res);
 };

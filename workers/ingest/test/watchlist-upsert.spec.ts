@@ -128,6 +128,63 @@ describe('watchlist upsert', () => {
 		expect(result.skipped).toBe(false);
 	});
 
+	it('upsertKickChannelFromLookup creates tracked row', async () => {
+		const { db } = createMemoryDb();
+		const result = await upsertKickChannelFromLookup(db, {
+			broadcaster_user_id: 42,
+			channel_id: 1,
+			slug: 'newkick'
+		});
+
+		expect(result.created).toBe(true);
+		expect(result.skipped).toBe(false);
+	});
+
+	it('upsertKickChannelFromLookup promotes discovered row', async () => {
+		const { db, channels } = createMemoryDb();
+		channels.set('kick-ch-42', {
+			id: 'kick-ch-42',
+			platform_id: 'kick',
+			platform_channel_id: '42',
+			slug: 'newkick',
+			display_name: 'newkick',
+			ingest_state: 'discovered'
+		});
+
+		const result = await upsertKickChannelFromLookup(db, {
+			broadcaster_user_id: 42,
+			channel_id: 1,
+			slug: 'newkick'
+		});
+
+		expect(result.promoted).toBe(true);
+	});
+
+	it('upsertTwitchChannelFromUser skips already tracked row', async () => {
+		const { db, channels } = createMemoryDb();
+		channels.set('twitch-ch-123', {
+			id: 'twitch-ch-123',
+			platform_id: 'twitch',
+			platform_channel_id: '123',
+			slug: 'ninja',
+			display_name: 'Ninja',
+			ingest_state: 'tracked'
+		});
+
+		const result = await upsertTwitchChannelFromUser(db, {
+			id: '123',
+			login: 'ninja',
+			display_name: 'Ninja',
+			type: '',
+			broadcaster_type: 'partner',
+			description: '',
+			profile_image_url: null,
+			created_at: '2011-01-01T00:00:00Z'
+		});
+
+		expect(result.skipped).toBe(true);
+	});
+
 	it('upsertKickChannelFromLookup skips tracked row', async () => {
 		const { db, channels } = createMemoryDb();
 		channels.set('kick-ch-99', {

@@ -141,7 +141,8 @@ export default defineConfig({
 				'src/db/**/*.ts',
 				'src/kick/**/*.ts',
 				'src/youtube/**/*.ts',
-				'src/r2/**/*.ts'
+				'src/r2/**/*.ts',
+				'src/watchlist/**/*.ts'
 			],
 			exclude: ['src/twitch/**/index.ts', '**/types.ts', 'src/db/d1-meta.ts'],
 			thresholds: {
@@ -170,6 +171,12 @@ export default defineConfig({
 					statements: 80
 				},
 				'src/r2/**': {
+					lines: 80,
+					functions: 80,
+					branches: 80,
+					statements: 80
+				},
+				'src/watchlist/**': {
 					lines: 80,
 					functions: 80,
 					branches: 80,

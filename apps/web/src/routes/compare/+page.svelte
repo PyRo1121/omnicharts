@@ -180,7 +180,7 @@
 							<h2 class="font-[family-name:var(--font-display)] text-lg font-semibold text-[var(--color-oc-text)]">
 								{#if side.source === 'live' && side.ingestState !== 'discovered'}
 									<a
-										href="/channels/{side.slug}?platform={side.platform}&period={data.period}"
+										href="/channels/{side.slugParam}?platform={side.platform}&period={data.period}"
 										class="hover:text-[var(--color-oc-accent)]"
 									>
 										{side.displayName}

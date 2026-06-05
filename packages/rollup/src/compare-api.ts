@@ -1,4 +1,5 @@
 import {
+	isComparePeriod,
 	isPlatformId,
 	parseComparePeriod,
 	type ComparePeriod,
@@ -7,7 +8,7 @@ import {
 import type { D1Database } from './d1';
 import { buildChannelDetailResponse, type ChannelDetailResponse } from './channel-api';
 
-export type CompareChannelsQueryError = 'invalid_platform' | 'missing_slugs';
+export type CompareChannelsQueryError = 'invalid_platform' | 'invalid_period' | 'missing_slugs';
 
 export type ParsedCompareChannelsQuery =
 	| { ok: true; platform: string; period: ComparePeriod; a: string; b: string }
@@ -44,7 +45,11 @@ export function parseCompareChannelsQuery(url: URL): ParsedCompareChannelsQuery 
 		return { ok: false, error: 'missing_slugs' };
 	}
 
-	const period = parseComparePeriod(url.searchParams.get('period'));
+	const periodRaw = url.searchParams.get('period');
+	if (periodRaw != null && periodRaw !== '' && !isComparePeriod(periodRaw)) {
+		return { ok: false, error: 'invalid_period' };
+	}
+	const period = parseComparePeriod(periodRaw);
 	return { ok: true, platform: platformRaw, period, a, b };
 }
 

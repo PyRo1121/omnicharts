@@ -41,17 +41,11 @@ describe('parseCompareChannelsQuery', () => {
 		});
 	});
 
-	test('maps unknown period to 7d', () => {
+	test('rejects invalid compare period', () => {
 		const url = new URL(
 			'http://localhost/v1/compare/channels?a=ninja&b=shroud&platform=twitch&period=24h'
 		);
-		expect(parseCompareChannelsQuery(url)).toEqual({
-			ok: true,
-			platform: 'twitch',
-			period: '7d',
-			a: 'ninja',
-			b: 'shroud'
-		});
+		expect(parseCompareChannelsQuery(url)).toEqual({ ok: false, error: 'invalid_period' });
 	});
 
 	test('trims slug whitespace', () => {

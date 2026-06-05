@@ -33,7 +33,7 @@
 			? rankingsChannelsCsvUrl(
 					searchPlatformId(data.platform),
 					data.period,
-					100,
+					20,
 					data.language
 				)
 			: null

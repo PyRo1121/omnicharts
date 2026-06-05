@@ -78,6 +78,7 @@ describe('runRetentionWithColdArchive', () => {
 			sampleRows: [],
 			channelRollupRows: [
 				{
+					rowid: 1,
 					channel_id: 'ch-1',
 					date: '2026-02-01',
 					hours_watched: 1,
@@ -90,6 +91,7 @@ describe('runRetentionWithColdArchive', () => {
 			],
 			gameRollupRows: [
 				{
+					rowid: 2,
 					game_category_id: 'g-1',
 					date: '2026-02-01',
 					hours_watched: 2,
@@ -214,12 +216,12 @@ describe('runRetentionWithColdArchive', () => {
 		const env = { DB: undefined as unknown as D1Database, COLD_ARCHIVE_ENABLED: '1', SAMPLES: {} } as unknown as Env;
 		const db = {
 			prepare(sql: string) {
-				if (sql.includes('FROM channel_daily_rollups') && sql.includes('SELECT channel_id')) {
+				if (sql.includes('FROM channel_daily_rollups') && sql.includes('channel_id')) {
 					return {
 						bind: () => ({ all: async () => ({ results: null }) })
 					};
 				}
-				if (sql.includes('FROM game_daily_rollups') && sql.includes('SELECT game_category_id')) {
+				if (sql.includes('FROM game_daily_rollups') && sql.includes('game_category_id')) {
 					return {
 						bind: () => ({ all: async () => ({ results: null }) })
 					};
@@ -289,7 +291,10 @@ function makeDb(opts: {
 					})
 				};
 			}
-			if (sql.startsWith('DELETE FROM channel_daily_rollups') && sql.includes('channel_id = ?')) {
+			if (
+				sql.startsWith('DELETE FROM channel_daily_rollups') &&
+				sql.includes('json_each')
+			) {
 				return {
 					bind: () => ({
 						run: async () => ({ meta: { changes: opts.onChannelRollupDelete?.() ?? 1 } })
@@ -303,7 +308,7 @@ function makeDb(opts: {
 					})
 				};
 			}
-			if (sql.startsWith('DELETE FROM game_daily_rollups') && sql.includes('game_category_id = ?')) {
+			if (sql.startsWith('DELETE FROM game_daily_rollups') && sql.includes('json_each')) {
 				return {
 					bind: () => ({
 						run: async () => ({ meta: { changes: opts.onGameRollupDelete?.() ?? 1 } })
@@ -330,7 +335,7 @@ function makeDb(opts: {
 					}
 				};
 			}
-			if (sql.includes('FROM channel_daily_rollups') && sql.includes('SELECT channel_id')) {
+			if (sql.includes('FROM channel_daily_rollups') && sql.includes('channel_id')) {
 				return {
 					bind(_cutoff: string, _limit: number) {
 						return {
@@ -343,7 +348,7 @@ function makeDb(opts: {
 					}
 				};
 			}
-			if (sql.includes('FROM game_daily_rollups') && sql.includes('SELECT game_category_id')) {
+			if (sql.includes('FROM game_daily_rollups') && sql.includes('game_category_id')) {
 				return {
 					bind(_cutoff: string, _limit: number) {
 						return {

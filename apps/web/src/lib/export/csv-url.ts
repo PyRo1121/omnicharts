@@ -2,7 +2,7 @@
 export function rankingsChannelsCsvUrl(
 	platform: string,
 	period: string,
-	limit = 100,
+	limit = 20,
 	language?: string | null
 ): string {
 	const q = new URLSearchParams({

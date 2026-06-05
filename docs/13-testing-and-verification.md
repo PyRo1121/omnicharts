@@ -53,12 +53,12 @@ Period: **rolling 7×24h UTC** ending at last completed rollup day (document in 
 | Gate | Command |
 |------|---------|
 | Ingest unit + workers | `bun run test:ingest` |
-| Twitch + DB coverage ≥ 80% | `bun run test:ingest:coverage` |
+| Ingest gated paths coverage ≥ 80% | `bun run test:ingest:coverage` |
 | Web server load helpers | `bun run test:web` |
 | Ingest + web unit (CI fast path) | `bun run test` |
 | Full Twitch smoke | `bun run verify:twitch` |
 
-**Coverage scope** (`workers/ingest`, unit project): `src/twitch/**/*.ts` (except `index.ts` if present) and `src/db/**/*.ts`, thresholds 80% lines/branches/functions/statements per glob.
+**Coverage scope** (`workers/ingest`, unit project): `src/twitch/**`, `src/db/**`, `src/kick/**`, `src/youtube/**`, `src/r2/**`, `src/watchlist/**` (excludes `**/types.ts`, `src/db/d1-meta.ts`, `src/twitch/**/index.ts`). Post-coverage gate: `scripts/verify/check-ingest-coverage-thresholds.ts` — 80% lines/branches/functions/statements per glob.
 
 **Web tests** (`apps/web`): Vitest in `src/lib/server/*.test.ts` — mocked `fetch` against ingest JSON for `loadTwitchChannelRankings`, `loadChannelDetail`, `loadGameDetail`, `loadOverview`, `loadTwitchGameRankings`.
 
@@ -75,8 +75,8 @@ Root `package.json` scripts — **do not duplicate bash blocks** in docs 23/24/2
 | `bun run twitch:freeze-proof` | M1 operational proof matrix (health → schema → cron → checkpoint → optional EventSub) | `dev:ingest` with `--test-scheduled` |
 | `bun run twitch:checkpoint --no-start-ingest` | Deep ingest pipeline smoke (subset of verify) | `dev:ingest` + `ADMIN_API_KEY` in `.dev.vars` |
 | `bun run twitch:checkpoint:full` | Slow coverage poll path | Same as checkpoint |
-| `bun run d1:verify-schema` | After `d1:migrate:local` — tables/columns/indexes through migration **0009** (`channels.youtube_live_video_id`) | Local D1 |
-| `bun run d1:verify-schema:remote` | Pre-deploy / freeze **G2** — parity through **0009** | Wrangler login |
+| `bun run d1:verify-schema` | After `d1:migrate:local` — tables/columns/indexes through migration **0010** (VOD backfill columns) | Local D1 |
+| `bun run d1:verify-schema:remote` | Pre-deploy / freeze **G2** — parity through **0010** | Wrangler login |
 | `bun run verify:wrangler-production` | Pre-deploy guard: prod vars 60m airtime / 20 min viewers | — |
 | `bun run check:web` | Wrangler types + svelte-check | — |
 | `bun run build:web` | Production Pages build | — |
@@ -120,7 +120,7 @@ From repo root:
 From repo root (ingest must be running for checkpoint: `bun run dev:ingest`):
 
 1. `bun run test:ingest` — ingest Vitest
-2. `bun run test:ingest:coverage` — Twitch + `src/db/` ≥80%
+2. `bun run test:ingest:coverage` — gated ingest globs ≥80%
 3. `bun run test:web` — server load mocks
 4. Fail fast if `GET http://127.0.0.1:8787/health` unreachable (skipped when `VERIFY_SKIP_CHECKPOINT=1` or `CI=true` without `VERIFY_FULL=1`)
 5. `bun run twitch:checkpoint --no-start-ingest`
@@ -162,8 +162,8 @@ Pre–Kick freeze: [23 §2](./23-audit-remediation-plan.md#2-freeze-gate-twitch-
 | Kick Phase 3 gate | `bun run verify:kick` |
 | YouTube Phase 3 gate | `bun run verify:youtube` |
 | M1 proof matrix | `bun run twitch:freeze-proof` |
-| D1 schema (local) | `bun run d1:verify-schema` (after `d1:migrate:local`) — migrations **0001–0009** |
-| D1 schema (pre-deploy) | `bun run d1:verify-schema:remote` — freeze G2; through **0009** |
+| D1 schema (local) | `bun run d1:verify-schema` (after `d1:migrate:local`) — migrations **0001–0010** |
+| D1 schema (pre-deploy) | `bun run d1:verify-schema:remote` — freeze G2; through **0010** |
 | Production wrangler vars | `bun run verify:wrangler-production` — freeze G3 guard |
 | Types | `bun run check:web` |
 | Build | `bun run build:web` |

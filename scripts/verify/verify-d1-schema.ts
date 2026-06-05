@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * D1 schema parity through migration 0009 (local or remote).
+ * D1 schema parity through migration 0010 (local or remote).
  * @see docs/13-testing-and-verification.md · migrations/d1/
  */
 import { spawnSync } from 'node:child_process';
@@ -18,10 +18,11 @@ const MIGRATION_FILES = [
 	'0006_channel_sightings_followers.sql',
 	'0007_viewer_samples_sampled_at_index.sql',
 	'0008_ingest_hot_path_indexes.sql',
-	'0009_youtube_live_video_id.sql'
+	'0009_youtube_live_video_id.sql',
+	'0010_twitch_vod_metadata.sql'
 ] as const;
 
-/** Tables that must exist after migrations 0001–0009 (0001–0006 create/alter; 0007–0008 indexes; 0009 column). */
+/** Tables that must exist after migrations 0001–0010 (0001–0006 create/alter; 0007–0008 indexes; 0009–0010 columns). */
 const EXPECTED_TABLES = [
 	'platforms',
 	'channels',
@@ -47,9 +48,18 @@ const EXPECTED_COLUMNS: Record<string, string[]> = {
 		'profile_enriched_at',
 		'follower_count',
 		'followers_enriched_at',
-		'youtube_live_video_id'
+		'youtube_live_video_id',
+		'vod_backfilled_at'
 	],
-	stream_sessions: ['language', 'tags_json', 'thumbnail_url', 'stream_type'],
+	stream_sessions: [
+		'language',
+		'tags_json',
+		'thumbnail_url',
+		'stream_type',
+		'backfill_source',
+		'duration',
+		'view_count'
+	],
 	channel_daily_rollups: ['followers_delta']
 };
 
@@ -57,7 +67,8 @@ const EXPECTED_COLUMNS: Record<string, string[]> = {
 const EXPECTED_INDEXES = [
 	'idx_viewer_samples_sampled_at',
 	'idx_channels_platform_state_seen',
-	'idx_stream_sessions_channel_open'
+	'idx_stream_sessions_channel_open',
+	'idx_channels_vod_backfill'
 ] as const;
 
 function usage(): never {
@@ -143,7 +154,7 @@ function main() {
 	const remote = process.argv.includes('--remote');
 	const target = remote ? 'remote' : 'local';
 
-	console.log(`D1 schema verify (${target}) — migrations 0001–0009\n`);
+	console.log(`D1 schema verify (${target}) — migrations 0001–0010\n`);
 	console.log(`Migration files (SSOT): ${MIGRATION_FILES.join(', ')}\n`);
 
 	const errors: string[] = [];
@@ -179,7 +190,7 @@ function main() {
 	}
 
 	console.log(
-		`PASS — ${EXPECTED_TABLES.length} tables, key columns through 0009, ${EXPECTED_INDEXES.length} indexes through 0008 (${target})`
+		`PASS — ${EXPECTED_TABLES.length} tables, key columns through 0010, ${EXPECTED_INDEXES.length} indexes through 0010 (${target})`
 	);
 }
 

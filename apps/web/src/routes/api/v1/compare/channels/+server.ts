@@ -8,10 +8,11 @@ import { getD1 } from '$lib/server/d1';
 import type { RequestHandler } from './$types';
 
 function compareQueryErrorResponse(
-	error: 'invalid_platform' | 'missing_slugs'
+	error: 'invalid_platform' | 'invalid_period' | 'missing_slugs'
 ): Response {
 	const messages = {
 		invalid_platform: 'platform must be twitch, kick, or youtube',
+		invalid_period: 'period must be one of 7d, 30d, 90d',
 		missing_slugs: 'query params a and b (channel slugs) are required'
 	} as const;
 	return Response.json(

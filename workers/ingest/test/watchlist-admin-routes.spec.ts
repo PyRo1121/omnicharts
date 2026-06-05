@@ -1,6 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import worker from '../src/index';
-import * as watchlistImport from '../src/watchlist/import';
+import * as helixModule from '../src/twitch/helix';
+import * as watchlistUpsert from '../src/watchlist/upsert';
+
+const dbStub = {
+	prepare: () => ({
+		bind: () => ({ first: async () => null, run: async () => ({}) })
+	})
+} as unknown as D1Database;
 
 describe('watchlist admin routes (worker.fetch)', () => {
 	beforeEach(() => {
@@ -14,7 +21,7 @@ describe('watchlist admin routes (worker.fetch)', () => {
 				headers: { 'content-type': 'text/csv' },
 				body: 'platform,slug\ntwitch,ninja'
 			}),
-			{ ADMIN_API_KEY: 'secret', DB: {} as D1Database } as Env
+			{ ADMIN_API_KEY: 'secret', DB: dbStub } as Env
 		);
 		expect(res.status).toBe(401);
 	});
@@ -29,28 +36,55 @@ describe('watchlist admin routes (worker.fetch)', () => {
 				},
 				body: ''
 			}),
-			{ ADMIN_API_KEY: 'secret', DB: {} as D1Database } as Env
+			{ ADMIN_API_KEY: 'secret', DB: dbStub } as Env
 		);
 		expect(res.status).toBe(400);
 		const body = (await res.json()) as { error: { code: string } };
 		expect(body.error.code).toBe('invalid_csv');
 	});
 
-	it('POST /admin/watchlist/import returns stats on valid CSV', async () => {
-		vi.spyOn(watchlistImport, 'importWatchlistCsv').mockResolvedValue({
-			ok: true,
-			skipped: false,
-			imported: 1,
-			promoted: 0,
-			skipped_rows: 0,
-			not_found: 0,
-			errors: 0,
-			parse_errors: 0,
-			parse: {
-				rows: [{ line: 2, platform: 'twitch', slug: 'ninja' }],
-				errors: []
-			},
-			results: [{ line: 2, platform: 'twitch', slug: 'ninja', status: 'imported' }]
+	it('POST /admin/watchlist/import returns needs_api when twitch credentials missing', async () => {
+		const res = await worker.fetch(
+			new Request('http://ingest/admin/watchlist/import', {
+				method: 'POST',
+				headers: {
+					'X-Admin-Api-Key': 'secret',
+					'content-type': 'text/csv'
+				},
+				body: 'platform,slug\ntwitch,ninja'
+			}),
+			{ ADMIN_API_KEY: 'secret', DB: dbStub } as Env
+		);
+
+		expect(res.status).toBe(200);
+		const body = (await res.json()) as {
+			ok: boolean;
+			skipped: boolean;
+			results: { status: string }[];
+		};
+		expect(body.ok).toBe(false);
+		expect(body.skipped).toBe(true);
+		expect(body.results[0]?.status).toBe('needs_api');
+	});
+
+	it('POST /admin/watchlist/import imports twitch row via Helix lookup', async () => {
+		vi.spyOn(helixModule.TwitchHelixClient.prototype, 'getUsersByLogins').mockResolvedValue([
+			{
+				id: '123',
+				login: 'ninja',
+				display_name: 'Ninja',
+				type: '',
+				broadcaster_type: 'partner',
+				description: '',
+				profile_image_url: 'https://example.com/ninja.jpg',
+				created_at: '2011-01-01T00:00:00Z'
+			}
+		]);
+		vi.spyOn(watchlistUpsert, 'upsertTwitchChannelFromUser').mockResolvedValue({
+			channelId: 'twitch-ch-123',
+			created: true,
+			promoted: false,
+			skipped: false
 		});
 
 		const res = await worker.fetch(
@@ -62,7 +96,12 @@ describe('watchlist admin routes (worker.fetch)', () => {
 				},
 				body: 'platform,slug\ntwitch,ninja'
 			}),
-			{ ADMIN_API_KEY: 'secret', DB: {} as D1Database } as Env
+			{
+				ADMIN_API_KEY: 'secret',
+				TWITCH_CLIENT_ID: 'id',
+				TWITCH_CLIENT_SECRET: 'sec',
+				DB: dbStub
+			} as Env
 		);
 
 		expect(res.status).toBe(200);

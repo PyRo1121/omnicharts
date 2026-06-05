@@ -8,14 +8,16 @@ import {
 } from '@omnicharts/rollup';
 import { ROLLUP_CACHE_CONTROL } from '$lib/server/cache';
 import { getIngestBaseUrl } from '$lib/server/ingest';
+import { proxyIngestResponse } from '$lib/server/proxy-ingest';
 import { getD1 } from '$lib/server/d1';
 import type { RequestHandler } from './$types';
 
 function channelQueryErrorResponse(
-	error: 'invalid_platform' | 'invalid_format'
+	error: 'invalid_platform' | 'invalid_period' | 'invalid_format'
 ): Response {
 	const messages = {
 		invalid_platform: 'platform must be twitch, kick, or youtube',
+		invalid_period: 'period must be one of 24h, 7d, 30d, 90d',
 		invalid_format: 'format must be json or csv'
 	} as const;
 	return Response.json(
@@ -87,11 +89,5 @@ export const GET: RequestHandler = async ({ params, url, fetch, platform }) => {
 		headers: { accept: 'application/json' }
 	});
 
-	return new Response(res.body, {
-		status: res.status,
-		headers: {
-			'content-type': res.headers.get('content-type') ?? 'application/json',
-			'cache-control': res.headers.get('cache-control') ?? ROLLUP_CACHE_CONTROL
-		}
-	});
+	return proxyIngestResponse(res);
 };

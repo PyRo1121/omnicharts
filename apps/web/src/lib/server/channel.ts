@@ -4,6 +4,7 @@ import {
 	resolveChannelSlug
 } from '@omnicharts/rollup';
 import { getIngestBaseUrl } from '$lib/server/ingest';
+import { periodForApi } from '$lib/server/period-api';
 import type { ServerLoadContext } from '$lib/server/load-context';
 import { parseUiPeriod, type Period } from '$lib/ui/platform.svelte';
 
@@ -226,11 +227,6 @@ export async function resolveChannelSlugFromHistory(
 	} catch {
 		return null;
 	}
-}
-
-function periodForApi(period: Period): string {
-	if (period === '24h' || period === '7d' || period === '30d' || period === '90d') return period;
-	return '7d';
 }
 
 export async function loadChannelDetail(

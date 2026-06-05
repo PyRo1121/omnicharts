@@ -64,9 +64,9 @@ describe('channelRankingsToCsv', () => {
 		});
 		const lines = csv.trim().split('\n');
 		expect(lines[0]).toBe(
-			'rank,slug,display_name,hours_watched,average_viewers,peak_viewers,airtime_hours,stream_count,tracked_since'
+			'rank,slug,display_name,avatar_url,hours_watched,average_viewers,peak_viewers,airtime_hours,stream_count,tracked_since'
 		);
-		expect(lines[1]).toBe('1,caedrel,Caedrel,1000,500,900,12.5,3,2026-03-01T00:00:00Z');
+		expect(lines[1]).toBe('1,caedrel,Caedrel,,1000,500,900,12.5,3,2026-03-01T00:00:00Z');
 	});
 });
 

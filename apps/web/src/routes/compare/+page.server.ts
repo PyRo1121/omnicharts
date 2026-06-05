@@ -1,7 +1,7 @@
 import { applyRollupPageCache } from '$lib/server/cache';
 import { loadChannelCompare, parseCompareSlugs } from '$lib/server/compare';
 import { resolvePeriodContext } from '$lib/server/period-context';
-import { parseComparePagePeriod } from '$lib/compare/url';
+import { parseComparePeriod } from '@omnicharts/domain';
 import { parseUiPlatform, searchPlatformId } from '$lib/ui/platform.svelte';
 import { serverLoadContext } from '$lib/server/load-context';
 import type { PageServerLoad } from './$types';
@@ -11,7 +11,7 @@ export const load: PageServerLoad = async ({ fetch, url, setHeaders, platform: c
 
 	const ctx = serverLoadContext(fetch, cfPlatform);
 	const platformId = searchPlatformId(parseUiPlatform(url.searchParams.get('platform')));
-	const period = parseComparePagePeriod(url.searchParams.get('period'));
+	const period = parseComparePeriod(url.searchParams.get('period'));
 	const { a, b } = parseCompareSlugs(
 		url.searchParams.get('a'),
 		url.searchParams.get('b')

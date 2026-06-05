@@ -19,6 +19,11 @@ describe('parseChannelDetailQuery', () => {
 		const url = new URL('http://x/v1/channels/ninja?platform=facebook');
 		expect(parseChannelDetailQuery(url)).toEqual({ ok: false, error: 'invalid_platform' });
 	});
+
+	it('rejects invalid period', () => {
+		const url = new URL('http://x/v1/channels/ninja?platform=twitch&period=365d');
+		expect(parseChannelDetailQuery(url)).toEqual({ ok: false, error: 'invalid_period' });
+	});
 });
 
 describe('buildChannelDetailResponse', () => {

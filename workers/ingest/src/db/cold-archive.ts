@@ -89,10 +89,10 @@ async function fetchPrunableChannelRollups(
 	db: D1Database,
 	cutoff: string,
 	limit: number
-): Promise<ChannelRollupArchiveRow[]> {
+): Promise<ChannelRollupRowWithId[]> {
 	const { results } = await db
 		.prepare(
-			`SELECT channel_id, date, hours_watched, average_viewers, peak_viewers,
+			`SELECT rowid, channel_id, date, hours_watched, average_viewers, peak_viewers,
               airtime_minutes, stream_count, followers_delta
        FROM channel_daily_rollups
        WHERE date < ?
@@ -100,25 +100,24 @@ async function fetchPrunableChannelRollups(
        LIMIT ?`
 		)
 		.bind(cutoff, limit)
-		.all<ChannelRollupArchiveRow>();
+		.all<ChannelRollupRowWithId>();
 
 	return results ?? [];
 }
 
-async function deleteChannelRollupsBatch(
+type ChannelRollupRowWithId = ChannelRollupArchiveRow & { rowid: number };
+
+async function deleteRollupsByRowid(
 	db: D1Database,
-	rows: ChannelRollupArchiveRow[]
+	table: 'channel_daily_rollups' | 'game_daily_rollups',
+	rowids: number[]
 ): Promise<number> {
-	if (rows.length === 0) return 0;
-	let totalDeleted = 0;
-	for (const row of rows) {
-		const result = await db
-			.prepare(`DELETE FROM channel_daily_rollups WHERE channel_id = ? AND date = ?`)
-			.bind(row.channel_id, row.date)
-			.run();
-		totalDeleted += result.meta?.changes ?? 0;
-	}
-	return totalDeleted;
+	if (rowids.length === 0) return 0;
+	const result = await db
+		.prepare(`DELETE FROM ${table} WHERE rowid IN (SELECT value FROM json_each(?))`)
+		.bind(JSON.stringify(rowids))
+		.run();
+	return result.meta?.changes ?? 0;
 }
 
 async function archiveAndPruneChannelRollups(
@@ -133,9 +132,17 @@ async function archiveAndPruneChannelRollups(
 		const rows = await fetchPrunableChannelRollups(db, cutoff, DAILY_ROLLUP_DELETE_BATCH_SIZE);
 		if (rows.length === 0) break;
 
-		await archiveRowsToColdStorage(env, 'channel_daily_rollups', rows);
+		await archiveRowsToColdStorage(
+			env,
+			'channel_daily_rollups',
+			rows.map(({ rowid: _rowid, ...row }) => row)
+		);
 
-		totalDeleted += await deleteChannelRollupsBatch(db, rows);
+		totalDeleted += await deleteRollupsByRowid(
+			db,
+			'channel_daily_rollups',
+			rows.map((r) => r.rowid)
+		);
 		if (rows.length < DAILY_ROLLUP_DELETE_BATCH_SIZE) break;
 	}
 
@@ -146,10 +153,10 @@ async function fetchPrunableGameRollups(
 	db: D1Database,
 	cutoff: string,
 	limit: number
-): Promise<GameRollupArchiveRow[]> {
+): Promise<GameRollupRowWithId[]> {
 	const { results } = await db
 		.prepare(
-			`SELECT game_category_id, date, hours_watched, average_viewers, peak_viewers,
+			`SELECT rowid, game_category_id, date, hours_watched, average_viewers, peak_viewers,
               airtime_minutes, live_channels
        FROM game_daily_rollups
        WHERE date < ?
@@ -157,23 +164,12 @@ async function fetchPrunableGameRollups(
        LIMIT ?`
 		)
 		.bind(cutoff, limit)
-		.all<GameRollupArchiveRow>();
+		.all<GameRollupRowWithId>();
 
 	return results ?? [];
 }
 
-async function deleteGameRollupsBatch(db: D1Database, rows: GameRollupArchiveRow[]): Promise<number> {
-	if (rows.length === 0) return 0;
-	let totalDeleted = 0;
-	for (const row of rows) {
-		const result = await db
-			.prepare(`DELETE FROM game_daily_rollups WHERE game_category_id = ? AND date = ?`)
-			.bind(row.game_category_id, row.date)
-			.run();
-		totalDeleted += result.meta?.changes ?? 0;
-	}
-	return totalDeleted;
-}
+type GameRollupRowWithId = GameRollupArchiveRow & { rowid: number };
 
 async function archiveAndPruneGameRollups(
 	db: D1Database,
@@ -187,9 +183,17 @@ async function archiveAndPruneGameRollups(
 		const rows = await fetchPrunableGameRollups(db, cutoff, DAILY_ROLLUP_DELETE_BATCH_SIZE);
 		if (rows.length === 0) break;
 
-		await archiveRowsToColdStorage(env, 'game_daily_rollups', rows);
+		await archiveRowsToColdStorage(
+			env,
+			'game_daily_rollups',
+			rows.map(({ rowid: _rowid, ...row }) => row)
+		);
 
-		totalDeleted += await deleteGameRollupsBatch(db, rows);
+		totalDeleted += await deleteRollupsByRowid(
+			db,
+			'game_daily_rollups',
+			rows.map((r) => r.rowid)
+		);
 		if (rows.length < DAILY_ROLLUP_DELETE_BATCH_SIZE) break;
 	}
 

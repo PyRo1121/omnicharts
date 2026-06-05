@@ -72,4 +72,20 @@ kick,xqc`);
 		expect(result.errors).toEqual([]);
 		expect(result.rows).toHaveLength(2);
 	});
+
+	it('parses quoted slug fields', () => {
+		const result = parseWatchlistCsv('platform,slug\ntwitch,"ninja, jr"');
+
+		expect(result.errors).toEqual([]);
+		expect(result.rows).toEqual([{ line: 2, platform: 'twitch', slug: 'ninja, jr' }]);
+	});
+
+	it('reports missing platform', () => {
+		const result = parseWatchlistCsv('platform,slug\n,ninja');
+
+		expect(result.rows).toEqual([]);
+		expect(result.errors).toEqual([
+			expect.objectContaining({ line: 2, code: 'missing_platform' })
+		]);
+	});
 });

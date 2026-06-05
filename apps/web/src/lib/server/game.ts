@@ -5,6 +5,7 @@ import {
 	type GameTopChannelItem
 } from '@omnicharts/rollup';
 import { getIngestBaseUrl } from '$lib/server/ingest';
+import { periodForApi } from '$lib/server/period-api';
 import type { ChannelDailyPoint } from '$lib/server/channel';
 import type { ServerLoadContext } from '$lib/server/load-context';
 import { webRankingEligibility } from '$lib/server/ranking-env';
@@ -60,11 +61,6 @@ type IngestGameResponse = {
 
 export function parseGamePeriod(raw: string | null): { period: Period; periodNote: string | null } {
 	return parseUiPeriod(raw);
-}
-
-function periodForApi(period: Period): string {
-	if (period === '24h' || period === '7d' || period === '30d' || period === '90d') return period;
-	return '7d';
 }
 
 function mapDaily(rows: IngestGameDaily[] | undefined): ChannelDailyPoint[] {

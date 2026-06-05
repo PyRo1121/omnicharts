@@ -47,8 +47,8 @@ paths:
               schema:
                 type: string
               example: |
-                rank,slug,display_name,hours_watched,average_viewers,peak_viewers,airtime_hours,stream_count,tracked_since
-                1,caedrel,Caedrel,2173869,45210,120334,48.1,12,2026-03-15T00:00:00Z
+                rank,slug,display_name,avatar_url,hours_watched,average_viewers,peak_viewers,airtime_hours,stream_count,tracked_since
+                1,caedrel,Caedrel,https://static-cdn.jtvnw.net/...,2173869,45210,120334,48.1,12,2026-03-15T00:00:00Z
         '400':
           $ref: '#/components/responses/BadRequest'
 
@@ -62,7 +62,6 @@ paths:
         - $ref: '#/components/parameters/period'
         - $ref: '#/components/parameters/limit'
         - $ref: '#/components/parameters/format'
-        - $ref: '#/components/parameters/language'
       responses:
         '200':
           description: Ranked game list
@@ -105,9 +104,14 @@ paths:
       tags: [channels]
       summary: Side-by-side two-channel rollup compare
       operationId: compareChannels
+      servers:
+        - url: https://api.omnicharts.com/api/v1
+          description: Pages BFF (production TBD)
+        - url: http://127.0.0.1:4173/api/v1
+          description: Local Pages dev
       description: |
         Rollup reads only — composes two channel detail responses. Web UI at `/compare?a=&b=`.
-        Implemented on Pages at `/api/v1/compare/channels`; ingest HTTP fallback uses two `GET /v1/channels/{slug}` calls.
+        **Not implemented on ingest Worker** — Pages `/api/v1/compare/channels` only; ingest HTTP fallback composes two `GET /v1/channels/{slug}` calls.
       parameters:
         - name: a
           in: query

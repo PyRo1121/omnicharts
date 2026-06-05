@@ -8,11 +8,7 @@ import { getIngestBaseUrl } from '$lib/server/ingest';
 import type { ServerLoadContext } from '$lib/server/load-context';
 import { webRankingEligibility } from '$lib/server/ranking-env';
 import { topChannels, type ChannelRow, type Period } from '$lib/mock/home';
-
-function periodForApi(period: Period): string {
-	if (period === '24h' || period === '7d' || period === '30d' || period === '90d') return period;
-	return '7d';
-}
+import { periodForApi } from '$lib/server/period-api';
 
 export type RankingsSource = 'live' | 'mock' | 'unavailable';
 

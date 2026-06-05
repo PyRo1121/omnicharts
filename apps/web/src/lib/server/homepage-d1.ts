@@ -18,6 +18,7 @@ import type { GameRankingsLoad } from '$lib/server/game-rankings';
 import type { WebRankingEnv } from '$lib/server/ranking-env';
 import { webRankingEligibility } from '$lib/server/ranking-env';
 import type { Period } from '$lib/mock/home';
+import { periodForApi } from '$lib/server/period-api';
 
 /** Homepage: one D1 batch for counts + rollup rankings (docs/11). */
 export type HomepageD1Snapshot = {
@@ -27,11 +28,6 @@ export type HomepageD1Snapshot = {
 	channelRankings: ChannelRankingsLoad;
 	gameRankings: GameRankingsLoad;
 };
-
-function periodForApi(period: Period): string {
-	if (period === '24h' || period === '7d' || period === '30d' || period === '90d') return period;
-	return '7d';
-}
 
 export async function loadHomepageFromD1(
 	db: D1Database,

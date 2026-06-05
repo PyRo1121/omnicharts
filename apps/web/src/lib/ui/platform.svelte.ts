@@ -1,3 +1,5 @@
+import { parseOptionalLanguageParam } from '@omnicharts/domain';
+
 export type PlatformId = 'all' | 'twitch' | 'kick' | 'youtube';
 
 export type DataSource = 'live' | 'mock' | 'unavailable';
@@ -72,10 +74,11 @@ export const rankingLanguages = [
 	{ code: 'zh', label: 'Chinese' }
 ] as const;
 
+/** UI language filter — accepts any domain-valid BCP 47-lite tag; dropdown shows `rankingLanguages` subset. */
 export function parseUiLanguage(raw: string | null): string | null {
-	const normalized = raw?.trim().toLowerCase() ?? '';
-	if (!normalized) return null;
-	return rankingLanguages.some((l) => l.code === normalized) ? normalized : null;
+	const parsed = parseOptionalLanguageParam(raw);
+	if (!parsed.ok) return null;
+	return parsed.language;
 }
 
 export function languageFilterNote(platform: PlatformId, language: string | null): string | null {

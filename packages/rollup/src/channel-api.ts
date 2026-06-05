@@ -1,6 +1,7 @@
 import {
 	PLATFORM_TWITCH,
 	isPlatformId,
+	isRankingPeriod,
 	parseRankingPeriod,
 	periodToDays,
 	type RankingPeriod
@@ -89,7 +90,7 @@ export async function resolveChannelSlug(
 	return null;
 }
 
-export type ChannelDetailQueryError = 'invalid_platform';
+export type ChannelDetailQueryError = 'invalid_platform' | 'invalid_period';
 
 export type ParsedChannelDetailQuery =
 	| { ok: true; platform: string; period: RankingPeriod; slug: string }
@@ -100,7 +101,11 @@ export function parseChannelDetailQuery(url: URL): ParsedChannelDetailQuery {
 	if (!isPlatformId(platformRaw)) {
 		return { ok: false, error: 'invalid_platform' };
 	}
-	const period = parseRankingPeriod(url.searchParams.get('period'));
+	const periodRaw = url.searchParams.get('period');
+	if (periodRaw != null && periodRaw !== '' && !isRankingPeriod(periodRaw)) {
+		return { ok: false, error: 'invalid_period' };
+	}
+	const period = parseRankingPeriod(periodRaw);
 	const parts = url.pathname.split('/').filter(Boolean);
 	const slug = decodeURIComponent(parts[parts.length - 1] ?? '');
 	return { ok: true, platform: platformRaw, period, slug };
