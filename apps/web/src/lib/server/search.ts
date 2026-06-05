@@ -1,7 +1,10 @@
+import type { PlatformId } from '@omnicharts/domain';
 import { formatHoursWatched } from '@omnicharts/rollup';
 import { getIngestBaseUrl } from '$lib/server/ingest';
 import { loadChannelDetail } from '$lib/server/channel';
 import type { ServerLoadContext } from '$lib/server/load-context';
+
+const SEARCH_HW_PLATFORMS = new Set<PlatformId>(['twitch', 'kick']);
 
 export type SearchResultRow = {
 	id: string;
@@ -65,7 +68,7 @@ export async function enrichSearchResultsWithRollups(
 
 	return Promise.all(
 		results.map(async (row) => {
-			if (row.platform !== 'twitch') return row;
+			if (!SEARCH_HW_PLATFORMS.has(row.platform as PlatformId)) return row;
 
 			const detail = await loadChannelDetail(ctx, row.slug, row.platform, '7d');
 			const hoursWatched7d =

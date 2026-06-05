@@ -22,7 +22,7 @@ function searchLoadArgs(q: string, platform: string) {
 }
 
 describe('search page load — platform=kick', () => {
-	it('forwards platform=kick to ingest and returns results without rollup HW', async () => {
+	it('forwards platform=kick to ingest and enriches results with rollup HW', async () => {
 		const fetchFn = vi.fn().mockImplementation((input: string | URL) => {
 			const url = String(input);
 			if (url.includes('/v1/search/channels')) {
@@ -39,6 +39,31 @@ describe('search page load — platform=kick', () => {
 								platform_id: 'kick'
 							}
 						]
+					})
+				});
+			}
+			if (url.includes('/v1/channels/xqc') && url.includes('platform=kick')) {
+				return Promise.resolve({
+					ok: true,
+					status: 200,
+					json: async () => ({
+						platform: 'kick',
+						slug: 'xqc',
+						display_name: 'xQc',
+						avatar_url: null,
+						tracked_since: '2026-01-01T00:00:00Z',
+						ingest_state: 'tracked',
+						follower_count: 100,
+						description: null,
+						period: '7d',
+						totals: {
+							hours_watched: 12_500,
+							average_viewers: 5,
+							peak_viewers: 20,
+							airtime_hours: 2,
+							stream_count: 3,
+							followers_gain: null
+						}
 					})
 				});
 			}
@@ -63,7 +88,7 @@ describe('search page load — platform=kick', () => {
 		expect(result.results[0]).toMatchObject({
 			slug: 'xqc',
 			platform: 'kick',
-			hoursWatched7d: null
+			hoursWatched7d: '12.5K'
 		});
 	});
 
