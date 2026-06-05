@@ -3,7 +3,7 @@ import {
 	markChannelsDormantWithoutRecentActivity,
 	markChannelRetired,
 	batchMarkChannelsRetired,
-	recordSlugChangeIfNeeded
+	recordSlugChangeIfNeeded,
 } from '../src/db/channel-state';
 import { d1BatchFromDb } from './helpers/d1-batch-mock';
 
@@ -19,7 +19,7 @@ describe('channel-state', () => {
 				expect(sql).toContain("ingest_state = 'dormant'");
 				expect(sql).toContain("ingest_state = 'tracked'");
 				return { bind: () => ({ run }) };
-			}
+			},
 		} as unknown as D1Database;
 
 		const n = await markChannelsDormantWithoutRecentActivity(db, 30);
@@ -30,7 +30,7 @@ describe('channel-state', () => {
 		const db = {
 			prepare() {
 				return { bind: () => ({ run: async () => ({ meta: {} }) }) };
-			}
+			},
 		} as unknown as D1Database;
 		expect(await markChannelsDormantWithoutRecentActivity(db, 7)).toBe(0);
 	});
@@ -45,20 +45,20 @@ describe('channel-state', () => {
 						expect(args[0]).toBe('twitch');
 						expect(args[1]).toBe('123');
 						return { run };
-					}
+					},
 				};
 			},
 			batch: d1BatchFromDb({
-				prepare(sql: string) {
+				prepare(_sql: string) {
 					return {
 						bind: (...args: unknown[]) => {
 							expect(args[0]).toBe('twitch');
 							expect(args[1]).toBe('123');
 							return { run };
-						}
+						},
 					};
-				}
-			})
+				},
+			}),
 		} as unknown as D1Database;
 
 		await markChannelRetired(db, '123');
@@ -78,7 +78,7 @@ describe('channel-state', () => {
 			},
 			async batch(statements: unknown[]) {
 				batches.push(statements);
-			}
+			},
 		} as unknown as D1Database;
 
 		expect(await batchMarkChannelsRetired(db, ['111', '222'])).toBe(2);
@@ -91,7 +91,7 @@ describe('channel-state', () => {
 		await recordSlugChangeIfNeeded(db, {
 			channelId: 'ch-1',
 			oldSlug: 'alpha',
-			newSlug: 'alpha'
+			newSlug: 'alpha',
 		});
 		expect(db.prepare).not.toHaveBeenCalled();
 	});
@@ -106,15 +106,15 @@ describe('channel-state', () => {
 						expect(args[1]).toBe('old-name');
 						expect(args[2]).toBe('new-name');
 						return { run };
-					}
+					},
 				};
-			}
+			},
 		} as unknown as D1Database;
 
 		await recordSlugChangeIfNeeded(db, {
 			channelId: 'ch-1',
 			oldSlug: 'old-name',
-			newSlug: 'new-name'
+			newSlug: 'new-name',
 		});
 		expect(run).toHaveBeenCalled();
 	});

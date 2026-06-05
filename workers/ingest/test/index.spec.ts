@@ -1,11 +1,4 @@
-import {
-	env,
-	createExecutionContext,
-	waitOnExecutionContext,
-	createScheduledController,
-	createMessageBatch,
-	SELF,
-} from 'cloudflare:test';
+import { env, createExecutionContext, waitOnExecutionContext, createScheduledController, createMessageBatch, SELF } from 'cloudflare:test';
 import { describe, it, expect, vi } from 'vitest';
 import worker from '../src/index';
 import { TWITCH_CRON, MULTI_PLATFORM_CRON } from '../src/cron-messages';
@@ -46,7 +39,7 @@ describe('ingest worker', () => {
 		const scheduledEnv = { ...env, INGEST_COVERAGE_MODE: 'full' } as Env;
 		const ctrl = createScheduledController({
 			scheduledTime: new Date(1_000),
-			cron: TWITCH_CRON
+			cron: TWITCH_CRON,
 		});
 		const ctx = createExecutionContext();
 		await worker.scheduled(ctrl, scheduledEnv, ctx);
@@ -54,10 +47,7 @@ describe('ingest worker', () => {
 		expect(sendBatch).toHaveBeenCalledOnce();
 		const batch = sendBatch.mock.calls[0]?.[0] as { body: { type: string } }[];
 		expect(batch).toHaveLength(2);
-		expect(batch.map((m) => m.body.type)).toEqual([
-			'poll_twitch_sweep',
-			'poll_twitch_reconcile'
-		]);
+		expect(batch.map((m) => m.body.type)).toEqual(['poll_twitch_sweep', 'poll_twitch_reconcile']);
 		sendBatch.mockRestore();
 	});
 
@@ -67,7 +57,7 @@ describe('ingest worker', () => {
 			.mockResolvedValue({ messages: [] } as Awaited<ReturnType<Env['INGEST_QUEUE']['sendBatch']>>);
 		const ctrl = createScheduledController({
 			scheduledTime: new Date(1_000),
-			cron: MULTI_PLATFORM_CRON
+			cron: MULTI_PLATFORM_CRON,
 		});
 		const ctx = createExecutionContext();
 		await worker.scheduled(ctrl, env, ctx);
@@ -85,8 +75,8 @@ describe('ingest worker', () => {
 				id: 'bad-1',
 				body: { type: 'not_a_real_job' },
 				timestamp: new Date(1_000),
-				attempts: 1
-			}
+				attempts: 1,
+			},
 		]);
 		const message = batch.messages[0]!;
 		const ack = vi.spyOn(message, 'ack');
@@ -96,9 +86,6 @@ describe('ingest worker', () => {
 		await waitOnExecutionContext(ctx);
 		expect(ack).toHaveBeenCalledOnce();
 		expect(retry).not.toHaveBeenCalled();
-		expect(warn).toHaveBeenCalledWith(
-			'queue: ack invalid message body (drop)',
-			{ type: 'not_a_real_job' }
-		);
+		expect(warn).toHaveBeenCalledWith('queue: ack invalid message body (drop)', { type: 'not_a_real_job' });
 	});
 });

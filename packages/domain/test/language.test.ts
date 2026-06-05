@@ -1,9 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import {
-	isValidLanguageCode,
-	normalizeLanguageCode,
-	parseOptionalLanguageParam
-} from '../src/language';
+import { isValidLanguageCode, normalizeLanguageCode, parseOptionalLanguageParam } from '../src/language';
 
 describe('normalizeLanguageCode', () => {
 	test('returns null for absent or blank', () => {
@@ -47,7 +43,7 @@ describe('parseOptionalLanguageParam', () => {
 	test('invalid code returns error', () => {
 		expect(parseOptionalLanguageParam('english')).toEqual({
 			ok: false,
-			error: 'invalid_language'
+			error: 'invalid_language',
 		});
 	});
 });

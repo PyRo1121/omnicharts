@@ -31,12 +31,12 @@ export async function writeCachedTopGames(db: D1Database, games: HelixGame[]): P
 	if (games.length === 0) return;
 	const payload: CachedTopGames = {
 		cachedAt: new Date().toISOString(),
-		games
+		games,
 	};
 	await db
 		.prepare(
 			`INSERT INTO ingest_metadata (key, value) VALUES (?, ?)
-       ON CONFLICT(key) DO UPDATE SET value = excluded.value`
+       ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
 		)
 		.bind(TWITCH_TOP_GAMES_CACHE_KEY, JSON.stringify(payload))
 		.run();
@@ -46,7 +46,7 @@ export async function writeCachedTopGames(db: D1Database, games: HelixGame[]): P
 export async function resolveTopGamesForCoverage(
 	client: TwitchHelixClient,
 	db: D1Database,
-	first: number
+	first: number,
 ): Promise<{ games: HelixGame[]; helixPointsUsed: number }> {
 	const cached = await readCachedTopGames(db);
 	if (cached && cached.length > 0) {

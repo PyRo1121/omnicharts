@@ -2,19 +2,13 @@ import { ingestNonFatalError } from '../../log';
 import { requireDb } from '../../worker-bindings';
 import { isEventSubConfigured } from './env';
 import { TwitchEventSubApi } from './subscriptions-api';
-import {
-	deleteEventSubSubscriptionsForBroadcaster,
-	listEventSubSubscriptionsForBroadcaster
-} from './subscriptions-db';
+import { deleteEventSubSubscriptionsForBroadcaster, listEventSubSubscriptionsForBroadcaster } from './subscriptions-db';
 
 /**
  * Delete Helix EventSub subs when a channel is retired (404 on Helix user).
  * Best-effort — logs and continues on API errors.
  */
-export async function deleteEventSubForRetiredChannels(
-	env: Env,
-	platformChannelIds: string[]
-): Promise<number> {
+export async function deleteEventSubForRetiredChannels(env: Env, platformChannelIds: string[]): Promise<number> {
 	if (platformChannelIds.length === 0 || !isEventSubConfigured(env)) return 0;
 
 	const db = requireDb(env);

@@ -11,7 +11,7 @@ import {
 	TWITCH_TRACKED_COUNT_SQL,
 	type ChannelRollupQueryRow,
 	type D1BatchResult,
-	type GameRollupQueryRow
+	type GameRollupQueryRow,
 } from '@omnicharts/rollup';
 import type { ChannelRankingsLoad } from '$lib/server/rankings';
 import type { GameRankingsLoad } from '$lib/server/game-rankings';
@@ -34,7 +34,7 @@ export async function loadHomepageFromD1(
 	period: RankingPeriod,
 	channelLimit: number,
 	gameLimit: number,
-	cfEnv: WebRankingEnv | null = null
+	cfEnv: WebRankingEnv | null = null,
 ): Promise<HomepageD1Snapshot> {
 	const apiPeriod = parseRankingPeriod(periodForApi(period));
 	const days = periodToDays(apiPeriod);
@@ -51,25 +51,19 @@ export async function loadHomepageFromD1(
 			days,
 			limit: channelQueryLimit,
 			minAirtimeMinutes: eligibility.minAirtimeMinutes,
-			minAverageViewers: eligibility.minAverageViewers
+			minAverageViewers: eligibility.minAverageViewers,
 		}) as unknown as CfStmt,
 		prepareTopGamesByAverageViewers(db, {
 			platformId: PLATFORM_TWITCH,
 			days,
 			limit: gameLimit,
 			minAirtimeMinutes: eligibility.minAirtimeMinutes,
-			minAverageViewers: eligibility.minAverageViewers
-		}) as unknown as CfStmt
+			minAverageViewers: eligibility.minAverageViewers,
+		}) as unknown as CfStmt,
 	]);
 
-	const channelRows = rankTopChannelsFromRollupRows(
-		(channelsBatch.results ?? []) as ChannelRollupQueryRow[],
-		channelLimit
-	);
-	const gameRows = rankTopGamesFromRollupRows(
-		(gamesBatch.results ?? []) as GameRollupQueryRow[],
-		gameLimit
-	);
+	const channelRows = rankTopChannelsFromRollupRows((channelsBatch.results ?? []) as ChannelRollupQueryRow[], channelLimit);
+	const gameRows = rankTopGamesFromRollupRows((gamesBatch.results ?? []) as GameRollupQueryRow[], gameLimit);
 
 	return {
 		status: 'ok',
@@ -86,8 +80,8 @@ export async function loadHomepageFromD1(
 				platform: 'twitch',
 				avatarUrl: item.avatarUrl ?? '',
 				metric: formatHoursWatched(item.hoursWatched),
-				metricLabel: 'Hours watched'
-			}))
+				metricLabel: 'Hours watched',
+			})),
 		},
 		gameRankings: {
 			source: 'live',
@@ -100,8 +94,8 @@ export async function loadHomepageFromD1(
 				platform: 'twitch',
 				boxArtUrl: '',
 				metric: formatCompactMetric(item.averageViewers),
-				metricLabel: 'Avg viewers'
-			}))
-		}
+				metricLabel: 'Avg viewers',
+			})),
+		},
 	};
 }

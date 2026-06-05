@@ -3,7 +3,7 @@ import {
 	DISCOVERY_MAX_PAGES_PER_GAME,
 	ENRICH_MAX_CHANNELS_PER_RUN,
 	TOP_GAMES_FIRST,
-	minViewersFromEnv
+	minViewersFromEnv,
 } from './config';
 import { runTwitchProfileEnrichment } from './enrich-profiles';
 import { shouldContinueHelixPagination } from './helix-pagination';
@@ -19,10 +19,7 @@ export type TwitchDiscoveryOptions = {
 	quick?: boolean;
 };
 
-export async function runTwitchDiscovery(
-	env: Env,
-	opts: TwitchDiscoveryOptions = {}
-): Promise<DiscoveryStats> {
+export async function runTwitchDiscovery(env: Env, opts: TwitchDiscoveryOptions = {}): Promise<DiscoveryStats> {
 	const db = requireDb(env);
 	const client = new TwitchHelixClient(env);
 	const minViewers = minViewersFromEnv(env);
@@ -32,13 +29,13 @@ export async function runTwitchDiscovery(
 	const pageStats = {
 		streamsSeen: 0,
 		channelsIngested: 0,
-		duplicatesSkipped: 0
+		duplicatesSkipped: 0,
 	};
 	const stats: DiscoveryStats = {
 		gamesScanned: 0,
 		pagesFetched: 0,
 		streamsSeen: 0,
-		channelsUpserted: 0
+		channelsUpserted: 0,
 	};
 
 	const topGames = await client.getTopGames(TOP_GAMES_FIRST);
@@ -55,15 +52,13 @@ export async function runTwitchDiscovery(
 		for (let page = 0; page < maxPagesPerGame; page++) {
 			const pageResult = await client.getStreamsByGameId(game.id, {
 				first: 100,
-				after: cursor
+				after: cursor,
 			});
 			stats.pagesFetched++;
 
 			const streams = pageResult.data ?? [];
 			if (streams.length === 0) {
-				if (
-					shouldContinueHelixPagination(streams, pageResult.pagination, consecutiveEmptyPages)
-				) {
+				if (shouldContinueHelixPagination(streams, pageResult.pagination, consecutiveEmptyPages)) {
 					consecutiveEmptyPages++;
 					cursor = pageResult.pagination!.cursor;
 					continue;
@@ -72,13 +67,7 @@ export async function runTwitchDiscovery(
 			}
 			consecutiveEmptyPages = 0;
 
-			const { pageMaxViewers } = await ingestStreamPage(
-				env,
-				streams,
-				minViewers,
-				seenUserIds,
-				pageStats
-			);
+			const { pageMaxViewers } = await ingestStreamPage(env, streams, minViewers, seenUserIds, pageStats);
 			stats.streamsSeen = pageStats.streamsSeen;
 			stats.channelsUpserted = pageStats.channelsIngested;
 

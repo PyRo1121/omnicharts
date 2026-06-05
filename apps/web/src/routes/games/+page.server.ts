@@ -10,10 +10,7 @@ export const load: PageServerLoad = async ({ fetch, url, setHeaders, platform: c
 	applyRollupPageCache(setHeaders);
 
 	const ctx = serverLoadContext(fetch, cfPlatform);
-	const { period, periodNote } = await resolvePeriodContext(
-		url.searchParams.get('period'),
-		ctx.db
-	);
+	const { period, periodNote } = await resolvePeriodContext(url.searchParams.get('period'), ctx.db);
 	const platform = parseUiPlatform(url.searchParams.get('platform'));
 	const mockEnabled = isDevMockEnabled(url.searchParams.get('demo'));
 

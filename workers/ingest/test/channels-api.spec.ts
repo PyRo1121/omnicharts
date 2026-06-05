@@ -43,14 +43,14 @@ describe('buildRankingsChannelsResponse', () => {
 				average_viewers: 200,
 				airtime_minutes: 1500,
 				peak_viewers: 1000,
-				stream_count: 4
-			}
+				stream_count: 4,
+			},
 		]);
 
 		const res = await buildRankingsChannelsResponse({} as D1Database, {
 			platform: 'kick',
 			period: '7d',
-			limit: 20
+			limit: 20,
 		});
 
 		expect(res.platform).toBe('kick');
@@ -69,14 +69,14 @@ describe('buildRankingsChannelsResponse', () => {
 				average_viewers: 50.6,
 				airtime_minutes: 750,
 				peak_viewers: 500,
-				stream_count: 3
-			}
+				stream_count: 3,
+			},
 		]);
 
 		const res = await buildRankingsChannelsResponse({} as D1Database, {
 			platform: 'twitch',
 			period: '7d',
-			limit: 20
+			limit: 20,
 		});
 
 		expect(res.items[0]).toMatchObject({
@@ -87,7 +87,7 @@ describe('buildRankingsChannelsResponse', () => {
 			peak_viewers: 500,
 			airtime_hours: 12.5,
 			stream_count: 3,
-			tracked_since: '2026-03-01T00:00:00.000Z'
+			tracked_since: '2026-03-01T00:00:00.000Z',
 		});
 		vi.restoreAllMocks();
 	});

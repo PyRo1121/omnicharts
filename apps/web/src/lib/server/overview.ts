@@ -52,20 +52,20 @@ function unavailableOverviewStats(): OverviewStat[] {
 			label: 'Channels tracked',
 			value: '—',
 			hint: 'Start ingest and run discover for counts',
-			source: 'unavailable'
+			source: 'unavailable',
 		},
 		{
 			label: 'Live now',
 			value: '—',
 			hint: 'Requires ingest /health',
-			source: 'unavailable'
+			source: 'unavailable',
 		},
 		{
 			label: 'Top 20 ranked (7d)',
 			value: '—',
 			hint: 'Requires rollup-backed rankings',
-			source: 'unavailable'
-		}
+			source: 'unavailable',
+		},
 	];
 }
 
@@ -75,40 +75,38 @@ function rollupPlatformHealthUnavailableStats(): OverviewStat[] {
 			label: 'Channels tracked',
 			value: '—',
 			hint: 'Directory metrics ship with ingest health',
-			source: 'unavailable'
+			source: 'unavailable',
 		},
 		{
 			label: 'Live now',
 			value: '—',
 			hint: 'Requires platform ingest health',
-			source: 'unavailable'
-		}
+			source: 'unavailable',
+		},
 	];
 }
 
-function overviewFromD1Snapshot(
-	snapshot: Awaited<ReturnType<typeof loadHomepageFromD1>>
-): OverviewLoad {
+function overviewFromD1Snapshot(snapshot: Awaited<ReturnType<typeof loadHomepageFromD1>>): OverviewLoad {
 	const { channelRankings, gameRankings } = snapshot;
 	const stats: OverviewStat[] = [
 		{
 			label: 'Channels tracked',
 			value: formatCount(snapshot.trackedChannels),
 			hint: 'Twitch ingest state tracked',
-			source: 'live'
+			source: 'live',
 		},
 		{
 			label: 'Live now',
 			value: formatCount(snapshot.channelsLive),
 			hint: 'From latest directory sweep',
-			source: 'live'
+			source: 'live',
 		},
 		{
 			label: 'Top 20 ranked (7d)',
 			value: String(channelRankings.rows.length),
 			hint: 'Channels with rollup HW in period',
-			source: channelRankings.source
-		}
+			source: channelRankings.source,
+		},
 	];
 
 	return {
@@ -119,7 +117,7 @@ function overviewFromD1Snapshot(
 		topChannelName: channelRankings.rows[0]?.displayName ?? null,
 		topGameName: gameRankings.rows[0]?.name ?? null,
 		channelRankings,
-		gameRankings
+		gameRankings,
 	};
 }
 
@@ -127,7 +125,7 @@ async function loadRollupPlatformOverview(
 	ctx: ServerLoadContext,
 	platform: 'kick' | 'youtube',
 	mockEnabled = false,
-	opts: OverviewLoadOptions = {}
+	opts: OverviewLoadOptions = {},
 ): Promise<OverviewLoad> {
 	const period = opts.period ?? '7d';
 	const channelLimit = opts.channelLimit ?? 20;
@@ -135,7 +133,7 @@ async function loadRollupPlatformOverview(
 
 	const [channels, games] = await Promise.all([
 		loadChannelRankings(ctx, platform, period, channelLimit, mockEnabled),
-		loadGameRankings(ctx, platform, period, gameLimit, mockEnabled)
+		loadGameRankings(ctx, platform, period, gameLimit, mockEnabled),
 	]);
 
 	const rankingsLive = channels.source === 'live' || games.source === 'live';
@@ -147,13 +145,13 @@ async function loadRollupPlatformOverview(
 				label: 'Top 20 ranked (7d)',
 				value: '—',
 				hint: 'Requires rollup-backed rankings',
-				source: 'unavailable'
+				source: 'unavailable',
 			}
 		: {
 				label: 'Top 20 ranked (7d)',
 				value: String(channels.rows.length),
 				hint: 'Channels with rollup HW in period',
-				source: channels.source
+				source: channels.source,
 			};
 
 	let healthStats = rollupPlatformHealthUnavailableStats();
@@ -163,27 +161,26 @@ async function loadRollupPlatformOverview(
 	if (rankingsLive) {
 		try {
 			const healthRes = await ctx.fetch(`${getIngestBaseUrl()}/health`, {
-				headers: { accept: 'application/json' }
+				headers: { accept: 'application/json' },
 			});
 			if (healthRes.ok) {
 				const health = (await healthRes.json()) as IngestHealth;
 				const tracked = health.tracked_channels[platform];
 				const live =
-					health.channels_live_by_platform?.[platform] ??
-					(platform === 'kick' || platform === 'youtube' ? 0 : health.channels_live);
+					health.channels_live_by_platform?.[platform] ?? (platform === 'kick' || platform === 'youtube' ? 0 : health.channels_live);
 				healthStats = [
 					{
 						label: 'Channels tracked',
 						value: formatCount(tracked),
 						hint: `${platform === 'kick' ? 'Kick' : 'YouTube'} ingest state tracked`,
-						source: 'live'
+						source: 'live',
 					},
 					{
 						label: 'Live now',
 						value: formatCount(live),
 						hint: 'From latest directory sweep',
-						source: 'live'
-					}
+						source: 'live',
+					},
 				];
 				channelsLive = live;
 				ingestStatus = health.status;
@@ -203,31 +200,23 @@ async function loadRollupPlatformOverview(
 		topChannelName: channels.rows[0]?.displayName ?? null,
 		topGameName: games.rows[0]?.name ?? null,
 		channelRankings: channels,
-		gameRankings: games
+		gameRankings: games,
 	};
 }
 
-export async function loadKickOverview(
-	ctx: ServerLoadContext,
-	mockEnabled = false,
-	opts: OverviewLoadOptions = {}
-): Promise<OverviewLoad> {
+export async function loadKickOverview(ctx: ServerLoadContext, mockEnabled = false, opts: OverviewLoadOptions = {}): Promise<OverviewLoad> {
 	return loadRollupPlatformOverview(ctx, 'kick', mockEnabled, opts);
 }
 
 export async function loadYoutubeOverview(
 	ctx: ServerLoadContext,
 	mockEnabled = false,
-	opts: OverviewLoadOptions = {}
+	opts: OverviewLoadOptions = {},
 ): Promise<OverviewLoad> {
 	return loadRollupPlatformOverview(ctx, 'youtube', mockEnabled, opts);
 }
 
-export async function loadOverview(
-	ctx: ServerLoadContext,
-	mockEnabled = false,
-	opts: OverviewLoadOptions = {}
-): Promise<OverviewLoad> {
+export async function loadOverview(ctx: ServerLoadContext, mockEnabled = false, opts: OverviewLoadOptions = {}): Promise<OverviewLoad> {
 	const period = opts.period ?? '7d';
 	const channelLimit = opts.channelLimit ?? 20;
 	const gameLimit = opts.gameLimit ?? 1;
@@ -245,7 +234,7 @@ export async function loadOverview(
 					stats: mockStats,
 					channelsLive: null,
 					topChannelName: null,
-					topGameName: null
+					topGameName: null,
 				};
 			}
 			return {
@@ -254,14 +243,14 @@ export async function loadOverview(
 				stats: unavailableOverviewStats(),
 				channelsLive: null,
 				topChannelName: null,
-				topGameName: null
+				topGameName: null,
 			};
 		}
 	}
 
 	try {
 		const healthRes = await ctx.fetch(`${getIngestBaseUrl()}/health`, {
-			headers: { accept: 'application/json' }
+			headers: { accept: 'application/json' },
 		});
 		if (!healthRes.ok) {
 			if (mockEnabled) {
@@ -271,7 +260,7 @@ export async function loadOverview(
 					stats: mockStats,
 					channelsLive: null,
 					topChannelName: null,
-					topGameName: null
+					topGameName: null,
 				};
 			}
 			return {
@@ -280,37 +269,36 @@ export async function loadOverview(
 				stats: unavailableOverviewStats(),
 				channelsLive: null,
 				topChannelName: null,
-				topGameName: null
+				topGameName: null,
 			};
 		}
 
 		const health = (await healthRes.json()) as IngestHealth;
 		const [channels, games] = await Promise.all([
 			loadChannelRankings(ctx, 'twitch', period, channelLimit, mockEnabled),
-			loadGameRankings(ctx, 'twitch', period, gameLimit, mockEnabled)
+			loadGameRankings(ctx, 'twitch', period, gameLimit, mockEnabled),
 		]);
 
-		const twitchLive =
-			health.channels_live_by_platform?.twitch ?? health.channels_live;
+		const twitchLive = health.channels_live_by_platform?.twitch ?? health.channels_live;
 		const stats: OverviewStat[] = [
 			{
 				label: 'Channels tracked',
 				value: formatCount(health.tracked_channels.twitch),
 				hint: 'Twitch ingest state tracked',
-				source: 'live'
+				source: 'live',
 			},
 			{
 				label: 'Live now',
 				value: formatCount(twitchLive),
 				hint: 'From latest directory sweep',
-				source: 'live'
+				source: 'live',
 			},
 			{
 				label: 'Top 20 ranked (7d)',
 				value: String(channels.rows.length),
 				hint: 'Channels with rollup HW in period',
-				source: channels.source
-			}
+				source: channels.source,
+			},
 		];
 
 		return {
@@ -321,7 +309,7 @@ export async function loadOverview(
 			topChannelName: channels.rows[0]?.displayName ?? null,
 			topGameName: games.rows[0]?.name ?? null,
 			channelRankings: channels,
-			gameRankings: games
+			gameRankings: games,
 		};
 	} catch {
 		if (mockEnabled) {
@@ -331,7 +319,7 @@ export async function loadOverview(
 				stats: mockStats,
 				channelsLive: null,
 				topChannelName: null,
-				topGameName: null
+				topGameName: null,
 			};
 		}
 		return {
@@ -340,7 +328,7 @@ export async function loadOverview(
 			stats: unavailableOverviewStats(),
 			channelsLive: null,
 			topChannelName: null,
-			topGameName: null
+			topGameName: null,
 		};
 	}
 }

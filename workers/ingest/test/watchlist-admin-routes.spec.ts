@@ -5,8 +5,8 @@ import * as watchlistUpsert from '../src/watchlist/upsert';
 
 const dbStub = {
 	prepare: () => ({
-		bind: () => ({ first: async () => null, run: async () => ({}) })
-	})
+		bind: () => ({ first: async () => null, run: async () => ({}) }),
+	}),
 } as unknown as D1Database;
 
 describe('watchlist admin routes (worker.fetch)', () => {
@@ -19,9 +19,9 @@ describe('watchlist admin routes (worker.fetch)', () => {
 			new Request('http://ingest/admin/watchlist/import', {
 				method: 'POST',
 				headers: { 'content-type': 'text/csv' },
-				body: 'platform,slug\ntwitch,ninja'
+				body: 'platform,slug\ntwitch,ninja',
 			}),
-			{ ADMIN_API_KEY: 'secret', DB: dbStub } as Env
+			{ ADMIN_API_KEY: 'secret', DB: dbStub } as Env,
 		);
 		expect(res.status).toBe(401);
 	});
@@ -32,11 +32,11 @@ describe('watchlist admin routes (worker.fetch)', () => {
 				method: 'POST',
 				headers: {
 					'X-Admin-Api-Key': 'secret',
-					'content-type': 'text/csv'
+					'content-type': 'text/csv',
 				},
-				body: ''
+				body: '',
 			}),
-			{ ADMIN_API_KEY: 'secret', DB: dbStub } as Env
+			{ ADMIN_API_KEY: 'secret', DB: dbStub } as Env,
 		);
 		expect(res.status).toBe(400);
 		const body = (await res.json()) as { error: { code: string } };
@@ -49,11 +49,11 @@ describe('watchlist admin routes (worker.fetch)', () => {
 				method: 'POST',
 				headers: {
 					'X-Admin-Api-Key': 'secret',
-					'content-type': 'text/csv'
+					'content-type': 'text/csv',
 				},
-				body: 'platform,slug\ntwitch,ninja'
+				body: 'platform,slug\ntwitch,ninja',
 			}),
-			{ ADMIN_API_KEY: 'secret', DB: dbStub } as Env
+			{ ADMIN_API_KEY: 'secret', DB: dbStub } as Env,
 		);
 
 		expect(res.status).toBe(200);
@@ -77,14 +77,14 @@ describe('watchlist admin routes (worker.fetch)', () => {
 				broadcaster_type: 'partner',
 				description: '',
 				profile_image_url: 'https://example.com/ninja.jpg',
-				created_at: '2011-01-01T00:00:00Z'
-			}
+				created_at: '2011-01-01T00:00:00Z',
+			},
 		]);
 		vi.spyOn(watchlistUpsert, 'upsertTwitchChannelFromUser').mockResolvedValue({
 			channelId: 'twitch-ch-123',
 			created: true,
 			promoted: false,
-			skipped: false
+			skipped: false,
 		});
 
 		const res = await worker.fetch(
@@ -92,16 +92,16 @@ describe('watchlist admin routes (worker.fetch)', () => {
 				method: 'POST',
 				headers: {
 					'X-Admin-Api-Key': 'secret',
-					'content-type': 'text/csv'
+					'content-type': 'text/csv',
 				},
-				body: 'platform,slug\ntwitch,ninja'
+				body: 'platform,slug\ntwitch,ninja',
 			}),
 			{
 				ADMIN_API_KEY: 'secret',
 				TWITCH_CLIENT_ID: 'id',
 				TWITCH_CLIENT_SECRET: 'sec',
-				DB: dbStub
-			} as Env
+				DB: dbStub,
+			} as Env,
 		);
 
 		expect(res.status).toBe(200);

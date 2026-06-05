@@ -12,7 +12,7 @@ export type UpsertYoutubeChannelResult = {
 export async function upsertYoutubeChannel(
 	db: D1Database,
 	lookup: YoutubeChannelLookup,
-	opts: { ingestState?: 'discovered' | 'tracked'; promoteToTracked?: boolean } = {}
+	opts: { ingestState?: 'discovered' | 'tracked'; promoteToTracked?: boolean } = {},
 ): Promise<UpsertYoutubeChannelResult> {
 	const now = nowIso();
 	const id = `youtube-ch-${lookup.platformChannelId}`;
@@ -22,7 +22,7 @@ export async function upsertYoutubeChannel(
 	const existing = await db
 		.prepare(
 			`SELECT id, slug FROM channels
-       WHERE platform_id = ? AND platform_channel_id = ?`
+       WHERE platform_id = ? AND platform_channel_id = ?`,
 		)
 		.bind(PLATFORM_YOUTUBE, lookup.platformChannelId)
 		.first<{ id: string; slug: string }>();
@@ -40,17 +40,9 @@ export async function upsertYoutubeChannel(
              WHEN ? THEN 'tracked'
              ELSE channels.ingest_state
            END
-         WHERE id = ? AND platform_id = ?`
+         WHERE id = ? AND platform_id = ?`,
 			)
-			.bind(
-				lookup.slug,
-				lookup.displayName,
-				lookup.avatarUrl,
-				now,
-				promoteToTracked ? 1 : 0,
-				existing.id,
-				PLATFORM_YOUTUBE
-			)
+			.bind(lookup.slug, lookup.displayName, lookup.avatarUrl, now, promoteToTracked ? 1 : 0, existing.id, PLATFORM_YOUTUBE)
 			.run();
 
 		return { id: existing.id, slug: lookup.slug, created: false };
@@ -61,19 +53,9 @@ export async function upsertYoutubeChannel(
 			`INSERT INTO channels (
          id, platform_id, platform_channel_id, slug, display_name,
          avatar_url, first_observed_at, last_seen_at, ingest_state
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		)
-		.bind(
-			id,
-			PLATFORM_YOUTUBE,
-			lookup.platformChannelId,
-			lookup.slug,
-			lookup.displayName,
-			lookup.avatarUrl,
-			now,
-			now,
-			ingestState
-		)
+		.bind(id, PLATFORM_YOUTUBE, lookup.platformChannelId, lookup.slug, lookup.displayName, lookup.avatarUrl, now, now, ingestState)
 		.run();
 
 	return { id, slug: lookup.slug, created: true };

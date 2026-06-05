@@ -20,10 +20,10 @@ function mockDbForSlugResolve(canonical: { slug: string; from_history: boolean }
 						}
 						if (call === 1) return null;
 						return { new_slug: canonical.slug };
-					})
-				})
+					}),
+				}),
 			};
-		})
+		}),
 	} as unknown as D1Database;
 }
 
@@ -35,10 +35,7 @@ describe('public HTTP edge cases (worker.fetch)', () => {
 	});
 
 	it('GET /v1/rankings/channels?period=365d returns 400 invalid_period', async () => {
-		const res = await worker.fetch(
-			new Request('http://ingest/v1/rankings/channels?period=365d'),
-			{ DB: {} as D1Database } as Env
-		);
+		const res = await worker.fetch(new Request('http://ingest/v1/rankings/channels?period=365d'), { DB: {} as D1Database } as Env);
 		expect(res.status).toBe(400);
 		const body = (await res.json()) as { error: { code: string } };
 		expect(body.error.code).toBe('invalid_period');
@@ -46,10 +43,7 @@ describe('public HTTP edge cases (worker.fetch)', () => {
 
 	it('GET /v1/rankings/channels?language=english returns 400 invalid_language', async () => {
 		const buildSpy = vi.spyOn(channelsApi, 'buildRankingsChannelsResponse');
-		const res = await worker.fetch(
-			new Request('http://ingest/v1/rankings/channels?language=english'),
-			{ DB: {} as D1Database } as Env
-		);
+		const res = await worker.fetch(new Request('http://ingest/v1/rankings/channels?language=english'), { DB: {} as D1Database } as Env);
 		expect(res.status).toBe(400);
 		const body = (await res.json()) as { error: { code: string } };
 		expect(body.error.code).toBe('invalid_language');
@@ -57,19 +51,16 @@ describe('public HTTP edge cases (worker.fetch)', () => {
 	});
 
 	it('POST /admin/twitch/discover returns 401 when ADMIN_API_KEY set and header missing', async () => {
-		const res = await worker.fetch(
-			new Request('http://ingest/admin/twitch/discover', { method: 'POST' }),
-			{ ADMIN_API_KEY: 'secret', DB: {} as D1Database } as Env
-		);
+		const res = await worker.fetch(new Request('http://ingest/admin/twitch/discover', { method: 'POST' }), {
+			ADMIN_API_KEY: 'secret',
+			DB: {} as D1Database,
+		} as Env);
 		expect(res.status).toBe(401);
 	});
 
 	it('GET /v1/channels/resolve returns canonical slug payload (from_history)', async () => {
 		const db = mockDbForSlugResolve({ slug: 'newname', from_history: true });
-		const res = await worker.fetch(
-			new Request('http://ingest/v1/channels/resolve?slug=oldname&platform=twitch'),
-			{ DB: db } as Env
-		);
+		const res = await worker.fetch(new Request('http://ingest/v1/channels/resolve?slug=oldname&platform=twitch'), { DB: db } as Env);
 		expect(res.status).toBe(200);
 		const body = (await res.json()) as {
 			platform: string;
@@ -79,15 +70,12 @@ describe('public HTTP edge cases (worker.fetch)', () => {
 		expect(body).toEqual({
 			platform: 'twitch',
 			slug: 'newname',
-			from_history: true
+			from_history: true,
 		});
 	});
 
 	it('GET /v1/rankings/games?period=365d returns 400 invalid_period', async () => {
-		const res = await worker.fetch(
-			new Request('http://ingest/v1/rankings/games?period=365d'),
-			{ DB: {} as D1Database } as Env
-		);
+		const res = await worker.fetch(new Request('http://ingest/v1/rankings/games?period=365d'), { DB: {} as D1Database } as Env);
 		expect(res.status).toBe(400);
 		const body = (await res.json()) as { error: { code: string } };
 		expect(body.error.code).toBe('invalid_period');
@@ -98,7 +86,7 @@ describe('public HTTP edge cases (worker.fetch)', () => {
 			platform: 'twitch',
 			period: '7d',
 			updated_at: '2026-06-03T00:00:00.000Z',
-			items: []
+			items: [],
 		});
 		const env = { DB: {} as D1Database } as Env;
 		const req = new Request('http://ingest/v1/rankings/channels?platform=twitch&period=7d');
@@ -114,7 +102,7 @@ describe('public HTTP edge cases (worker.fetch)', () => {
 			platform: 'twitch',
 			period: '7d',
 			updated_at: '2026-06-03T00:00:00.000Z',
-			items: []
+			items: [],
 		});
 		const env = { DB: {} as D1Database } as Env;
 		const req = new Request('http://ingest/v1/rankings/games?platform=twitch&period=7d');
@@ -129,11 +117,10 @@ describe('public HTTP edge cases (worker.fetch)', () => {
 		const env = {
 			ENVIRONMENT: 'production',
 			INGEST_RATE_LIMIT_PER_MINUTE: '2',
-			DB: {} as D1Database
+			DB: {} as D1Database,
 		} as Env;
 		const headers = { 'CF-Connecting-IP': '203.0.113.99' };
-		const req = () =>
-			new Request('http://ingest/v1/rankings/channels?period=365d', { headers });
+		const req = () => new Request('http://ingest/v1/rankings/channels?period=365d', { headers });
 		expect((await worker.fetch(req(), env)).status).toBe(400);
 		expect((await worker.fetch(req(), env)).status).toBe(400);
 		const blocked = await worker.fetch(req(), env);
@@ -144,10 +131,7 @@ describe('public HTTP edge cases (worker.fetch)', () => {
 
 	it('GET /v1/search/channels returns 400 when query too short', async () => {
 		const searchSpy = vi.spyOn(search, 'searchChannels').mockResolvedValue([]);
-		const res = await worker.fetch(
-			new Request('http://ingest/v1/search/channels?q=a&platform=twitch'),
-			{ DB: {} as D1Database } as Env
-		);
+		const res = await worker.fetch(new Request('http://ingest/v1/search/channels?q=a&platform=twitch'), { DB: {} as D1Database } as Env);
 		expect(res.status).toBe(400);
 		const body = (await res.json()) as { error: { code: string } };
 		expect(body.error.code).toBe('invalid_query');
@@ -156,10 +140,9 @@ describe('public HTTP edge cases (worker.fetch)', () => {
 
 	it('GET /v1/search/channels returns 400 when query exceeds 100 chars', async () => {
 		const searchSpy = vi.spyOn(search, 'searchChannels').mockResolvedValue([]);
-		const res = await worker.fetch(
-			new Request(`http://ingest/v1/search/channels?q=${'z'.repeat(101)}&platform=twitch`),
-			{ DB: {} as D1Database } as Env
-		);
+		const res = await worker.fetch(new Request(`http://ingest/v1/search/channels?q=${'z'.repeat(101)}&platform=twitch`), {
+			DB: {} as D1Database,
+		} as Env);
 		expect(res.status).toBe(400);
 		const body = (await res.json()) as { error: { code: string } };
 		expect(body.error.code).toBe('invalid_query');
@@ -168,10 +151,9 @@ describe('public HTTP edge cases (worker.fetch)', () => {
 
 	it('GET /v1/search/channels returns 400 invalid_language', async () => {
 		const searchSpy = vi.spyOn(search, 'searchChannelsWithYoutubeSeed').mockResolvedValue([]);
-		const res = await worker.fetch(
-			new Request('http://ingest/v1/search/channels?q=sh&platform=twitch&language=english'),
-			{ DB: {} as D1Database } as Env
-		);
+		const res = await worker.fetch(new Request('http://ingest/v1/search/channels?q=sh&platform=twitch&language=english'), {
+			DB: {} as D1Database,
+		} as Env);
 		expect(res.status).toBe(400);
 		const body = (await res.json()) as { error: { code: string } };
 		expect(body.error.code).toBe('invalid_language');

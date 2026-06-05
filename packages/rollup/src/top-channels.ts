@@ -16,18 +16,15 @@ export type TopChannelRanking = {
 	trackedSince: string | null;
 };
 
-export function rankTopChannelsFromRollupRows(
-	rows: ChannelRollupQueryRow[],
-	limit: number
-): TopChannelRanking[] {
+export function rankTopChannelsFromRollupRows(rows: ChannelRollupQueryRow[], limit: number): TopChannelRanking[] {
 	const bySlug = new Map(rows.map((r) => [r.slug, r]));
 	const sorted = sortChannelsByHoursWatched(
 		rows.map((r) => ({
 			slug: r.slug,
 			displayName: r.display_name,
 			hoursWatched: r.hours_watched,
-			averageViewers: r.average_viewers
-		}))
+			averageViewers: r.average_viewers,
+		})),
 	).slice(0, limit);
 
 	return sorted.map((r, i) => {
@@ -43,7 +40,7 @@ export function rankTopChannelsFromRollupRows(
 			peakViewers: row?.peak_viewers ?? 0,
 			airtimeHours: Math.round((airtimeMinutes / 60) * 10) / 10,
 			streamCount: row?.stream_count ?? 0,
-			trackedSince: row?.first_observed_at ?? null
+			trackedSince: row?.first_observed_at ?? null,
 		};
 	});
 }
@@ -57,7 +54,7 @@ export async function getTopChannelsByHoursWatched(
 		minAverageViewers?: number;
 		minAirtimeMinutes?: number;
 		language?: string | null;
-	}
+	},
 ): Promise<TopChannelRanking[]> {
 	const days = opts.days ?? 7;
 	const limit = Math.min(opts.limit ?? 20, 100);
@@ -68,7 +65,7 @@ export async function getTopChannelsByHoursWatched(
 		limit,
 		minAirtimeMinutes: opts.minAirtimeMinutes,
 		minAverageViewers: opts.minAverageViewers ?? 0,
-		language: opts.language ?? null
+		language: opts.language ?? null,
 	});
 
 	return rankTopChannelsFromRollupRows(rows, limit);
@@ -82,7 +79,7 @@ export async function getTopTwitchChannelsByHoursWatched(
 		limit?: number;
 		minAverageViewers?: number;
 		minAirtimeMinutes?: number;
-	} = {}
+	} = {},
 ): Promise<TopChannelRanking[]> {
 	return getTopChannelsByHoursWatched(db, { ...opts, platformId: PLATFORM_TWITCH });
 }

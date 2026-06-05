@@ -26,7 +26,7 @@ export function parseComparePageParams(url: URL): ComparePageParams {
 		a: normalizeCompareSlug(url.searchParams.get('a')),
 		b: normalizeCompareSlug(url.searchParams.get('b')),
 		platform: searchPlatformId(parseUiPlatform(url.searchParams.get('platform'))),
-		period: parseComparePeriod(url.searchParams.get('period'))
+		period: parseComparePeriod(url.searchParams.get('period')),
 	};
 }
 

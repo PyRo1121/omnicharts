@@ -1,9 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import {
-	MIN_RANKING_AIRTIME_MINUTES,
-	periodAverageViewers,
-	passesRankingEligibility
-} from '../src/eligibility';
+import { MIN_RANKING_AIRTIME_MINUTES, periodAverageViewers, passesRankingEligibility } from '../src/eligibility';
 
 describe('ranking eligibility (docs/12-channel-discovery-and-tracking.md)', () => {
 	test('requires tracked state', () => {
@@ -12,8 +8,8 @@ describe('ranking eligibility (docs/12-channel-discovery-and-tracking.md)', () =
 				ingestState: 'discovered',
 				airtimeMinutes: 120,
 				hoursWatched: 10,
-				minViewers: 20
-			})
+				minViewers: 20,
+			}),
 		).toBe(false);
 	});
 
@@ -23,8 +19,8 @@ describe('ranking eligibility (docs/12-channel-discovery-and-tracking.md)', () =
 				ingestState: 'tracked',
 				airtimeMinutes: 59,
 				hoursWatched: 100,
-				minViewers: 20
-			})
+				minViewers: 20,
+			}),
 		).toBe(false);
 	});
 
@@ -35,8 +31,8 @@ describe('ranking eligibility (docs/12-channel-discovery-and-tracking.md)', () =
 				airtimeMinutes: 1,
 				hoursWatched: 100,
 				minViewers: 2,
-				minAirtimeMinutes: 1
-			})
+				minAirtimeMinutes: 1,
+			}),
 		).toBe(true);
 	});
 
@@ -46,8 +42,8 @@ describe('ranking eligibility (docs/12-channel-discovery-and-tracking.md)', () =
 				ingestState: 'tracked',
 				airtimeMinutes: 120,
 				hoursWatched: 10,
-				minViewers: 20
-			})
+				minViewers: 20,
+			}),
 		).toBe(false);
 	});
 
@@ -57,8 +53,8 @@ describe('ranking eligibility (docs/12-channel-discovery-and-tracking.md)', () =
 				ingestState: 'tracked',
 				airtimeMinutes: 120,
 				hoursWatched: 40,
-				minViewers: 20
-			})
+				minViewers: 20,
+			}),
 		).toBe(true);
 	});
 

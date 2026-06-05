@@ -11,7 +11,7 @@ describe('twitch poll', () => {
 	it('enqueueTwitchPollShards sends one consolidated catalog message', async () => {
 		const send = vi.fn().mockResolvedValue(undefined);
 		const env = {
-			INGEST_QUEUE: { send }
+			INGEST_QUEUE: { send },
 		} as unknown as Env;
 
 		const messages = await enqueueTwitchPollShards(env);
@@ -31,20 +31,18 @@ describe('twitch poll', () => {
 				title: 'T',
 				viewer_count: 50,
 				started_at: '2026-06-01T00:00:00Z',
-				type: 'live'
-			}
+				type: 'live',
+			},
 		]);
 		vi.spyOn(twitchDb, 'batchUpsertGameCategories').mockResolvedValue(new Map([['g', 'game-1']]));
-		vi.spyOn(twitchDb, 'batchUpsertChannelsFromStreams').mockResolvedValue(
-			new Map([['10', 'ch-1']])
-		);
+		vi.spyOn(twitchDb, 'batchUpsertChannelsFromStreams').mockResolvedValue(new Map([['10', 'ch-1']]));
 		vi.spyOn(twitchDb, 'batchRecordLiveSamples').mockResolvedValue([
 			{
 				stream_session_id: 'sess',
 				sampled_at: '2026-06-01T00:00:00Z',
 				viewer_count: 50,
-				platform: 'twitch'
-			}
+				platform: 'twitch',
+			},
 		]);
 
 		const runs: string[] = [];
@@ -55,8 +53,8 @@ describe('twitch poll', () => {
 						run: async () => {
 							runs.push(sql);
 							return {};
-						}
-					})
+						},
+					}),
 				};
 			},
 			batch: async (statements: { run: () => Promise<unknown> }[]) => {
@@ -64,13 +62,10 @@ describe('twitch poll', () => {
 					await stmt.run();
 				}
 				return [];
-			}
+			},
 		} as unknown as D1Database;
 
-		const result = await runTwitchPollBatch(
-			{ TWITCH_MIN_VIEWERS: '5', DB: db } as Env,
-			['10', '11']
-		);
+		const result = await runTwitchPollBatch({ TWITCH_MIN_VIEWERS: '5', DB: db } as Env, ['10', '11']);
 
 		expect(result.liveStreams).toBe(1);
 		expect(result.samplesWritten).toBe(1);

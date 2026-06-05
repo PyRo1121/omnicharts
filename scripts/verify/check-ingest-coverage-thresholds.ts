@@ -11,14 +11,7 @@ const COVERAGE_JSON = join(INGEST_ROOT, 'coverage', 'coverage-final.json');
 
 const THRESHOLD = 80;
 
-const GATED_GLOBS = [
-	'src/twitch/',
-	'src/db/',
-	'src/kick/',
-	'src/youtube/',
-	'src/r2/',
-	'src/watchlist/'
-] as const;
+const GATED_GLOBS = ['src/twitch/', 'src/db/', 'src/kick/', 'src/youtube/', 'src/r2/', 'src/watchlist/'] as const;
 
 type Metric = 'lines' | 'statements' | 'functions' | 'branches';
 
@@ -29,7 +22,7 @@ function emptyTotals(): Totals {
 		lines: { covered: 0, total: 0 },
 		statements: { covered: 0, total: 0 },
 		functions: { covered: 0, total: 0 },
-		branches: { covered: 0, total: 0 }
+		branches: { covered: 0, total: 0 },
 	};
 }
 
@@ -86,10 +79,7 @@ function main(): number {
 		return 1;
 	}
 
-	const raw = JSON.parse(readFileSync(COVERAGE_JSON, 'utf8')) as Record<
-		string,
-		Record<string, unknown>
-	>;
+	const raw = JSON.parse(readFileSync(COVERAGE_JSON, 'utf8')) as Record<string, Record<string, unknown>>;
 	const prefix = `${INGEST_ROOT}/`;
 
 	const byGlob = new Map<string, Totals>();

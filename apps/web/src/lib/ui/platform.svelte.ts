@@ -5,7 +5,7 @@ import {
 	uiRankingPeriods,
 	type PlatformId,
 	type RankingPeriod,
-	type UiPlatformFilter
+	type UiPlatformFilter,
 } from '@omnicharts/domain';
 
 export type { PlatformId, RankingPeriod, UiPlatformFilter };
@@ -16,7 +16,7 @@ export const platforms: { id: UiPlatformFilter; label: string }[] = [
 	{ id: 'all', label: 'All' },
 	{ id: 'twitch', label: 'Twitch' },
 	{ id: 'kick', label: 'Kick' },
-	{ id: 'youtube', label: 'YouTube' }
+	{ id: 'youtube', label: 'YouTube' },
 ];
 
 export const uiPeriods = uiRankingPeriods;
@@ -45,11 +45,7 @@ export function platformQueryParam(platform: UiPlatformFilter): string {
 }
 
 /** Append `?platform=` when non-default; optional extra query params. */
-export function routeWithPlatform(
-	path: string,
-	platform: UiPlatformFilter,
-	extra?: Record<string, string>
-): string {
+export function routeWithPlatform(path: string, platform: UiPlatformFilter, extra?: Record<string, string>): string {
 	const q = new URLSearchParams(extra);
 	if (platform === 'kick' || platform === 'youtube' || platform === 'all') {
 		q.set('platform', platform);
@@ -75,7 +71,7 @@ export const rankingLanguages = [
 	{ code: 'ru', label: 'Russian' },
 	{ code: 'ja', label: 'Japanese' },
 	{ code: 'ko', label: 'Korean' },
-	{ code: 'zh', label: 'Chinese' }
+	{ code: 'zh', label: 'Chinese' },
 ] as const;
 
 /** UI language filter — accepts any domain-valid BCP 47-lite tag; dropdown shows `rankingLanguages` subset. */
@@ -141,21 +137,14 @@ export function gamesPageSubtitle(platform: UiPlatformFilter, source: DataSource
 	return 'No game rollups for this period yet.';
 }
 
-export function homeRankingsFootnote(
-	channelSource: DataSource,
-	gameSource: DataSource
-): 'demo' | 'unavailable' | 'live' | null {
+export function homeRankingsFootnote(channelSource: DataSource, gameSource: DataSource): 'demo' | 'unavailable' | 'live' | null {
 	if (channelSource === 'mock' || gameSource === 'mock') return 'demo';
 	if (channelSource === 'unavailable' || gameSource === 'unavailable') return 'unavailable';
 	if (channelSource === 'live' || gameSource === 'live') return 'live';
 	return null;
 }
 
-export function channelRankingsEmptyMessage(
-	hasRows: boolean,
-	source: DataSource,
-	period?: RankingPeriod
-): string | null {
+export function channelRankingsEmptyMessage(hasRows: boolean, source: DataSource, period?: RankingPeriod): string | null {
 	if (hasRows) return null;
 	if (source === 'unavailable') return 'Channel rankings unavailable — ingest not reachable.';
 	if (period === '90d') {
@@ -164,11 +153,7 @@ export function channelRankingsEmptyMessage(
 	return 'No channel rollups yet for this period.';
 }
 
-export function gameRankingsEmptyMessage(
-	hasRows: boolean,
-	source: DataSource,
-	period?: RankingPeriod
-): string | null {
+export function gameRankingsEmptyMessage(hasRows: boolean, source: DataSource, period?: RankingPeriod): string | null {
 	if (hasRows) return null;
 	if (source === 'unavailable') return 'Game rankings unavailable — ingest not reachable.';
 	if (period === '90d') {

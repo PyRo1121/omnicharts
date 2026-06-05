@@ -42,16 +42,14 @@ export function requireAdminApiKey(request: Request, env: Env): Response | null 
 				{
 					error: {
 						code: 'service_unavailable',
-						message: 'Admin API is not configured (ADMIN_API_KEY missing)'
-					}
+						message: 'Admin API is not configured (ADMIN_API_KEY missing)',
+					},
 				},
-				{ status: 503, headers: { 'content-type': 'application/json' } }
+				{ status: 503, headers: { 'content-type': 'application/json' } },
 			);
 		}
 		if (!localBypassWarned) {
-			ingestWarn(
-				'[ingest] ADMIN_API_KEY unset — POST /admin/* routes accept any caller (local dev only)'
-			);
+			ingestWarn('[ingest] ADMIN_API_KEY unset — POST /admin/* routes accept any caller (local dev only)');
 			localBypassWarned = true;
 		}
 		return null;
@@ -61,7 +59,7 @@ export function requireAdminApiKey(request: Request, env: Env): Response | null 
 	if (!provided || !adminKeysEqual(provided, expected)) {
 		return Response.json(
 			{ error: { code: 'unauthorized', message: 'Invalid or missing admin API key' } },
-			{ status: 401, headers: { 'content-type': 'application/json' } }
+			{ status: 401, headers: { 'content-type': 'application/json' } },
 		);
 	}
 
@@ -75,7 +73,5 @@ export function isAdminPostPath(pathname: string, method: string): boolean {
 /** Legacy GET rankings aliases — redirect to /v1 in index.ts. */
 export function isAdminRankingsGetPath(pathname: string, method: string): boolean {
 	if (method !== 'GET') return false;
-	return (
-		pathname === '/admin/twitch/rankings' || pathname === '/admin/twitch/rankings/games'
-	);
+	return pathname === '/admin/twitch/rankings' || pathname === '/admin/twitch/rankings/games';
 }

@@ -5,7 +5,7 @@ describe('parseQueueBody', () => {
 	const sample: IngestQueueMessage = {
 		type: 'poll_channel_batch',
 		platform: 'twitch',
-		channel_ids: ['1']
+		channel_ids: ['1'],
 	};
 
 	it('accepts object bodies from sendBatch', () => {

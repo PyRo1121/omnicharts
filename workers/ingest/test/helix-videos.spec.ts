@@ -13,8 +13,8 @@ describe('TwitchHelixClient archive videos', () => {
 		vi.spyOn(globalThis, 'fetch').mockResolvedValue(
 			new Response(JSON.stringify({ data: [] }), {
 				status: 200,
-				headers: { 'content-type': 'application/json' }
-			})
+				headers: { 'content-type': 'application/json' },
+			}),
 		);
 
 		const client = new TwitchHelixClient({ TWITCH_CLIENT_ID: 'id' } as Env);
@@ -29,16 +29,16 @@ describe('TwitchHelixClient archive videos', () => {
 				new Response(
 					JSON.stringify({
 						data: [{ id: 'v1', user_id: '12345', type: 'archive' }],
-						pagination: { cursor: 'page2' }
+						pagination: { cursor: 'page2' },
 					}),
-					{ status: 200, headers: { 'content-type': 'application/json' } }
-				)
+					{ status: 200, headers: { 'content-type': 'application/json' } },
+				),
 			)
 			.mockResolvedValueOnce(
 				new Response(JSON.stringify({ data: [{ id: 'v2', user_id: '12345', type: 'archive' }] }), {
 					status: 200,
-					headers: { 'content-type': 'application/json' }
-				})
+					headers: { 'content-type': 'application/json' },
+				}),
 			);
 
 		vi.spyOn(globalThis, 'fetch').mockImplementation(fetchMock);
@@ -58,14 +58,14 @@ describe('TwitchHelixClient archive videos', () => {
 			.mockResolvedValueOnce(
 				new Response('rate limited', {
 					status: 429,
-					headers: { 'Ratelimit-Reset': String(Math.floor(Date.now() / 1000) + 1) }
-				})
+					headers: { 'Ratelimit-Reset': String(Math.floor(Date.now() / 1000) + 1) },
+				}),
 			)
 			.mockResolvedValueOnce(
 				new Response(JSON.stringify({ data: [{ id: 'v1', user_id: '99', type: 'archive' }] }), {
 					status: 200,
-					headers: { 'content-type': 'application/json' }
-				})
+					headers: { 'content-type': 'application/json' },
+				}),
 			);
 		vi.spyOn(globalThis, 'fetch').mockImplementation(fetchMock);
 

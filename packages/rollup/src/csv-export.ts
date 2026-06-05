@@ -27,8 +27,8 @@ export function channelRankingsToCsv(body: RankingsChannelsResponse): string {
 			'peak_viewers',
 			'airtime_hours',
 			'stream_count',
-			'tracked_since'
-		])
+			'tracked_since',
+		]),
 	];
 	for (const item of body.items) {
 		lines.push(
@@ -42,47 +42,25 @@ export function channelRankingsToCsv(body: RankingsChannelsResponse): string {
 				item.peak_viewers,
 				item.airtime_hours,
 				item.stream_count,
-				item.tracked_since
-			])
+				item.tracked_since,
+			]),
 		);
 	}
 	return `${lines.join('\n')}\n`;
 }
 
 export function gameRankingsToCsv(body: RankingsGamesResponse): string {
-	const lines = [
-		csvRow(['rank', 'slug', 'name', 'average_viewers', 'hours_watched'])
-	];
+	const lines = [csvRow(['rank', 'slug', 'name', 'average_viewers', 'hours_watched'])];
 	for (const item of body.items) {
-		lines.push(
-			csvRow([item.rank, item.slug, item.name, item.average_viewers, item.hours_watched])
-		);
+		lines.push(csvRow([item.rank, item.slug, item.name, item.average_viewers, item.hours_watched]));
 	}
 	return `${lines.join('\n')}\n`;
 }
 
 export function channelDetailToCsv(body: ChannelDetailResponse): string {
-	const lines = [
-		csvRow([
-			'date',
-			'hours_watched',
-			'average_viewers',
-			'peak_viewers',
-			'airtime_hours',
-			'stream_count'
-		])
-	];
+	const lines = [csvRow(['date', 'hours_watched', 'average_viewers', 'peak_viewers', 'airtime_hours', 'stream_count'])];
 	for (const day of body.daily) {
-		lines.push(
-			csvRow([
-				day.date,
-				day.hours_watched,
-				day.average_viewers,
-				day.peak_viewers,
-				day.airtime_hours,
-				day.stream_count
-			])
-		);
+		lines.push(csvRow([day.date, day.hours_watched, day.average_viewers, day.peak_viewers, day.airtime_hours, day.stream_count]));
 	}
 	return `${lines.join('\n')}\n`;
 }
@@ -98,6 +76,6 @@ export function csvDownloadFilename(parts: string[]): string {
 export function csvAttachmentHeaders(filename: string): Record<string, string> {
 	return {
 		'content-type': CSV_CONTENT_TYPE,
-		'content-disposition': `attachment; filename="${filename}"`
+		'content-disposition': `attachment; filename="${filename}"`,
 	};
 }

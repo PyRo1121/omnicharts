@@ -22,13 +22,9 @@ function pemToSpkiBytes(pem: string): Uint8Array {
 async function importRsaPublicKey(pem: string): Promise<CryptoKey | null> {
 	if (cachedKey && cachedKeyPem === pem) return cachedKey;
 	try {
-		const key = await crypto.subtle.importKey(
-			'spki',
-			pemToSpkiBytes(pem),
-			{ name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
-			false,
-			['verify']
-		);
+		const key = await crypto.subtle.importKey('spki', pemToSpkiBytes(pem), { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, [
+			'verify',
+		]);
 		cachedKey = key;
 		cachedKeyPem = pem;
 		return key;
@@ -38,18 +34,11 @@ async function importRsaPublicKey(pem: string): Promise<CryptoKey | null> {
 }
 
 /** message_id.timestamp.rawBody — Kick webhook signed payload string. */
-export function buildKickWebhookSignedPayload(
-	messageId: string,
-	timestamp: string,
-	rawBody: string
-): string {
+export function buildKickWebhookSignedPayload(messageId: string, timestamp: string, rawBody: string): string {
 	return `${messageId}.${timestamp}.${rawBody}`;
 }
 
-export function isKickWebhookTimestampFresh(
-	timestamp: string,
-	maxSkewSeconds = DEFAULT_MAX_SKEW_SECONDS
-): boolean {
+export function isKickWebhookTimestampFresh(timestamp: string, maxSkewSeconds = DEFAULT_MAX_SKEW_SECONDS): boolean {
 	if (!timestamp.includes('T')) return false;
 	const parsedMs = Date.parse(timestamp);
 	if (!Number.isFinite(parsedMs)) return false;
@@ -80,12 +69,7 @@ export async function verifyKickWebhookSignature(opts: {
 	}
 
 	const payload = buildKickWebhookSignedPayload(messageId, timestamp, rawBody);
-	return crypto.subtle.verify(
-		'RSASSA-PKCS1-v1_5',
-		publicKey,
-		signatureBytes,
-		new TextEncoder().encode(payload)
-	);
+	return crypto.subtle.verify('RSASSA-PKCS1-v1_5', publicKey, signatureBytes, new TextEncoder().encode(payload));
 }
 
 export function clearKickWebhookKeyCacheForTests(): void {

@@ -3,33 +3,26 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
 import type { HelixStream } from '../src/twitch/helix';
-import {
-	helixStreamSessionPersist,
-	helixTagsJson
-} from '../src/twitch/stream-fields';
+import { helixStreamSessionPersist, helixTagsJson } from '../src/twitch/stream-fields';
 import { recordLiveSample, upsertChannelFromStream } from '../src/db/twitch';
 import { ingestHelixStream } from '../src/twitch/ingest-stream';
 
 const fixtureDir = dirname(fileURLToPath(import.meta.url));
-const samplePayload = JSON.parse(
-	readFileSync(join(fixtureDir, 'fixtures/helix-streams-sample.json'), 'utf8')
-) as { data: HelixStream[] };
+const samplePayload = JSON.parse(readFileSync(join(fixtureDir, 'fixtures/helix-streams-sample.json'), 'utf8')) as { data: HelixStream[] };
 
 const sampleStream = (): HelixStream => ({
 	...samplePayload.data[0],
 	user_login: 'kato_junichi0817',
 	user_name: 'Kato',
 	game_name: 'Just Chatting',
-	title: 'Live title'
+	title: 'Live title',
 });
 
 describe('helix stream field mapping', () => {
 	it('serializes tags to JSON', () => {
 		expect(helixTagsJson(undefined)).toBeNull();
 		expect(helixTagsJson([])).toBeNull();
-		expect(helixTagsJson(['日本語', 'Drops有効'])).toBe(
-			JSON.stringify(['日本語', 'Drops有効'])
-		);
+		expect(helixTagsJson(['日本語', 'Drops有効'])).toBe(JSON.stringify(['日本語', 'Drops有効']));
 	});
 
 	it('maps fixture stream to session persist shape', () => {
@@ -38,7 +31,7 @@ describe('helix stream field mapping', () => {
 			language: 'ja',
 			tags_json: JSON.stringify(['日本語', 'Drops有効']),
 			thumbnail_url: stream.thumbnail_url,
-			stream_type: 'live'
+			stream_type: 'live',
 		});
 		expect(helixStreamSessionPersist(stream).language).toBe('ja');
 	});
@@ -54,23 +47,18 @@ describe('helix stream field mapping', () => {
 			title: 'T',
 			viewer_count: 10,
 			started_at: '2026-06-01T00:00:00Z',
-			type: 'live'
+			type: 'live',
 		};
 		expect(helixStreamSessionPersist(minimal)).toEqual({
 			language: null,
 			tags_json: null,
 			thumbnail_url: null,
-			stream_type: 'live'
+			stream_type: 'live',
 		});
 	});
 });
 
-function createChannelDbMock(opts: {
-	existingChannel?: boolean;
-	openSession?: boolean;
-	sightingCount?: number;
-	ingestState?: string;
-}) {
+function createChannelDbMock(opts: { existingChannel?: boolean; openSession?: boolean; sightingCount?: number; ingestState?: string }) {
 	const channelUpserts: unknown[][] = [];
 	const sessionWrites: { sql: string; args: unknown[] }[] = [];
 	const viewerSamples: unknown[][] = [];
@@ -90,31 +78,28 @@ function createChannelDbMock(opts: {
 												slug: 'kato_junichi0817',
 												ingest_state: opts.ingestState ?? 'discovered',
 												first_observed_at: '2026-05-01T00:00:00Z',
-												platform_channel_id: '545050196'
-											}
-										]
+												platform_channel_id: '545050196',
+											},
+										],
 									}
-								: { results: [] }
-					})
+								: { results: [] },
+					}),
 				};
 			}
 			if (sql.includes('slug IN')) {
 				return {
 					bind: () => ({
-						all: async () => ({ results: [] })
-					})
+						all: async () => ({ results: [] }),
+					}),
 				};
 			}
 			if (sql.includes('GROUP BY channel_id')) {
 				return {
 					bind: () => ({
 						all: async () => ({
-							results:
-								sightings > 0
-									? [{ channel_id: 'twitch-ch-545050196', n: sightings }]
-									: []
-						})
-					})
+							results: sightings > 0 ? [{ channel_id: 'twitch-ch-545050196', n: sightings }] : [],
+						}),
+					}),
 				};
 			}
 			if (sql.includes('INSERT INTO channel_live_sightings')) {
@@ -123,8 +108,8 @@ function createChannelDbMock(opts: {
 						run: async () => {
 							sightings++;
 							return {};
-						}
-					})
+						},
+					}),
 				};
 			}
 			if (sql.includes('DELETE FROM channel_live_sightings')) {
@@ -135,12 +120,9 @@ function createChannelDbMock(opts: {
 					bind: () => ({
 						first: async () => ({ n: sightings }),
 						all: async () => ({
-							results:
-								sightings > 0
-									? [{ channel_id: 'twitch-ch-545050196', n: sightings }]
-									: []
-						})
-					})
+							results: sightings > 0 ? [{ channel_id: 'twitch-ch-545050196', n: sightings }] : [],
+						}),
+					}),
 				};
 			}
 			if (sql.includes('INSERT INTO channels')) {
@@ -148,14 +130,14 @@ function createChannelDbMock(opts: {
 					bind: (...args: unknown[]) => {
 						channelUpserts.push(args);
 						return { run: async () => ({}) };
-					}
+					},
 				};
 			}
 			if (sql.includes('SELECT id FROM channels WHERE')) {
 				return {
 					bind: () => ({
-						first: async () => ({ id: 'twitch-ch-545050196' })
-					})
+						first: async () => ({ id: 'twitch-ch-545050196' }),
+					}),
 				};
 			}
 			if (sql.includes('FROM stream_sessions') && sql.includes('ended_at IS NULL')) {
@@ -170,12 +152,12 @@ function createChannelDbMock(opts: {
 												id: 'open-sess',
 												channel_id: 'twitch-ch-545050196',
 												platform_stream_id: sampleStream().id,
-												started_at: '2026-05-01T00:00:00Z'
-											}
-										]
+												started_at: '2026-05-01T00:00:00Z',
+											},
+										],
 									}
-								: { results: [] }
-					})
+								: { results: [] },
+					}),
 				};
 			}
 			if (sql.includes('INSERT INTO stream_sessions')) {
@@ -183,7 +165,7 @@ function createChannelDbMock(opts: {
 					bind: (...args: unknown[]) => {
 						sessionWrites.push({ sql, args });
 						return { run: async () => ({}) };
-					}
+					},
 				};
 			}
 			if (sql.includes('UPDATE stream_sessions SET')) {
@@ -191,7 +173,7 @@ function createChannelDbMock(opts: {
 					bind: (...args: unknown[]) => {
 						sessionWrites.push({ sql, args });
 						return { run: async () => ({}) };
-					}
+					},
 				};
 			}
 			if (sql.includes('INSERT INTO viewer_samples')) {
@@ -199,16 +181,16 @@ function createChannelDbMock(opts: {
 					bind: (...args: unknown[]) => {
 						viewerSamples.push(args);
 						return { run: async () => ({}) };
-					}
+					},
 				};
 			}
 			if (sql.includes('game_categories')) {
 				return {
-					bind: () => ({ run: async () => ({}) })
+					bind: () => ({ run: async () => ({}) }),
 				};
 			}
 			return {
-				bind: () => ({ run: async () => ({}), first: async () => null, all: async () => ({}) })
+				bind: () => ({ run: async () => ({}), first: async () => null, all: async () => ({}) }),
 			};
 		},
 		async batch(statements: { run: () => Promise<unknown> }[]) {
@@ -216,7 +198,7 @@ function createChannelDbMock(opts: {
 				await stmt.run();
 			}
 			return [];
-		}
+		},
 	} as unknown as D1Database;
 
 	return { db, channelUpserts, sessionWrites, viewerSamples };
@@ -227,7 +209,7 @@ describe('Helix stream → D1', () => {
 		const { db, channelUpserts } = createChannelDbMock({});
 		await upsertChannelFromStream(db, sampleStream(), {
 			minViewers: 0,
-			promoteToTracked: false
+			promoteToTracked: false,
 		});
 		expect(channelUpserts[0]).toHaveLength(9);
 		expect(channelUpserts[0]![8]).toBe('ja');
@@ -238,7 +220,7 @@ describe('Helix stream → D1', () => {
 		const stream = { ...sampleStream(), viewer_count: 500 };
 		await upsertChannelFromStream(db, stream, {
 			minViewers: 20,
-			promoteToTracked: true
+			promoteToTracked: true,
 		});
 		expect(channelUpserts[0]![7]).toBe('discovered');
 	});
@@ -246,12 +228,12 @@ describe('Helix stream → D1', () => {
 	it('promotes discovered to tracked after second sighting in 14d', async () => {
 		const { db, channelUpserts } = createChannelDbMock({
 			existingChannel: true,
-			sightingCount: 1
+			sightingCount: 1,
 		});
 		const stream = { ...sampleStream(), viewer_count: 500 };
 		await upsertChannelFromStream(db, stream, {
 			minViewers: 20,
-			promoteToTracked: true
+			promoteToTracked: true,
 		});
 		expect(channelUpserts[0]![7]).toBe('discovered');
 	});
@@ -259,12 +241,16 @@ describe('Helix stream → D1', () => {
 	it('promotes dormant to tracked on qualifying live', async () => {
 		const { db, channelUpserts } = createChannelDbMock({
 			existingChannel: true,
-			ingestState: 'dormant'
+			ingestState: 'dormant',
 		});
-		await upsertChannelFromStream(db, { ...sampleStream(), viewer_count: 500 }, {
-			minViewers: 20,
-			promoteToTracked: true
-		});
+		await upsertChannelFromStream(
+			db,
+			{ ...sampleStream(), viewer_count: 500 },
+			{
+				minViewers: 20,
+				promoteToTracked: true,
+			},
+		);
 		expect(channelUpserts[0]![7]).toBe('tracked');
 	});
 

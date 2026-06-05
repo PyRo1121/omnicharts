@@ -9,7 +9,7 @@ const usersJson = readFileSync(join(fixtureDir, 'fixtures/helix-users-sample.jso
 const channelsJson = readFileSync(join(fixtureDir, 'fixtures/helix-channels-sample.json'), 'utf8');
 
 vi.mock('../src/twitch/auth', () => ({
-	getAppAccessToken: vi.fn().mockResolvedValue('test-token')
+	getAppAccessToken: vi.fn().mockResolvedValue('test-token'),
 }));
 
 describe('TwitchHelixClient users/channels batches', () => {
@@ -26,9 +26,9 @@ describe('TwitchHelixClient users/channels batches', () => {
 							status: 200,
 							headers: {
 								'Ratelimit-Remaining': '799',
-								'Ratelimit-Reset': String(Math.floor(Date.now() / 1000) + 60)
-							}
-						})
+								'Ratelimit-Reset': String(Math.floor(Date.now() / 1000) + 60),
+							},
+						}),
 					);
 				}
 				if (url.includes('/helix/channels')) {
@@ -37,13 +37,13 @@ describe('TwitchHelixClient users/channels batches', () => {
 							status: 200,
 							headers: {
 								'Ratelimit-Remaining': '798',
-								'Ratelimit-Reset': String(Math.floor(Date.now() / 1000) + 60)
-							}
-						})
+								'Ratelimit-Reset': String(Math.floor(Date.now() / 1000) + 60),
+							},
+						}),
 					);
 				}
 				return Promise.resolve(new Response('{}', { status: 404 }));
-			})
+			}),
 		);
 	});
 

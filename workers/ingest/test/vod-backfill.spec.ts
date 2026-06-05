@@ -1,8 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import {
-	fetchAllArchiveVideosForUser,
-	runTwitchVodBackfill
-} from '../src/twitch/vod-backfill';
+import { fetchAllArchiveVideosForUser, runTwitchVodBackfill } from '../src/twitch/vod-backfill';
 import { TwitchHelixClient, type HelixVideo } from '../src/twitch/helix';
 import * as vodSessions from '../src/db/vod-sessions';
 
@@ -22,13 +19,13 @@ const sampleVideo = (overrides: Partial<HelixVideo> = {}): HelixVideo => ({
 	language: 'en',
 	type: 'archive',
 	duration: 'PT2H',
-	...overrides
+	...overrides,
 });
 
 describe('fetchAllArchiveVideosForUser', () => {
 	it('returns empty list when Helix has no VODs', async () => {
 		const client = {
-			getArchiveVideosPage: vi.fn().mockResolvedValue({ data: [] })
+			getArchiveVideosPage: vi.fn().mockResolvedValue({ data: [] }),
 		} as unknown as TwitchHelixClient;
 
 		const result = await fetchAllArchiveVideosForUser(client, '123');
@@ -42,12 +39,12 @@ describe('fetchAllArchiveVideosForUser', () => {
 				.fn()
 				.mockResolvedValueOnce({
 					data: [sampleVideo({ id: '1' })],
-					pagination: { cursor: 'next' }
+					pagination: { cursor: 'next' },
 				})
 				.mockResolvedValueOnce({
 					data: [sampleVideo({ id: '2' })],
-					pagination: {}
-				})
+					pagination: {},
+				}),
 		} as unknown as TwitchHelixClient;
 
 		const result = await fetchAllArchiveVideosForUser(client, '123', { first: 1 });
@@ -72,31 +69,28 @@ describe('runTwitchVodBackfill', () => {
 			{
 				id: 'twitch-ch-1',
 				platform_channel_id: '111',
-				broadcaster_type: 'affiliate'
-			}
+				broadcaster_type: 'affiliate',
+			},
 		]);
 		vi.spyOn(vodSessions, 'batchUpsertVodSessions').mockResolvedValue(0);
 		vi.spyOn(vodSessions, 'markChannelsVodBackfilled').mockResolvedValue();
 		vi.spyOn(TwitchHelixClient.prototype, 'getArchiveVideosPage').mockResolvedValue({
-			data: []
+			data: [],
 		});
 
 		const stats = await runTwitchVodBackfill(
 			{
 				TWITCH_CLIENT_ID: 'id',
 				TWITCH_CLIENT_SECRET: 'secret',
-				DB: {} as D1Database
+				DB: {} as D1Database,
 			} as Env,
-			{ limit: 1 }
+			{ limit: 1 },
 		);
 
 		expect(stats.channels_processed).toBe(1);
 		expect(stats.videos_fetched).toBe(0);
 		expect(stats.sessions_upserted).toBe(0);
-		expect(vodSessions.markChannelsVodBackfilled).toHaveBeenCalledWith(
-			expect.anything(),
-			['twitch-ch-1']
-		);
+		expect(vodSessions.markChannelsVodBackfilled).toHaveBeenCalledWith(expect.anything(), ['twitch-ch-1']);
 	});
 
 	it('upserts in-window VOD metadata for partner tier', async () => {
@@ -104,33 +98,33 @@ describe('runTwitchVodBackfill', () => {
 			{
 				id: 'twitch-ch-2',
 				platform_channel_id: '222',
-				broadcaster_type: 'partner'
-			}
+				broadcaster_type: 'partner',
+			},
 		]);
 		const upsert = vi.spyOn(vodSessions, 'batchUpsertVodSessions').mockResolvedValue(1);
 		vi.spyOn(vodSessions, 'markChannelsVodBackfilled').mockResolvedValue();
 
 		const recent = sampleVideo({
 			published_at: '2026-06-04T00:00:00.000Z',
-			created_at: '2026-06-04T00:00:00.000Z'
+			created_at: '2026-06-04T00:00:00.000Z',
 		});
 		const stale = sampleVideo({
 			id: 'old',
 			published_at: '2026-01-01T00:00:00.000Z',
-			created_at: '2026-01-01T00:00:00.000Z'
+			created_at: '2026-01-01T00:00:00.000Z',
 		});
 
 		vi.spyOn(TwitchHelixClient.prototype, 'getArchiveVideosPage').mockResolvedValue({
-			data: [recent, stale]
+			data: [recent, stale],
 		});
 
 		const stats = await runTwitchVodBackfill(
 			{
 				TWITCH_CLIENT_ID: 'id',
 				TWITCH_CLIENT_SECRET: 'secret',
-				DB: {} as D1Database
+				DB: {} as D1Database,
 			} as Env,
-			{ limit: 1 }
+			{ limit: 1 },
 		);
 
 		expect(stats.sessions_upserted).toBe(1);
@@ -140,9 +134,9 @@ describe('runTwitchVodBackfill', () => {
 				expect.objectContaining({
 					channel_id: 'twitch-ch-2',
 					platform_stream_id: recent.id,
-					duration: 'PT2H'
-				})
-			])
+					duration: 'PT2H',
+				}),
+			]),
 		);
 	});
 
@@ -151,8 +145,8 @@ describe('runTwitchVodBackfill', () => {
 			{
 				id: 'twitch-ch-3',
 				platform_channel_id: '333',
-				broadcaster_type: null
-			}
+				broadcaster_type: null,
+			},
 		]);
 		vi.spyOn(vodSessions, 'batchUpsertVodSessions').mockResolvedValue(1);
 		vi.spyOn(vodSessions, 'markChannelsVodBackfilled').mockResolvedValue();
@@ -167,23 +161,22 @@ describe('runTwitchVodBackfill', () => {
 				{
 					TWITCH_CLIENT_ID: 'id',
 					TWITCH_CLIENT_SECRET: 'secret',
-					DB: {} as D1Database
+					DB: {} as D1Database,
 				} as Env,
-				{ platformChannelIds: ['333'] }
-			)
+				{ platformChannelIds: ['333'] },
+			),
 		).rejects.toThrow(/rate limited/);
 
 		getPage.mockReset();
-		getPage
-			.mockResolvedValueOnce({ data: [sampleVideo()] });
+		getPage.mockResolvedValueOnce({ data: [sampleVideo()] });
 
 		const stats = await runTwitchVodBackfill(
 			{
 				TWITCH_CLIENT_ID: 'id',
 				TWITCH_CLIENT_SECRET: 'secret',
-				DB: {} as D1Database
+				DB: {} as D1Database,
 			} as Env,
-			{ platformChannelIds: ['333'] }
+			{ platformChannelIds: ['333'] },
 		);
 		expect(stats.channels_processed).toBe(1);
 	});

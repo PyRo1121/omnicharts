@@ -1,9 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'bun:test';
 import * as topGames from '../src/top-games';
-import {
-	buildRankingsGamesResponse,
-	parseRankingsGamesQuery
-} from '../src/games-api';
+import { buildRankingsGamesResponse, parseRankingsGamesQuery } from '../src/games-api';
 
 describe('parseRankingsGamesQuery', () => {
 	it('defaults platform twitch and period 7d', () => {
@@ -42,27 +39,24 @@ describe('buildRankingsGamesResponse', () => {
 				slug: 'just-chatting',
 				name: 'Just Chatting',
 				averageViewers: 8500.2,
-				hoursWatched: 120000
-			}
+				hoursWatched: 120000,
+			},
 		]);
 
 		const res = await buildRankingsGamesResponse({} as D1Database, {
 			platform: 'kick',
 			period: '7d',
-			limit: 20
+			limit: 20,
 		});
 
-		expect(spy).toHaveBeenCalledWith(
-			{},
-			expect.objectContaining({ platformId: 'kick', days: 7, limit: 20 })
-		);
+		expect(spy).toHaveBeenCalledWith({}, expect.objectContaining({ platformId: 'kick', days: 7, limit: 20 }));
 		expect(res.platform).toBe('kick');
 		expect(res.items[0]).toMatchObject({
 			rank: 1,
 			slug: 'just-chatting',
 			name: 'Just Chatting',
 			average_viewers: 8500,
-			hours_watched: 120000
+			hours_watched: 120000,
 		});
 	});
 
@@ -72,13 +66,10 @@ describe('buildRankingsGamesResponse', () => {
 		await buildRankingsGamesResponse(
 			{} as D1Database,
 			{ platform: 'youtube', period: '7d', limit: 20 },
-			{ YOUTUBE_MIN_VIEWERS: 30, TWITCH_MIN_VIEWERS: 2 }
+			{ YOUTUBE_MIN_VIEWERS: 30, TWITCH_MIN_VIEWERS: 2 },
 		);
 
-		expect(spy).toHaveBeenCalledWith(
-			{},
-			expect.objectContaining({ platformId: 'youtube', minAverageViewers: 30 })
-		);
+		expect(spy).toHaveBeenCalledWith({}, expect.objectContaining({ platformId: 'youtube', minAverageViewers: 30 }));
 	});
 
 	it('returns empty items for youtube when no rollups', async () => {
@@ -87,7 +78,7 @@ describe('buildRankingsGamesResponse', () => {
 		const res = await buildRankingsGamesResponse({} as D1Database, {
 			platform: 'youtube',
 			period: '7d',
-			limit: 20
+			limit: 20,
 		});
 
 		expect(res.platform).toBe('youtube');
@@ -101,14 +92,14 @@ describe('buildRankingsGamesResponse', () => {
 				slug: 'league-of-legends',
 				name: 'League of Legends',
 				averageViewers: 12000.7,
-				hoursWatched: 500000
-			}
+				hoursWatched: 500000,
+			},
 		]);
 
 		const res = await buildRankingsGamesResponse({} as D1Database, {
 			platform: 'twitch',
 			period: '30d',
-			limit: 10
+			limit: 10,
 		});
 
 		expect(res.period).toBe('30d');
@@ -117,7 +108,7 @@ describe('buildRankingsGamesResponse', () => {
 			slug: 'league-of-legends',
 			name: 'League of Legends',
 			average_viewers: 12001,
-			hours_watched: 500000
+			hours_watched: 500000,
 		});
 	});
 });

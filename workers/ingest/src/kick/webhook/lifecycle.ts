@@ -1,18 +1,13 @@
 import { PLATFORM_KICK } from '@omnicharts/domain';
 import { closeStaleOpenSessionsForChannel } from '../../db/session-lifecycle';
 import { recordKickApiChannelId, resolveKickApiChannelId } from '../api-channel-id';
-import {
-	kickPlatformStreamIdFromChannelId,
-	kickSessionRowIdFromChannelId
-} from '../stream-fields';
+import { kickPlatformStreamIdFromChannelId, kickSessionRowIdFromChannelId } from '../stream-fields';
 import type { KickLivestreamStatusUpdatedEvent } from './types';
 import { requireDb } from '../../worker-bindings';
 
 const nowIso = () => new Date().toISOString();
 
-function parseLivestreamStatusUpdated(
-	body: unknown
-): KickLivestreamStatusUpdatedEvent | null {
+function parseLivestreamStatusUpdated(body: unknown): KickLivestreamStatusUpdatedEvent | null {
 	if (!body || typeof body !== 'object') return null;
 	const event = body as Record<string, unknown>;
 	const broadcaster = event.broadcaster;
@@ -34,21 +29,17 @@ function parseLivestreamStatusUpdated(
 			user_id: b.user_id,
 			username: typeof b.username === 'string' ? b.username : undefined,
 			channel_slug: b.channel_slug.trim(),
-			channel_id: channelId
+			channel_id: channelId,
 		},
 		channel_id: channelId,
 		is_live: event.is_live,
 		title: typeof event.title === 'string' ? event.title : undefined,
 		started_at: typeof event.started_at === 'string' ? event.started_at : undefined,
-		ended_at:
-			event.ended_at === null || typeof event.ended_at === 'string' ? event.ended_at : undefined
+		ended_at: event.ended_at === null || typeof event.ended_at === 'string' ? event.ended_at : undefined,
 	};
 }
 
-async function resolveKickChannelIdForSession(
-	db: D1Database,
-	event: KickLivestreamStatusUpdatedEvent
-): Promise<number> {
+async function resolveKickChannelIdForSession(db: D1Database, event: KickLivestreamStatusUpdatedEvent): Promise<number> {
 	const broadcasterId = String(event.broadcaster.user_id);
 	if (event.channel_id != null) return event.channel_id;
 	if (event.broadcaster.channel_id != null) return event.broadcaster.channel_id;
@@ -60,10 +51,7 @@ async function resolveKickChannelIdForSession(
 }
 
 /** Session boundary only — polling remains HW/AV source of truth (ADR-003). */
-export async function applyKickLivestreamStatusUpdated(
-	env: Env,
-	event: KickLivestreamStatusUpdatedEvent
-): Promise<void> {
+export async function applyKickLivestreamStatusUpdated(env: Env, event: KickLivestreamStatusUpdatedEvent): Promise<void> {
 	const db = requireDb(env);
 	const now = nowIso();
 	const broadcasterId = String(event.broadcaster.user_id);
@@ -85,7 +73,7 @@ export async function applyKickLivestreamStatusUpdated(
          WHEN channels.ingest_state = 'retired' THEN channels.ingest_state
          WHEN excluded.last_seen_at IS NOT NULL THEN 'tracked'
          ELSE channels.ingest_state
-       END`
+       END`,
 		)
 		.bind(channelId, PLATFORM_KICK, broadcasterId, slug, displayName, now, now)
 		.run();
@@ -112,7 +100,7 @@ export async function applyKickLivestreamStatusUpdated(
        ON CONFLICT(channel_id, platform_stream_id) DO UPDATE SET
          title = excluded.title,
          started_at = excluded.started_at,
-         ended_at = NULL`
+         ended_at = NULL`,
 			)
 			.bind(sessionId, resolvedChannelId, platformStreamId, event.title ?? null, startedAt)
 			.run();
@@ -125,7 +113,7 @@ export async function applyKickLivestreamStatusUpdated(
 	await db
 		.prepare(
 			`UPDATE stream_sessions SET ended_at = ?
-     WHERE channel_id = ? AND ended_at IS NULL`
+     WHERE channel_id = ? AND ended_at IS NULL`,
 		)
 		.bind(endedAt, resolvedChannelId)
 		.run();

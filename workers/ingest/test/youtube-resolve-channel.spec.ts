@@ -13,8 +13,8 @@ describe('fetchYoutubeChannelByQuery', () => {
 			snippet: {
 				title: 'MrBeast',
 				customUrl: '@MrBeast',
-				thumbnails: { default: { url: 'https://example.com/a.jpg' } }
-			}
+				thumbnails: { default: { url: 'https://example.com/a.jpg' } },
+			},
 		});
 
 		const client = new YoutubeDataApiClient({ YOUTUBE_API_KEY: 'key' } as Env);
@@ -24,7 +24,7 @@ describe('fetchYoutubeChannelByQuery', () => {
 			platformChannelId: 'UCabcdefghijklmnopqrstuv',
 			slug: 'mrbeast',
 			displayName: 'MrBeast',
-			avatarUrl: 'https://example.com/a.jpg'
+			avatarUrl: 'https://example.com/a.jpg',
 		});
 	});
 
@@ -32,8 +32,8 @@ describe('fetchYoutubeChannelByQuery', () => {
 		vi.spyOn(YoutubeDataApiClient.prototype, 'getChannelsByIds').mockResolvedValue([
 			{
 				id: 'UCabcdefghijklmnopqrstuv',
-				snippet: { title: 'MrBeast', customUrl: '@MrBeast' }
-			}
+				snippet: { title: 'MrBeast', customUrl: '@MrBeast' },
+			},
 		]);
 
 		const client = new YoutubeDataApiClient({ YOUTUBE_API_KEY: 'key' } as Env);

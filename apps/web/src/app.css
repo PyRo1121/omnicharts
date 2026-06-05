@@ -56,11 +56,7 @@
 	.oc-grid-bg {
 		background-image:
 			linear-gradient(color-mix(in oklab, var(--color-oc-border) 40%, transparent) 1px, transparent 1px),
-			linear-gradient(
-				90deg,
-				color-mix(in oklab, var(--color-oc-border) 40%, transparent) 1px,
-				transparent 1px
-			);
+			linear-gradient(90deg, color-mix(in oklab, var(--color-oc-border) 40%, transparent) 1px, transparent 1px);
 		background-size: 48px 48px;
 		mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 20%, transparent 70%);
 	}

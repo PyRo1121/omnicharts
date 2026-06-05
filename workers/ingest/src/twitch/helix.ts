@@ -102,7 +102,10 @@ function helixRateLimited(res: Response): boolean {
 export class TwitchHelixClient {
 	private readonly budget: HelixRateBudget;
 
-	constructor(private readonly env: Env, opts: TwitchHelixClientOptions = {}) {
+	constructor(
+		private readonly env: Env,
+		opts: TwitchHelixClientOptions = {},
+	) {
 		this.budget = new HelixRateBudget(opts.budgetPoints ?? helixPhaseBudgetFromEnv(env));
 	}
 
@@ -116,23 +119,18 @@ export class TwitchHelixClient {
 	}
 
 	/** All live streams, viewer count descending (global directory). */
-	async getLiveStreamsPage(
-		opts: { first?: number; after?: string } = {}
-	): Promise<HelixListResponse<HelixStream>> {
+	async getLiveStreamsPage(opts: { first?: number; after?: string } = {}): Promise<HelixListResponse<HelixStream>> {
 		const params: Record<string, string> = {
-			first: String(opts.first ?? STREAMS_BATCH_SIZE)
+			first: String(opts.first ?? STREAMS_BATCH_SIZE),
 		};
 		if (opts.after) params.after = opts.after;
 		return this.get<HelixListResponse<HelixStream>>('/streams', params);
 	}
 
-	async getStreamsByGameId(
-		gameId: string,
-		opts: { first?: number; after?: string } = {}
-	): Promise<HelixListResponse<HelixStream>> {
+	async getStreamsByGameId(gameId: string, opts: { first?: number; after?: string } = {}): Promise<HelixListResponse<HelixStream>> {
 		const params: Record<string, string> = {
 			game_id: gameId,
-			first: String(opts.first ?? 100)
+			first: String(opts.first ?? 100),
 		};
 		if (opts.after) params.after = opts.after;
 		return this.get<HelixListResponse<HelixStream>>('/streams', params);
@@ -174,9 +172,7 @@ export class TwitchHelixClient {
 	 * Public follower total per broadcaster (app token → `total` only).
 	 * @see https://dev.twitch.tv/docs/api/reference#get-channel-followers
 	 */
-	async getChannelFollowerTotals(
-		broadcasterIds: string[]
-	): Promise<Map<string, number>> {
+	async getChannelFollowerTotals(broadcasterIds: string[]): Promise<Map<string, number>> {
 		const out = new Map<string, number>();
 		for (const id of broadcasterIds) {
 			const total = await this.getChannelFollowerTotal(id);
@@ -185,10 +181,7 @@ export class TwitchHelixClient {
 		return out;
 	}
 
-	async getChannelFollowerTotal(
-		broadcasterId: string,
-		rateLimitRetries = 0
-	): Promise<number | null> {
+	async getChannelFollowerTotal(broadcasterId: string, rateLimitRetries = 0): Promise<number | null> {
 		const token = await getAppAccessToken(this.env, this.budget);
 		await this.budget.consume(1);
 
@@ -198,17 +191,15 @@ export class TwitchHelixClient {
 		const res = await fetch(url, {
 			headers: {
 				Authorization: `Bearer ${token}`,
-				'Client-Id': twitchClientId(this.env)
-			}
+				'Client-Id': twitchClientId(this.env),
+			},
 		});
 
 		this.budget.applyHeaders(res.headers);
 
 		if (helixRateLimited(res)) {
 			if (rateLimitRetries >= HELIX_429_MAX_RETRIES) {
-				throw new Error(
-					`Helix /channels/followers rate limited after ${HELIX_429_MAX_RETRIES} retries`
-				);
+				throw new Error(`Helix /channels/followers rate limited after ${HELIX_429_MAX_RETRIES} retries`);
 			}
 			await sleepMs(helixRateLimitWaitMs(res.headers));
 			return this.getChannelFollowerTotal(broadcasterId, rateLimitRetries + 1);
@@ -234,14 +225,11 @@ export class TwitchHelixClient {
 	}
 
 	/** Paginate archive VODs for one broadcaster (1 Helix point per page). */
-	async getArchiveVideosPage(
-		userId: string,
-		opts: { first?: number; after?: string } = {}
-	): Promise<HelixListResponse<HelixVideo>> {
+	async getArchiveVideosPage(userId: string, opts: { first?: number; after?: string } = {}): Promise<HelixListResponse<HelixVideo>> {
 		const params: Record<string, string> = {
 			user_id: userId,
 			type: 'archive',
-			first: String(opts.first ?? 100)
+			first: String(opts.first ?? 100),
 		};
 		if (opts.after) params.after = opts.after;
 		return this.get<HelixListResponse<HelixVideo>>('/videos', params);
@@ -259,12 +247,7 @@ export class TwitchHelixClient {
 		return this.getIdListBatch<HelixChannel>('/channels', 'broadcaster_id', broadcasterIds);
 	}
 
-	private async getIdListBatch<T>(
-		path: string,
-		param: string,
-		ids: string[],
-		rateLimitRetries = 0
-	): Promise<T[]> {
+	private async getIdListBatch<T>(path: string, param: string, ids: string[], rateLimitRetries = 0): Promise<T[]> {
 		const token = await getAppAccessToken(this.env, this.budget);
 		await this.budget.consume(1);
 
@@ -276,8 +259,8 @@ export class TwitchHelixClient {
 		const res = await fetch(url, {
 			headers: {
 				Authorization: `Bearer ${token}`,
-				'Client-Id': twitchClientId(this.env)
-			}
+				'Client-Id': twitchClientId(this.env),
+			},
 		});
 
 		this.budget.applyHeaders(res.headers);
@@ -285,9 +268,7 @@ export class TwitchHelixClient {
 		if (helixRateLimited(res)) {
 			if (rateLimitRetries >= HELIX_429_MAX_RETRIES) {
 				const text = await res.text();
-				throw new Error(
-					`Helix ${path} rate limited after ${HELIX_429_MAX_RETRIES} retries: ${text.slice(0, 300)}`
-				);
+				throw new Error(`Helix ${path} rate limited after ${HELIX_429_MAX_RETRIES} retries: ${text.slice(0, 300)}`);
 			}
 			await sleepMs(helixRateLimitWaitMs(res.headers));
 			return this.getIdListBatch<T>(path, param, ids, rateLimitRetries + 1);
@@ -315,8 +296,8 @@ export class TwitchHelixClient {
 		const res = await fetch(url, {
 			headers: {
 				Authorization: `Bearer ${token}`,
-				'Client-Id': twitchClientId(this.env)
-			}
+				'Client-Id': twitchClientId(this.env),
+			},
 		});
 
 		this.budget.applyHeaders(res.headers);
@@ -324,9 +305,7 @@ export class TwitchHelixClient {
 		if (helixRateLimited(res)) {
 			if (rateLimitRetries >= HELIX_429_MAX_RETRIES) {
 				const text = await res.text();
-				throw new Error(
-					`Helix /streams rate limited after ${HELIX_429_MAX_RETRIES} retries: ${text.slice(0, 300)}`
-				);
+				throw new Error(`Helix /streams rate limited after ${HELIX_429_MAX_RETRIES} retries: ${text.slice(0, 300)}`);
 			}
 			await sleepMs(helixRateLimitWaitMs(res.headers));
 			return this.getStreamsBatch(userIds, rateLimitRetries + 1);
@@ -341,11 +320,7 @@ export class TwitchHelixClient {
 		return json.data ?? [];
 	}
 
-	private async get<T>(
-		path: string,
-		query: Record<string, string>,
-		rateLimitRetries = 0
-	): Promise<T> {
+	private async get<T>(path: string, query: Record<string, string>, rateLimitRetries = 0): Promise<T> {
 		const token = await getAppAccessToken(this.env, this.budget);
 		await this.budget.consume(1);
 
@@ -357,8 +332,8 @@ export class TwitchHelixClient {
 		const res = await fetch(url, {
 			headers: {
 				Authorization: `Bearer ${token}`,
-				'Client-Id': twitchClientId(this.env)
-			}
+				'Client-Id': twitchClientId(this.env),
+			},
 		});
 
 		this.budget.applyHeaders(res.headers);
@@ -366,9 +341,7 @@ export class TwitchHelixClient {
 		if (helixRateLimited(res)) {
 			if (rateLimitRetries >= HELIX_429_MAX_RETRIES) {
 				const text = await res.text();
-				throw new Error(
-					`Helix ${path} rate limited after ${HELIX_429_MAX_RETRIES} retries: ${text.slice(0, 300)}`
-				);
+				throw new Error(`Helix ${path} rate limited after ${HELIX_429_MAX_RETRIES} retries: ${text.slice(0, 300)}`);
 			}
 			await sleepMs(helixRateLimitWaitMs(res.headers));
 			return this.get<T>(path, query, rateLimitRetries + 1);

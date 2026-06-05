@@ -8,9 +8,9 @@ describe('getRollupCoverageDays', () => {
 			prepare(sql: string) {
 				expect(sql).toContain('MIN(date)');
 				return {
-					first: async () => ({ oldest: '2026-03-01' })
+					first: async () => ({ oldest: '2026-03-01' }),
 				};
-			}
+			},
 		} as unknown as D1Database;
 
 		const days = await getRollupCoverageDays(db, new Date('2026-03-10T15:00:00.000Z'));
@@ -20,8 +20,8 @@ describe('getRollupCoverageDays', () => {
 	test('returns null when no rollups exist', async () => {
 		const db = {
 			prepare: () => ({
-				first: async () => ({ oldest: null })
-			})
+				first: async () => ({ oldest: null }),
+			}),
 		} as unknown as D1Database;
 
 		await expect(getRollupCoverageDays(db)).resolves.toBeNull();

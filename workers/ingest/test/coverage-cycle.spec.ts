@@ -16,7 +16,7 @@ describe('runTwitchCoverageCycle', () => {
 			streamsSeen: 1,
 			channelsIngested: 1,
 			duplicatesSkipped: 0,
-			stoppedBecause: 'end_of_catalog'
+			stoppedBecause: 'end_of_catalog',
 		});
 		vi.spyOn(gamePass, 'runTwitchGamePass').mockResolvedValue({
 			gamesScanned: 1,
@@ -25,7 +25,7 @@ describe('runTwitchCoverageCycle', () => {
 			channelsIngested: 1,
 			duplicatesSkipped: 0,
 			startGameIndex: 0,
-			topGamesHelixPoints: 0
+			topGamesHelixPoints: 0,
 		});
 		vi.spyOn(reconcile, 'runTwitchReconcileRecent').mockResolvedValue({
 			candidates: 1,
@@ -33,7 +33,7 @@ describe('runTwitchCoverageCycle', () => {
 			batches: 1,
 			liveFound: 0,
 			samplesWritten: 0,
-			retired: 0
+			retired: 0,
 		});
 		const enrich = await import('../src/twitch/enrich-profiles');
 		vi.spyOn(enrich, 'runTwitchProfileEnrichment').mockResolvedValue({
@@ -42,7 +42,7 @@ describe('runTwitchCoverageCycle', () => {
 			channelBatches: 1,
 			updated: 1,
 			skipped: 0,
-			retired: 0
+			retired: 0,
 		});
 
 		const stats = await runTwitchCoverageCycle({ DB: {} } as Env);
@@ -58,7 +58,7 @@ describe('runTwitchCoverageCycle', () => {
 			streamsSeen: 0,
 			channelsIngested: 0,
 			duplicatesSkipped: 0,
-			stoppedBecause: 'budget_exhausted'
+			stoppedBecause: 'budget_exhausted',
 		});
 		const gamePassSpy = vi.spyOn(gamePass, 'runTwitchGamePass').mockResolvedValue({
 			gamesScanned: 0,
@@ -67,7 +67,7 @@ describe('runTwitchCoverageCycle', () => {
 			channelsIngested: 0,
 			duplicatesSkipped: 0,
 			startGameIndex: 0,
-			topGamesHelixPoints: 0
+			topGamesHelixPoints: 0,
 		});
 		vi.spyOn(reconcile, 'runTwitchReconcileRecent').mockResolvedValue({
 			candidates: 0,
@@ -75,7 +75,7 @@ describe('runTwitchCoverageCycle', () => {
 			batches: 0,
 			liveFound: 0,
 			samplesWritten: 0,
-			retired: 0
+			retired: 0,
 		});
 		const enrich = await import('../src/twitch/enrich-profiles');
 		vi.spyOn(enrich, 'runTwitchProfileEnrichment').mockResolvedValue({
@@ -84,7 +84,7 @@ describe('runTwitchCoverageCycle', () => {
 			channelBatches: 0,
 			updated: 0,
 			skipped: 0,
-			retired: 0
+			retired: 0,
 		});
 
 		await runTwitchCoverageCycle(env);
@@ -94,8 +94,6 @@ describe('runTwitchCoverageCycle', () => {
 		expect(sweepOpts.client).toBeDefined();
 		expect(sweepOpts.client).toBe(gamePassOpts.client);
 		expect(sweepOpts.seenUserIds).toBe(gamePassOpts.seenUserIds);
-		expect(sweepOpts.client!.getBudget().snapshot().remaining).toBe(
-			helixSafePointsPerMinuteFromEnv(env)
-		);
+		expect(sweepOpts.client!.getBudget().snapshot().remaining).toBe(helixSafePointsPerMinuteFromEnv(env));
 	});
 });

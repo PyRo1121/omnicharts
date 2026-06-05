@@ -7,14 +7,14 @@ export const GET: RequestHandler = async ({ url, fetch }) => {
 	target.search = url.searchParams.toString();
 
 	const res = await fetch(target.toString(), {
-		headers: { accept: 'application/json' }
+		headers: { accept: 'application/json' },
 	});
 
 	return new Response(res.body, {
 		status: res.status,
 		headers: {
 			'content-type': res.headers.get('content-type') ?? 'application/json',
-			'cache-control': res.headers.get('cache-control') ?? SEARCH_CACHE_CONTROL
-		}
+			'cache-control': res.headers.get('cache-control') ?? SEARCH_CACHE_CONTROL,
+		},
 	});
 };

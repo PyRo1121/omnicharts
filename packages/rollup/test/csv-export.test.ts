@@ -1,32 +1,26 @@
 import { describe, expect, test } from 'vitest';
-import {
-	channelDetailToCsv,
-	channelRankingsToCsv,
-	csvDownloadFilename,
-	escapeCsvCell,
-	gameRankingsToCsv
-} from '../src/csv-export';
+import { channelDetailToCsv, channelRankingsToCsv, csvDownloadFilename, escapeCsvCell, gameRankingsToCsv } from '../src/csv-export';
 import { parseResponseFormat } from '../src/response-format';
 
 describe('parseResponseFormat', () => {
 	test('defaults to json', () => {
 		expect(parseResponseFormat(new URL('http://x/v1/rankings/channels'))).toEqual({
 			ok: true,
-			format: 'json'
+			format: 'json',
 		});
 	});
 
 	test('accepts csv', () => {
 		expect(parseResponseFormat(new URL('http://x/v1/rankings/channels?format=csv'))).toEqual({
 			ok: true,
-			format: 'csv'
+			format: 'csv',
 		});
 	});
 
 	test('rejects unknown format', () => {
 		expect(parseResponseFormat(new URL('http://x/v1/rankings/channels?format=xlsx'))).toEqual({
 			ok: false,
-			error: 'invalid_format'
+			error: 'invalid_format',
 		});
 	});
 });
@@ -58,13 +52,13 @@ describe('channelRankingsToCsv', () => {
 					peak_viewers: 900,
 					airtime_hours: 12.5,
 					stream_count: 3,
-					tracked_since: '2026-03-01T00:00:00Z'
-				}
-			]
+					tracked_since: '2026-03-01T00:00:00Z',
+				},
+			],
 		});
 		const lines = csv.trim().split('\n');
 		expect(lines[0]).toBe(
-			'rank,slug,display_name,avatar_url,hours_watched,average_viewers,peak_viewers,airtime_hours,stream_count,tracked_since'
+			'rank,slug,display_name,avatar_url,hours_watched,average_viewers,peak_viewers,airtime_hours,stream_count,tracked_since',
 		);
 		expect(lines[1]).toBe('1,caedrel,Caedrel,,1000,500,900,12.5,3,2026-03-01T00:00:00Z');
 	});
@@ -83,9 +77,9 @@ describe('gameRankingsToCsv', () => {
 					name: 'Just Chatting',
 					average_viewers: 1200,
 					hours_watched: 50000,
-					box_art_url: null
-				}
-			]
+					box_art_url: null,
+				},
+			],
 		});
 		expect(csv.trim().split('\n')[1]).toBe('1,just-chatting,Just Chatting,1200,50000');
 	});
@@ -110,7 +104,7 @@ describe('channelDetailToCsv', () => {
 				peak_viewers: 0,
 				airtime_hours: 0,
 				stream_count: 0,
-				followers_gain: null
+				followers_gain: null,
 			},
 			daily: [
 				{
@@ -119,9 +113,9 @@ describe('channelDetailToCsv', () => {
 					average_viewers: 50,
 					peak_viewers: 80,
 					airtime_hours: 4,
-					stream_count: 1
-				}
-			]
+					stream_count: 1,
+				},
+			],
 		});
 		expect(csv.trim().split('\n')[1]).toBe('2026-06-01,100,50,80,4,1');
 	});
@@ -129,8 +123,6 @@ describe('channelDetailToCsv', () => {
 
 describe('csvDownloadFilename', () => {
 	test('builds safe attachment name', () => {
-		expect(csvDownloadFilename(['twitch', 'channels', '7d'])).toBe(
-			'omnicharts-twitch-channels-7d.csv'
-		);
+		expect(csvDownloadFilename(['twitch', 'channels', '7d'])).toBe('omnicharts-twitch-channels-7d.csv');
 	});
 });

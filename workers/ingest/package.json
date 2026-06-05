@@ -2,6 +2,12 @@
 	"name": "ingest",
 	"version": "0.0.0",
 	"private": true,
+	"exports": {
+		"./health/operational-metrics": {
+			"types": "./src/health/operational-metrics.ts",
+			"default": "./src/health/operational-metrics.ts"
+		}
+	},
 	"scripts": {
 		"deploy": "wrangler deploy",
 		"dev": "bun ../../scripts/dev/wrangler-decline-skills.ts && wrangler dev --test-scheduled --show-interactive-dev-session false",
@@ -10,12 +16,6 @@
 		"test:coverage": "vitest run --project unit --coverage && bun ../../scripts/verify/check-ingest-coverage-thresholds.ts",
 		"check": "tsc -p tsconfig.json",
 		"cf-typegen": "wrangler types"
-	},
-	"exports": {
-		"./health/operational-metrics": {
-			"types": "./src/health/operational-metrics.ts",
-			"default": "./src/health/operational-metrics.ts"
-		}
 	},
 	"dependencies": {
 		"@omnicharts/domain": "workspace:*",

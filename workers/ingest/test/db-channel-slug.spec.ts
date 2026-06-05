@@ -12,7 +12,7 @@ const baseStream: HelixStream = {
 	title: 'T',
 	viewer_count: 100,
 	started_at: '2026-06-01T00:00:00Z',
-	type: 'live'
+	type: 'live',
 };
 
 describe('upsertChannelFromStream slug branches', () => {
@@ -25,7 +25,7 @@ describe('upsertChannelFromStream slug branches', () => {
 						bind: (...args: unknown[]) => {
 							binds.push(args);
 							return { run: async () => ({}) };
-						}
+						},
 					};
 				}
 				return {
@@ -37,18 +37,18 @@ describe('upsertChannelFromStream slug branches', () => {
 						if (sql.includes('slug IN')) {
 							return {
 								all: async () => ({
-									results: [{ slug: 'foo-bar', platform_channel_id: '999' }]
-								})
+									results: [{ slug: 'foo-bar', platform_channel_id: '999' }],
+								}),
 							};
 						}
 						return { run: async () => ({}), all: async () => ({ results: [] }) };
-					}
+					},
 				};
 			},
 			async batch(statements: { run: () => Promise<unknown> }[]) {
 				for (const stmt of statements) await stmt.run();
 				return [];
-			}
+			},
 		} as unknown as D1Database;
 
 		await upsertChannelFromStream(db, baseStream, { minViewers: 10, promoteToTracked: false });

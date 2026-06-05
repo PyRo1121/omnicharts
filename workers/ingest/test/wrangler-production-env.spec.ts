@@ -38,7 +38,7 @@ describe('wrangler production ranking thresholds', () => {
 		const production = parseProductionBlock();
 		expect(production.limits).toEqual({ cpu_ms: 30000 });
 		expect(production.triggers).toEqual({
-			crons: ['*/1 * * * *', '15 0 * * *', '0 */6 * * *']
+			crons: ['*/1 * * * *', '15 0 * * *', '0 */6 * * *'],
 		});
 	});
 });

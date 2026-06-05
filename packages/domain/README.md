@@ -4,22 +4,18 @@ Shared domain types and constants for OmniCharts. **Zero runtime dependencies.**
 
 ## Exports
 
-| Module | Contents |
-|--------|----------|
-| `PlatformId` | Data/API platform identifiers (`twitch`, `kick`, `youtube`) |
-| `UiPlatformFilter` | UI filter including `all` |
-| `RankingPeriod` | Ranking windows (`24h`, `7d`, `30d`, `90d`) |
-| `IngestState` | Channel ingest lifecycle states |
-| Constants | Platform IDs, default ranking period, ingest state list |
+| Module             | Contents                                                    |
+| ------------------ | ----------------------------------------------------------- |
+| `PlatformId`       | Data/API platform identifiers (`twitch`, `kick`, `youtube`) |
+| `UiPlatformFilter` | UI filter including `all`                                   |
+| `RankingPeriod`    | Ranking windows (`24h`, `7d`, `30d`, `90d`)                 |
+| `IngestState`      | Channel ingest lifecycle states                             |
+| Constants          | Platform IDs, default ranking period, ingest state list     |
 
 ## Usage
 
 ```ts
-import {
-	PLATFORM_TWITCH,
-	parseRankingPeriod,
-	type PlatformId
-} from '@omnicharts/domain';
+import { PLATFORM_TWITCH, parseRankingPeriod, type PlatformId } from '@omnicharts/domain';
 ```
 
 ## Scripts

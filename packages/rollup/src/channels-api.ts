@@ -6,7 +6,7 @@ import {
 	parseOptionalLanguageParam,
 	parseRankingPeriod,
 	periodToDays,
-	type RankingPeriod
+	type RankingPeriod,
 } from '@omnicharts/domain';
 import { MIN_RANKING_AIRTIME_MINUTES } from './eligibility';
 import { rankingQueryOptionsForPlatform, type RankingEligibilityEnv } from './ranking-env';
@@ -74,7 +74,7 @@ export async function buildRankingsChannelsResponse(
 		minAverageViewers?: number;
 		minAirtimeMinutes?: number;
 	},
-	env?: RankingEligibilityEnv
+	env?: RankingEligibilityEnv,
 ): Promise<RankingsChannelsResponse> {
 	const days = periodToDays(opts.period);
 	const language = opts.language ?? null;
@@ -82,7 +82,7 @@ export async function buildRankingsChannelsResponse(
 		? rankingQueryOptionsForPlatform(env, opts.platform)
 		: {
 				minAirtimeMinutes: opts.minAirtimeMinutes ?? MIN_RANKING_AIRTIME_MINUTES,
-				minAverageViewers: opts.minAverageViewers ?? 0
+				minAverageViewers: opts.minAverageViewers ?? 0,
 			};
 	const rankings = await getTopChannelsByHoursWatched(db, {
 		platformId: opts.platform,
@@ -90,7 +90,7 @@ export async function buildRankingsChannelsResponse(
 		limit: opts.limit,
 		minAverageViewers: eligibility.minAverageViewers,
 		minAirtimeMinutes: eligibility.minAirtimeMinutes,
-		language
+		language,
 	});
 
 	return {
@@ -108,7 +108,7 @@ export async function buildRankingsChannelsResponse(
 			peak_viewers: r.peakViewers,
 			airtime_hours: r.airtimeHours,
 			stream_count: r.streamCount,
-			tracked_since: r.trackedSince
-		}))
+			tracked_since: r.trackedSince,
+		})),
 	};
 }

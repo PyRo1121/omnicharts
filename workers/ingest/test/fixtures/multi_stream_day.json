@@ -1,22 +1,22 @@
 {
-  "description": "Two sessions same channel same day: 50 HW + 30 HW = 80",
-  "defaultIntervalMinutes": 1,
-  "sessions": [
-    {
-      "samples": [
-        { "offsetMinutes": 0, "viewerCount": 100 },
-        { "offsetMinutes": 30, "viewerCount": 100 }
-      ],
-      "expectedHoursWatched": 50
-    },
-    {
-      "samples": [
-        { "offsetMinutes": 0, "viewerCount": 60 },
-        { "offsetMinutes": 30, "viewerCount": 60 }
-      ],
-      "expectedHoursWatched": 30
-    }
-  ],
-  "expectedTotalHoursWatched": 80,
-  "expectedStreamCount": 2
+	"description": "Two sessions same channel same day: 50 HW + 30 HW = 80",
+	"defaultIntervalMinutes": 1,
+	"sessions": [
+		{
+			"samples": [
+				{ "offsetMinutes": 0, "viewerCount": 100 },
+				{ "offsetMinutes": 30, "viewerCount": 100 }
+			],
+			"expectedHoursWatched": 50
+		},
+		{
+			"samples": [
+				{ "offsetMinutes": 0, "viewerCount": 60 },
+				{ "offsetMinutes": 30, "viewerCount": 60 }
+			],
+			"expectedHoursWatched": 30
+		}
+	],
+	"expectedTotalHoursWatched": 80,
+	"expectedStreamCount": 2
 }

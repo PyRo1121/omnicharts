@@ -1,8 +1,5 @@
 import { describe, it, expect } from 'bun:test';
-import {
-	buildChannelDetailResponse,
-	parseChannelDetailQuery
-} from '../src/channel-api';
+import { buildChannelDetailResponse, parseChannelDetailQuery } from '../src/channel-api';
 
 describe('parseChannelDetailQuery', () => {
 	it('parses slug from path and defaults', () => {
@@ -32,7 +29,7 @@ describe('buildChannelDetailResponse', () => {
 		const res = await buildChannelDetailResponse(db, {
 			platform: 'twitch',
 			slug: '',
-			period: '7d'
+			period: '7d',
 		});
 		expect(res).toBeNull();
 	});
@@ -43,8 +40,8 @@ describe('buildChannelDetailResponse', () => {
 				if (sql.includes('lower(slug)')) {
 					return {
 						bind: () => ({
-							first: async () => ({ slug: 'xqc' })
-						})
+							first: async () => ({ slug: 'xqc' }),
+						}),
 					};
 				}
 				if (sql.includes('FROM channels') && sql.includes('display_name')) {
@@ -59,11 +56,11 @@ describe('buildChannelDetailResponse', () => {
 								first_observed_at: '2026-03-01T00:00:00.000Z',
 								ingest_state: 'tracked',
 								follower_count: 100_000,
-								description: 'kick bio'
+								description: 'kick bio',
 							}),
 							// platform bind assertion via closure
-							_platform: platform
-						})
+							_platform: platform,
+						}),
 					};
 				}
 				if (sql.includes('channel_daily_rollups')) {
@@ -78,21 +75,21 @@ describe('buildChannelDetailResponse', () => {
 										peak_viewers: 200,
 										airtime_minutes: 120,
 										stream_count: 1,
-										followers_delta: null
-									}
-								]
-							})
-						})
+										followers_delta: null,
+									},
+								],
+							}),
+						}),
 					};
 				}
 				return { bind: () => ({ first: async () => null, all: async () => ({}) }) };
-			}
+			},
 		} as unknown as D1Database;
 
 		const res = await buildChannelDetailResponse(db, {
 			platform: 'kick',
 			slug: 'xqc',
-			period: '7d'
+			period: '7d',
 		});
 
 		expect(res).toMatchObject({
@@ -101,8 +98,8 @@ describe('buildChannelDetailResponse', () => {
 			display_name: 'xQc',
 			totals: {
 				hours_watched: 100,
-				stream_count: 1
-			}
+				stream_count: 1,
+			},
 		});
 	});
 });

@@ -16,17 +16,14 @@ export type YoutubePollTarget = {
 	liveVideoId: string;
 };
 
-export async function listYoutubePollTargets(
-	db: D1Database,
-	limit: number
-): Promise<YoutubePollTarget[]> {
+export async function listYoutubePollTargets(db: D1Database, limit: number): Promise<YoutubePollTarget[]> {
 	const { results } = await db
 		.prepare(
 			`SELECT id, platform_channel_id, youtube_live_video_id
        FROM channels
        WHERE ${TRACKED_YOUTUBE_POLL_SQL}
        ORDER BY last_seen_at DESC NULLS LAST
-       LIMIT ?`
+       LIMIT ?`,
 		)
 		.bind(PLATFORM_YOUTUBE, limit)
 		.all<{
@@ -38,7 +35,7 @@ export async function listYoutubePollTargets(
 	return (results ?? []).map((row) => ({
 		channelRowId: row.id,
 		platformChannelId: row.platform_channel_id,
-		liveVideoId: row.youtube_live_video_id
+		liveVideoId: row.youtube_live_video_id,
 	}));
 }
 
@@ -55,10 +52,7 @@ export type YoutubeTrackedChannel = {
 };
 
 /** Tracked UC channels missing a live video id (poll bootstrap / refresh). */
-export async function listYoutubeTrackedMissingLiveVideoId(
-	db: D1Database,
-	limit: number
-): Promise<YoutubeTrackedChannel[]> {
+export async function listYoutubeTrackedMissingLiveVideoId(db: D1Database, limit: number): Promise<YoutubeTrackedChannel[]> {
 	const { results } = await db
 		.prepare(
 			`SELECT id, platform_channel_id
@@ -66,22 +60,18 @@ export async function listYoutubeTrackedMissingLiveVideoId(
        WHERE ${TRACKED_YOUTUBE_UC_SQL}
          AND (youtube_live_video_id IS NULL OR youtube_live_video_id = '')
        ORDER BY last_seen_at DESC NULLS LAST
-       LIMIT ?`
+       LIMIT ?`,
 		)
 		.bind(PLATFORM_YOUTUBE, limit)
 		.all<{ id: string; platform_channel_id: string }>();
 
 	return (results ?? []).map((row) => ({
 		channelRowId: row.id,
-		platformChannelId: row.platform_channel_id
+		platformChannelId: row.platform_channel_id,
 	}));
 }
 
-export async function setYoutubeLiveVideoId(
-	db: D1Database,
-	channelRowId: string,
-	liveVideoId: string | null
-): Promise<void> {
+export async function setYoutubeLiveVideoId(db: D1Database, channelRowId: string, liveVideoId: string | null): Promise<void> {
 	await db
 		.prepare(`UPDATE channels SET youtube_live_video_id = ? WHERE id = ? AND platform_id = ?`)
 		.bind(liveVideoId, channelRowId, PLATFORM_YOUTUBE)

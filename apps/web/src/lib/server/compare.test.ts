@@ -1,13 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
-import {
-	channelHasRollupMetrics,
-	loadChannelCompare,
-	parseCompareSlugs
-} from './compare';
+import { channelHasRollupMetrics, loadChannelCompare, parseCompareSlugs } from './compare';
 import { testLoadContext } from './test-helpers';
 
 vi.mock('$env/dynamic/private', () => ({
-	env: { INGEST_URL: 'http://ingest.test' }
+	env: { INGEST_URL: 'http://ingest.test' },
 }));
 
 describe('parseCompareSlugs', () => {
@@ -39,9 +35,9 @@ describe('channelHasRollupMetrics', () => {
 					peakViewers: 0,
 					airtimeHours: 0,
 					streamCount: 0,
-					followersGain: null
-				}
-			})
+					followersGain: null,
+				},
+			}),
 		).toBe(false);
 
 		expect(
@@ -64,9 +60,9 @@ describe('channelHasRollupMetrics', () => {
 					peakViewers: 0,
 					airtimeHours: 0,
 					streamCount: 0,
-					followersGain: null
-				}
-			})
+					followersGain: null,
+				},
+			}),
 		).toBe(false);
 	});
 
@@ -91,9 +87,9 @@ describe('channelHasRollupMetrics', () => {
 					peakViewers: 20,
 					airtimeHours: 2,
 					streamCount: 1,
-					followersGain: null
-				}
-			})
+					followersGain: null,
+				},
+			}),
 		).toBe(true);
 	});
 });
@@ -123,10 +119,10 @@ describe('loadChannelCompare', () => {
 						peak_viewers: 20,
 						airtime_hours: 2,
 						stream_count: 1,
-						followers_gain: null
+						followers_gain: null,
 					},
-					daily: [{ date: '2026-06-01', hours_watched: 10, average_viewers: 5, peak_viewers: 20 }]
-				})
+					daily: [{ date: '2026-06-01', hours_watched: 10, average_viewers: 5, peak_viewers: 20 }],
+				}),
 			});
 		});
 
@@ -134,7 +130,7 @@ describe('loadChannelCompare', () => {
 			a: 'ninja',
 			b: 'shroud',
 			platform: 'twitch',
-			period: '7d'
+			period: '7d',
 		});
 
 		expect(load.a?.displayName).toBe('ninja');
@@ -149,7 +145,7 @@ describe('loadChannelCompare', () => {
 			a: null,
 			b: null,
 			platform: 'twitch',
-			period: '7d'
+			period: '7d',
 		});
 		expect(load.a).toBeNull();
 		expect(load.b).toBeNull();
@@ -162,7 +158,7 @@ describe('loadChannelCompare', () => {
 			a: 'missing',
 			b: null,
 			platform: 'twitch',
-			period: '30d'
+			period: '30d',
 		});
 		expect(load.a?.source).toBe('not_found');
 		expect(load.a?.hasRollupMetrics).toBe(false);

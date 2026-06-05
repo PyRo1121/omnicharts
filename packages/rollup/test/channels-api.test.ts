@@ -1,9 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'bun:test';
 import * as topChannels from '../src/top-channels';
-import {
-	buildRankingsChannelsResponse,
-	parseRankingsChannelsQuery
-} from '../src/channels-api';
+import { buildRankingsChannelsResponse, parseRankingsChannelsQuery } from '../src/channels-api';
 
 describe('parseRankingsChannelsQuery', () => {
 	it('defaults platform twitch and period 7d', () => {
@@ -65,26 +62,23 @@ describe('buildRankingsChannelsResponse', () => {
 				peakViewers: 1000,
 				airtimeHours: 25,
 				streamCount: 4,
-				trackedSince: '2026-04-01T00:00:00.000Z'
-			}
+				trackedSince: '2026-04-01T00:00:00.000Z',
+			},
 		]);
 
 		const res = await buildRankingsChannelsResponse({} as D1Database, {
 			platform: 'kick',
 			period: '7d',
-			limit: 20
+			limit: 20,
 		});
 
-		expect(spy).toHaveBeenCalledWith(
-			{},
-			expect.objectContaining({ platformId: 'kick', days: 7, limit: 20 })
-		);
+		expect(spy).toHaveBeenCalledWith({}, expect.objectContaining({ platformId: 'kick', days: 7, limit: 20 }));
 		expect(res.platform).toBe('kick');
 		expect(res.items[0]).toMatchObject({
 			rank: 1,
 			slug: 'xqc',
 			hours_watched: 5000,
-			average_viewers: 200
+			average_viewers: 200,
 		});
 	});
 
@@ -100,14 +94,14 @@ describe('buildRankingsChannelsResponse', () => {
 				peakViewers: 500,
 				airtimeHours: 12.5,
 				streamCount: 3,
-				trackedSince: '2026-03-01T00:00:00.000Z'
-			}
+				trackedSince: '2026-03-01T00:00:00.000Z',
+			},
 		]);
 
 		const res = await buildRankingsChannelsResponse({} as D1Database, {
 			platform: 'twitch',
 			period: '7d',
-			limit: 20
+			limit: 20,
 		});
 
 		expect(res.items[0]).toMatchObject({
@@ -118,7 +112,7 @@ describe('buildRankingsChannelsResponse', () => {
 			peak_viewers: 500,
 			airtime_hours: 12.5,
 			stream_count: 3,
-			tracked_since: '2026-03-01T00:00:00.000Z'
+			tracked_since: '2026-03-01T00:00:00.000Z',
 		});
 	});
 
@@ -128,13 +122,10 @@ describe('buildRankingsChannelsResponse', () => {
 		await buildRankingsChannelsResponse({} as D1Database, {
 			platform: 'youtube',
 			period: '90d',
-			limit: 20
+			limit: 20,
 		});
 
-		expect(spy).toHaveBeenCalledWith(
-			{},
-			expect.objectContaining({ platformId: 'youtube', days: 90, limit: 20 })
-		);
+		expect(spy).toHaveBeenCalledWith({}, expect.objectContaining({ platformId: 'youtube', days: 90, limit: 20 }));
 	});
 
 	it('uses platform-specific min viewers from env', async () => {
@@ -143,13 +134,10 @@ describe('buildRankingsChannelsResponse', () => {
 		await buildRankingsChannelsResponse(
 			{} as D1Database,
 			{ platform: 'kick', period: '7d', limit: 20 },
-			{ KICK_MIN_VIEWERS: 50, TWITCH_MIN_VIEWERS: 2 }
+			{ KICK_MIN_VIEWERS: 50, TWITCH_MIN_VIEWERS: 2 },
 		);
 
-		expect(spy).toHaveBeenCalledWith(
-			{},
-			expect.objectContaining({ platformId: 'kick', minAverageViewers: 50 })
-		);
+		expect(spy).toHaveBeenCalledWith({}, expect.objectContaining({ platformId: 'kick', minAverageViewers: 50 }));
 	});
 
 	it('passes language filter to top channels query', async () => {
@@ -159,13 +147,10 @@ describe('buildRankingsChannelsResponse', () => {
 			platform: 'twitch',
 			period: '7d',
 			limit: 20,
-			language: 'es'
+			language: 'es',
 		});
 
-		expect(spy).toHaveBeenCalledWith(
-			{},
-			expect.objectContaining({ platformId: 'twitch', language: 'es' })
-		);
+		expect(spy).toHaveBeenCalledWith({}, expect.objectContaining({ platformId: 'twitch', language: 'es' }));
 		expect(res.language).toBe('es');
 	});
 
@@ -175,7 +160,7 @@ describe('buildRankingsChannelsResponse', () => {
 		const res = await buildRankingsChannelsResponse({} as D1Database, {
 			platform: 'twitch',
 			period: '7d',
-			limit: 20
+			limit: 20,
 		});
 
 		expect(res.language).toBeUndefined();

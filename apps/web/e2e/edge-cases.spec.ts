@@ -1,12 +1,5 @@
 import { test, expect } from '@playwright/test';
-import {
-	clickPlatform,
-	expectPlatformSelected,
-	ingestRankingsReady,
-	ingestReachable,
-	INGEST_URL,
-	platformNav
-} from './helpers';
+import { clickPlatform, expectPlatformSelected, ingestRankingsReady, ingestReachable, INGEST_URL, platformNav } from './helpers';
 
 test.describe('Edge cases (docs/09, docs/13)', () => {
 	test('invalid platform query falls back to Twitch tab', async ({ page }) => {
@@ -42,9 +35,7 @@ test.describe('Edge cases (docs/09, docs/13)', () => {
 			const url = platform === 'twitch' ? '/methodology' : `/methodology?platform=${platform}`;
 			const res = await page.goto(url);
 			expect(res?.status()).toBe(200);
-			await expect(
-				page.getByRole('heading', { name: /How we measure streaming statistics/i })
-			).toBeVisible();
+			await expect(page.getByRole('heading', { name: /How we measure streaming statistics/i })).toBeVisible();
 		}
 	});
 

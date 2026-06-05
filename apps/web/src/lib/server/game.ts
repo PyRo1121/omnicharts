@@ -1,9 +1,5 @@
 import { parseRankingPeriod } from '@omnicharts/domain';
-import {
-	buildGameDetailResponse,
-	formatHoursWatched,
-	type GameTopChannelItem
-} from '@omnicharts/rollup';
+import { buildGameDetailResponse, formatHoursWatched, type GameTopChannelItem } from '@omnicharts/rollup';
 import { getIngestBaseUrl } from '$lib/server/ingest';
 import { periodForApi } from '$lib/server/period-api';
 import type { ChannelDailyPoint } from '$lib/server/channel';
@@ -69,7 +65,7 @@ function mapDaily(rows: IngestGameDaily[] | undefined): ChannelDailyPoint[] {
 		date: d.date,
 		hoursWatched: d.hours_watched,
 		averageViewers: d.average_viewers,
-		peakViewers: d.peak_viewers
+		peakViewers: d.peak_viewers,
 	}));
 }
 
@@ -80,7 +76,7 @@ function mapTopChannels(rows: GameTopChannelItem[] | undefined): GameTopChannelR
 		slug: row.slug,
 		displayName: row.display_name,
 		avatarUrl: row.avatar_url ?? '',
-		hoursWatched: formatHoursWatched(row.hours_watched)
+		hoursWatched: formatHoursWatched(row.hours_watched),
 	}));
 }
 
@@ -98,17 +94,12 @@ function mapGameBody(body: IngestGameResponse, period: RankingPeriod): GameDetai
 			averageViewers: body.totals.average_viewers,
 			peakViewers: body.totals.peak_viewers,
 			airtimeHours: body.totals.airtime_hours,
-			liveChannels: body.totals.live_channels
-		}
+			liveChannels: body.totals.live_channels,
+		},
 	};
 }
 
-function emptyGameLoad(
-	source: 'not_found' | 'error',
-	slug: string,
-	platform: string,
-	period: RankingPeriod
-): GameDetailLoad {
+function emptyGameLoad(source: 'not_found' | 'error', slug: string, platform: string, period: RankingPeriod): GameDetailLoad {
 	return {
 		source,
 		platform,
@@ -122,8 +113,8 @@ function emptyGameLoad(
 			averageViewers: 0,
 			peakViewers: 0,
 			airtimeHours: 0,
-			liveChannels: 0
-		}
+			liveChannels: 0,
+		},
 	};
 }
 
@@ -131,7 +122,7 @@ export async function loadGameDetail(
 	ctx: ServerLoadContext,
 	slug: string,
 	platform: string,
-	period: RankingPeriod
+	period: RankingPeriod,
 ): Promise<GameDetailLoad> {
 	const apiPeriod = parseRankingPeriod(periodForApi(period));
 
@@ -144,8 +135,8 @@ export async function loadGameDetail(
 					{ platform, slug, period: apiPeriod },
 					{
 						minAirtimeMinutes: eligibility.minAirtimeMinutes,
-						minAverageViewers: eligibility.minAverageViewers
-					}
+						minAverageViewers: eligibility.minAverageViewers,
+					},
 				);
 				if (!body) return emptyGameLoad('not_found', slug, platform, period);
 				return mapGameBody(body as IngestGameResponse, period);

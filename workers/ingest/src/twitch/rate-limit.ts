@@ -47,7 +47,7 @@ export class HelixRateBudget {
 	snapshot(): { remaining: number; resetsInMs: number } {
 		return {
 			remaining: this.remaining,
-			resetsInMs: Math.max(0, this.windowEndsAt - Date.now())
+			resetsInMs: Math.max(0, this.windowEndsAt - Date.now()),
 		};
 	}
 }
@@ -97,10 +97,7 @@ export function helixBudgetGamesPerCycle(budget: HelixRateBudget, configured: nu
 }
 
 /** Cap reconcile stream batches — 1 Helix point per batch of ≤100 user_ids. */
-export function helixBudgetReconcileBatches(
-	budget: HelixRateBudget,
-	configuredBatches: number
-): number {
+export function helixBudgetReconcileBatches(budget: HelixRateBudget, configuredBatches: number): number {
 	const { remaining } = budget.snapshot();
 	if (remaining <= 5) return 0;
 	const reserve = 10;

@@ -17,56 +17,41 @@ export type ChannelCompareLoad = {
 	b: CompareSideLoad | null;
 };
 
-export function parseCompareSlugs(
-	aRaw: string | null,
-	bRaw: string | null
-): { a: string | null; b: string | null } {
+export function parseCompareSlugs(aRaw: string | null, bRaw: string | null): { a: string | null; b: string | null } {
 	return {
 		a: normalizeCompareSlug(aRaw),
-		b: normalizeCompareSlug(bRaw)
+		b: normalizeCompareSlug(bRaw),
 	};
 }
 
 export function channelHasRollupMetrics(channel: ChannelDetailLoad): boolean {
 	if (channel.source !== 'live' || channel.ingestState === 'discovered') return false;
-	return (
-		channel.daily.length > 0 ||
-		channel.totals.hoursWatched > 0 ||
-		channel.totals.airtimeHours > 0
-	);
+	return channel.daily.length > 0 || channel.totals.hoursWatched > 0 || channel.totals.airtimeHours > 0;
 }
 
 function mapSide(channel: ChannelDetailLoad, slugParam: string): CompareSideLoad {
 	return {
 		...channel,
 		slugParam,
-		hasRollupMetrics: channelHasRollupMetrics(channel)
+		hasRollupMetrics: channelHasRollupMetrics(channel),
 	};
 }
 
 export async function loadChannelCompare(
 	ctx: ServerLoadContext,
-	opts: { a: string | null; b: string | null; platform: PlatformId; period: ComparePeriod }
+	opts: { a: string | null; b: string | null; platform: PlatformId; period: ComparePeriod },
 ): Promise<ChannelCompareLoad> {
 	const platform = searchPlatformId(opts.platform);
 	const loads: Promise<CompareSideLoad | null>[] = [];
 
 	if (opts.a) {
-		loads.push(
-			loadChannelDetail(ctx, opts.a, platform, opts.period).then((channel) =>
-				mapSide(channel, opts.a!)
-			)
-		);
+		loads.push(loadChannelDetail(ctx, opts.a, platform, opts.period).then((channel) => mapSide(channel, opts.a!)));
 	} else {
 		loads.push(Promise.resolve(null));
 	}
 
 	if (opts.b) {
-		loads.push(
-			loadChannelDetail(ctx, opts.b, platform, opts.period).then((channel) =>
-				mapSide(channel, opts.b!)
-			)
-		);
+		loads.push(loadChannelDetail(ctx, opts.b, platform, opts.period).then((channel) => mapSide(channel, opts.b!)));
 	} else {
 		loads.push(Promise.resolve(null));
 	}

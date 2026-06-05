@@ -23,10 +23,7 @@ export type LiveSweepOptions = {
 	seenUserIds?: Set<string>;
 };
 
-export async function runTwitchLiveSweep(
-	env: Env,
-	opts: LiveSweepOptions = {}
-): Promise<LiveSweepStats> {
+export async function runTwitchLiveSweep(env: Env, opts: LiveSweepOptions = {}): Promise<LiveSweepStats> {
 	const client = opts.client ?? new TwitchHelixClient(env);
 	const minViewers = minViewersFromEnv(env);
 	const configuredPages = opts.maxPages ?? liveSweepMaxPagesFromEnv(env);
@@ -37,7 +34,7 @@ export async function runTwitchLiveSweep(
 		streamsSeen: 0,
 		channelsIngested: 0,
 		duplicatesSkipped: 0,
-		stoppedBecause: 'end_of_catalog'
+		stoppedBecause: 'end_of_catalog',
 	};
 
 	let cursor: string | undefined;
@@ -56,15 +53,13 @@ export async function runTwitchLiveSweep(
 
 		const pageResult = await client.getLiveStreamsPage({
 			first: 100,
-			after: cursor
+			after: cursor,
 		});
 		stats.pagesFetched++;
 
 		const streams = pageResult.data ?? [];
 		if (streams.length === 0) {
-			if (
-				shouldContinueHelixPagination(streams, pageResult.pagination, consecutiveEmptyPages)
-			) {
+			if (shouldContinueHelixPagination(streams, pageResult.pagination, consecutiveEmptyPages)) {
 				consecutiveEmptyPages++;
 				cursor = pageResult.pagination!.cursor;
 				continue;
@@ -74,13 +69,7 @@ export async function runTwitchLiveSweep(
 		}
 		consecutiveEmptyPages = 0;
 
-		const { pageMaxViewers } = await ingestStreamPage(
-			env,
-			streams,
-			minViewers,
-			seenUserIds,
-			stats
-		);
+		const { pageMaxViewers } = await ingestStreamPage(env, streams, minViewers, seenUserIds, stats);
 
 		if (pageMaxViewers < minViewers) {
 			stats.stoppedBecause = 'below_threshold';

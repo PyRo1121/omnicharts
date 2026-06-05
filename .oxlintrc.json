@@ -1,0 +1,29 @@
+{
+	"$schema": "./node_modules/oxlint/configuration_schema.json",
+	"plugins": ["typescript", "unicorn", "oxc"],
+	"categories": {
+		"correctness": "error"
+	},
+	"rules": {},
+	"env": {
+		"builtin": true,
+		"node": true
+	},
+	"ignorePatterns": [
+		"**/node_modules/**",
+		"**/.svelte-kit/**",
+		"**/build/**",
+		"**/dist/**",
+		"**/.wrangler/**",
+		"**/worker-configuration.d.ts",
+		"**/*.tsbuildinfo"
+	],
+	"overrides": [
+		{
+			"files": ["**/*.test.ts", "**/*.spec.ts", "**/test/**"],
+			"env": {
+				"vitest": true
+			}
+		}
+	]
+}

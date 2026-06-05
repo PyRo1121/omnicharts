@@ -1,9 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { setYoutubeLiveVideoId } from '../src/db/youtube';
-import {
-	pickLiveVideoIdFromPlaylistItems,
-	resolveYoutubeLiveVideoId
-} from '../src/youtube/live-video-id';
+import { pickLiveVideoIdFromPlaylistItems, resolveYoutubeLiveVideoId } from '../src/youtube/live-video-id';
 import type { YoutubeDataApiClient } from '../src/youtube/api';
 describe('pickLiveVideoIdFromPlaylistItems', () => {
 	it('returns first live video id from uploads playlist page', () => {
@@ -11,25 +8,21 @@ describe('pickLiveVideoIdFromPlaylistItems', () => {
 			{
 				snippet: {
 					resourceId: { videoId: 'vod123' },
-					liveBroadcastContent: 'none'
-				}
+					liveBroadcastContent: 'none',
+				},
 			},
 			{
 				snippet: {
 					resourceId: { videoId: 'live456' },
-					liveBroadcastContent: 'live'
-				}
-			}
+					liveBroadcastContent: 'live',
+				},
+			},
 		]);
 		expect(id).toBe('live456');
 	});
 
 	it('returns null when no live item', () => {
-		expect(
-			pickLiveVideoIdFromPlaylistItems([
-				{ snippet: { resourceId: { videoId: 'a' }, liveBroadcastContent: 'none' } }
-			])
-		).toBeNull();
+		expect(pickLiveVideoIdFromPlaylistItems([{ snippet: { resourceId: { videoId: 'a' }, liveBroadcastContent: 'none' } }])).toBeNull();
 	});
 });
 
@@ -41,10 +34,10 @@ describe('resolveYoutubeLiveVideoId', () => {
 				{
 					snippet: {
 						resourceId: { videoId: 'abcLive' },
-						liveBroadcastContent: 'live'
-					}
-				}
-			])
+						liveBroadcastContent: 'live',
+					},
+				},
+			]),
 		} as unknown as YoutubeDataApiClient;
 
 		const id = await resolveYoutubeLiveVideoId(client, 'UC-channel');
@@ -56,7 +49,7 @@ describe('resolveYoutubeLiveVideoId', () => {
 	it('returns null when channel has no uploads playlist', async () => {
 		const client = {
 			getUploadsPlaylistId: vi.fn().mockResolvedValue(null),
-			getPlaylistItems: vi.fn()
+			getPlaylistItems: vi.fn(),
 		} as unknown as YoutubeDataApiClient;
 
 		await expect(resolveYoutubeLiveVideoId(client, 'UC-channel')).resolves.toBeNull();
@@ -73,10 +66,10 @@ describe('setYoutubeLiveVideoId', () => {
 					bind: (...args: unknown[]) => ({
 						run: async () => {
 							binds.push([sql, ...args]);
-						}
-					})
+						},
+					}),
 				};
-			}
+			},
 		} as unknown as D1Database;
 
 		await setYoutubeLiveVideoId(db, 'ch-row-1', 'video123');

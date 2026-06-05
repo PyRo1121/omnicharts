@@ -8,7 +8,7 @@ describe('trendingFromRankings', () => {
 		expect(trendingFromRankings(rows)).toEqual([
 			{ slug: 'caedrel', name: 'Caedrel', platform: 'twitch' },
 			{ slug: 'korekore_ch', name: 'korekore_ch', platform: 'kick' },
-			{ slug: 'ramzes', name: 'ramzes', platform: 'twitch' }
+			{ slug: 'ramzes', name: 'ramzes', platform: 'twitch' },
 		]);
 	});
 

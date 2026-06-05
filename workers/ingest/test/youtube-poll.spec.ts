@@ -22,21 +22,21 @@ describe('youtube poll', () => {
 					channelId: 'UCabc',
 					title: 'Live stream',
 					liveBroadcastContent: 'live',
-					categoryId: '20'
+					categoryId: '20',
 				},
 				liveStreamingDetails: {
 					actualStartTime: '2026-06-01T00:00:00Z',
-					concurrentViewers: '120'
-				}
-			}
+					concurrentViewers: '120',
+				},
+			},
 		]);
 		vi.spyOn(youtubeDb, 'batchRecordYoutubeLiveSamples').mockResolvedValue([
 			{
 				stream_session_id: 'sess',
 				sampled_at: '2026-06-01T00:00:00Z',
 				viewer_count: 120,
-				platform: 'youtube'
-			}
+				platform: 'youtube',
+			},
 		]);
 		const clearSpy = vi.spyOn(youtubeDb, 'clearYoutubeLiveVideoIds').mockResolvedValue();
 
@@ -48,8 +48,8 @@ describe('youtube poll', () => {
 						run: async () => {
 							runs.push(sql);
 							return {};
-						}
-					})
+						},
+					}),
 				};
 			},
 			batch: async (statements: { run: () => Promise<unknown> }[]) => {
@@ -57,16 +57,16 @@ describe('youtube poll', () => {
 					await stmt.run();
 				}
 				return [];
-			}
+			},
 		} as unknown as D1Database;
 
 		const result = await runYoutubePollBatch(
 			{
 				YOUTUBE_API_KEY: 'key',
 				YOUTUBE_MIN_VIEWERS: '5',
-				DB: db
+				DB: db,
 			} as Env,
-			[{ channelRowId: 'ch-1', platformChannelId: 'UCabc', liveVideoId: 'vid-live' }]
+			[{ channelRowId: 'ch-1', platformChannelId: 'UCabc', liveVideoId: 'vid-live' }],
 		);
 
 		expect(result.liveVideos).toBe(1);
@@ -82,25 +82,24 @@ describe('youtube poll', () => {
 				snippet: {
 					channelId: 'UCabc',
 					title: 'Live stream',
-					liveBroadcastContent: 'live'
+					liveBroadcastContent: 'live',
 				},
 				liveStreamingDetails: {
-					actualStartTime: '2026-06-01T00:00:00Z'
-				}
-			}
+					actualStartTime: '2026-06-01T00:00:00Z',
+				},
+			},
 		]);
 		const recordSpy = vi.spyOn(youtubeDb, 'batchRecordYoutubeLiveSamples').mockResolvedValue([]);
 		vi.spyOn(youtubeDb, 'clearYoutubeLiveVideoIds').mockResolvedValue();
 
 		const db = {
 			prepare: () => ({ bind: () => ({ run: async () => ({}) }) }),
-			batch: async () => []
+			batch: async () => [],
 		} as unknown as D1Database;
 
-		const result = await runYoutubePollBatch(
-			{ YOUTUBE_API_KEY: 'key', DB: db } as Env,
-			[{ channelRowId: 'ch-1', platformChannelId: 'UCabc', liveVideoId: 'vid-live' }]
-		);
+		const result = await runYoutubePollBatch({ YOUTUBE_API_KEY: 'key', DB: db } as Env, [
+			{ channelRowId: 'ch-1', platformChannelId: 'UCabc', liveVideoId: 'vid-live' },
+		]);
 
 		expect(result.liveVideos).toBe(1);
 		expect(result.samplesWritten).toBe(0);
@@ -114,26 +113,25 @@ describe('youtube poll', () => {
 				snippet: {
 					channelId: 'UCabc',
 					title: 'Ended stream',
-					liveBroadcastContent: 'none'
+					liveBroadcastContent: 'none',
 				},
 				liveStreamingDetails: {
 					actualStartTime: '2026-06-01T00:00:00Z',
-					actualEndTime: '2026-06-01T02:00:00Z'
-				}
-			}
+					actualEndTime: '2026-06-01T02:00:00Z',
+				},
+			},
 		]);
 		vi.spyOn(youtubeDb, 'batchRecordYoutubeLiveSamples').mockResolvedValue([]);
 		const clearSpy = vi.spyOn(youtubeDb, 'clearYoutubeLiveVideoIds').mockResolvedValue();
 
 		const db = {
 			prepare: () => ({ bind: () => ({ run: async () => ({}) }) }),
-			batch: async () => []
+			batch: async () => [],
 		} as unknown as D1Database;
 
-		await runYoutubePollBatch(
-			{ YOUTUBE_API_KEY: 'key', DB: db } as Env,
-			[{ channelRowId: 'ch-1', platformChannelId: 'UCabc', liveVideoId: 'vid-ended' }]
-		);
+		await runYoutubePollBatch({ YOUTUBE_API_KEY: 'key', DB: db } as Env, [
+			{ channelRowId: 'ch-1', platformChannelId: 'UCabc', liveVideoId: 'vid-ended' },
+		]);
 
 		expect(clearSpy).toHaveBeenCalledWith(db, ['ch-1'], expect.anything());
 	});
@@ -145,13 +143,13 @@ describe('youtube poll', () => {
 				snippet: {
 					channelId: 'UCabc',
 					title: 'Ended',
-					liveBroadcastContent: 'none'
+					liveBroadcastContent: 'none',
 				},
 				liveStreamingDetails: {
 					actualStartTime: '2026-06-01T00:00:00Z',
-					actualEndTime: '2026-06-01T02:00:00Z'
-				}
-			}
+					actualEndTime: '2026-06-01T02:00:00Z',
+				},
+			},
 		]);
 		const resolveSpy = vi
 			.spyOn(await import('../src/youtube/live-video-id'), 'resolveYoutubeLiveVideoId')
@@ -168,17 +166,16 @@ describe('youtube poll', () => {
 							if (sql.includes('youtube_live_video_id')) {
 								setCalls.push(String(args[1]));
 							}
-						}
-					})
+						},
+					}),
 				};
 			},
-			batch: async () => []
+			batch: async () => [],
 		} as unknown as D1Database;
 
-		await runYoutubePollBatch(
-			{ YOUTUBE_API_KEY: 'key', DB: db } as Env,
-			[{ channelRowId: 'ch-1', platformChannelId: 'UCabc', liveVideoId: 'vid-ended' }]
-		);
+		await runYoutubePollBatch({ YOUTUBE_API_KEY: 'key', DB: db } as Env, [
+			{ channelRowId: 'ch-1', platformChannelId: 'UCabc', liveVideoId: 'vid-ended' },
+		]);
 
 		expect(resolveSpy).toHaveBeenCalled();
 	});
@@ -195,22 +192,21 @@ describe('youtube poll', () => {
 				snippet: { channelId: 'UCabc', title: 'Live', liveBroadcastContent: 'live' },
 				liveStreamingDetails: {
 					actualStartTime: '2026-06-01T00:00:00Z',
-					concurrentViewers: '3'
-				}
-			}
+					concurrentViewers: '3',
+				},
+			},
 		]);
 		const recordSpy = vi.spyOn(youtubeDb, 'batchRecordYoutubeLiveSamples').mockResolvedValue([]);
 		vi.spyOn(youtubeDb, 'clearYoutubeLiveVideoIds').mockResolvedValue();
 
 		const db = {
 			prepare: () => ({ bind: () => ({ run: async () => ({}) }) }),
-			batch: async () => []
+			batch: async () => [],
 		} as unknown as D1Database;
 
-		const result = await runYoutubePollBatch(
-			{ YOUTUBE_API_KEY: 'key', YOUTUBE_MIN_VIEWERS: '5', DB: db } as Env,
-			[{ channelRowId: 'ch-1', platformChannelId: 'UCabc', liveVideoId: 'vid-live' }]
-		);
+		const result = await runYoutubePollBatch({ YOUTUBE_API_KEY: 'key', YOUTUBE_MIN_VIEWERS: '5', DB: db } as Env, [
+			{ channelRowId: 'ch-1', platformChannelId: 'UCabc', liveVideoId: 'vid-live' },
+		]);
 
 		expect(result.liveVideos).toBe(1);
 		expect(result.samplesWritten).toBe(0);
@@ -218,11 +214,9 @@ describe('youtube poll', () => {
 	});
 
 	it('runYoutubeCatalogPoll batches tracked poll targets', async () => {
-		vi.spyOn(await import('../src/db/youtube'), 'listYoutubeTrackedMissingLiveVideoId').mockResolvedValue(
-			[]
-		);
+		vi.spyOn(await import('../src/db/youtube'), 'listYoutubeTrackedMissingLiveVideoId').mockResolvedValue([]);
 		vi.spyOn(await import('../src/db/youtube'), 'listYoutubePollTargets').mockResolvedValue([
-			{ channelRowId: 'ch-1', platformChannelId: 'UCabc', liveVideoId: 'vid-1' }
+			{ channelRowId: 'ch-1', platformChannelId: 'UCabc', liveVideoId: 'vid-1' },
 		]);
 		vi.spyOn(YoutubeDataApiClient.prototype, 'getVideosByIds').mockResolvedValue([
 			{
@@ -230,17 +224,17 @@ describe('youtube poll', () => {
 				snippet: { channelId: 'UCabc', title: 'Live', liveBroadcastContent: 'live' },
 				liveStreamingDetails: {
 					actualStartTime: '2026-06-01T00:00:00Z',
-					concurrentViewers: '50'
-				}
-			}
+					concurrentViewers: '50',
+				},
+			},
 		]);
 		vi.spyOn(youtubeDb, 'batchRecordYoutubeLiveSamples').mockResolvedValue([
 			{
 				stream_session_id: 's',
 				sampled_at: '2026-06-01T00:00:00Z',
 				viewer_count: 50,
-				platform: 'youtube'
-			}
+				platform: 'youtube',
+			},
 		]);
 		vi.spyOn(youtubeDb, 'clearYoutubeLiveVideoIds').mockResolvedValue();
 		vi.spyOn(await import('../src/r2/sample-archive'), 'archiveSampleBatch').mockResolvedValue();
@@ -250,13 +244,13 @@ describe('youtube poll', () => {
 			batch: async (stmts: { run: () => Promise<unknown> }[]) => {
 				for (const s of stmts) await s.run();
 				return [];
-			}
+			},
 		} as unknown as D1Database;
 
 		const result = await runYoutubeCatalogPoll({
 			YOUTUBE_API_KEY: 'key',
 			YOUTUBE_MIN_VIEWERS: '5',
-			DB: db
+			DB: db,
 		} as Env);
 
 		expect(result.batches).toBe(1);

@@ -4,7 +4,7 @@ import {
 	getCachedRankingsChannels,
 	rankingsChannelsCacheKey,
 	resetRankingsCacheForTests,
-	setCachedRankingsChannels
+	setCachedRankingsChannels,
 } from '../src/http/rankings-cache';
 
 describe('rankings in-worker cache', () => {
@@ -23,7 +23,7 @@ describe('rankings in-worker cache', () => {
 			period: '7d',
 			limit: 20,
 			minAverageViewers: 20,
-			minAirtimeMinutes: 60
+			minAirtimeMinutes: 60,
 		});
 		setCachedRankingsChannels(key, '{"items":[]}');
 		expect(getCachedRankingsChannels(key)).toBe('{"items":[]}');
@@ -41,7 +41,7 @@ describe('rankings in-worker cache', () => {
 			period: '7d' as const,
 			limit: 20,
 			minAverageViewers: 20,
-			minAirtimeMinutes: 60
+			minAirtimeMinutes: 60,
 		};
 		const keyA = rankingsChannelsCacheKey(base);
 		const keyB = rankingsChannelsCacheKey({ ...base, period: '30d' });

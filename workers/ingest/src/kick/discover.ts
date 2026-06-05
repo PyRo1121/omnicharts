@@ -1,7 +1,4 @@
-import {
-	batchUpsertKickChannelsFromLivestreams,
-	batchUpsertKickGameCategories
-} from '../db/kick-live-batch';
+import { batchUpsertKickChannelsFromLivestreams, batchUpsertKickGameCategories } from '../db/kick-live-batch';
 import { ingestWarn } from '../log';
 import { requireDb } from '../worker-bindings';
 import { KickPublicApiClient } from './api';
@@ -10,7 +7,7 @@ import {
 	DISCOVERY_CATEGORY_LIST_LIMIT,
 	DISCOVERY_CATEGORY_LIVESTREAMS_LIMIT,
 	kickCredentialsConfigured,
-	kickMinViewersFromEnv
+	kickMinViewersFromEnv,
 } from './config';
 import { kickBroadcasterId } from './stream-fields';
 
@@ -38,10 +35,7 @@ export function kickDiscoveryNeedsApiReason(env: Env): string | null {
  * GET /public/v2/categories → GET /public/v1/livestreams?category_id&sort=viewer_count&limit=100.
  * Metadata only (`discovered` / directory promotion); samples come from poll_kick_tracked.
  */
-export async function runKickDiscovery(
-	env: Env,
-	opts: KickDiscoveryOptions = {}
-): Promise<KickDiscoveryStats> {
+export async function runKickDiscovery(env: Env, opts: KickDiscoveryOptions = {}): Promise<KickDiscoveryStats> {
 	const needsApi = kickDiscoveryNeedsApiReason(env);
 	if (needsApi) {
 		ingestWarn('[kick] discover skipped — NEEDS_API:', needsApi);
@@ -49,7 +43,7 @@ export async function runKickDiscovery(
 			categoriesScanned: 0,
 			categoryListPagesFetched: 0,
 			streamsSeen: 0,
-			channelsUpserted: 0
+			channelsUpserted: 0,
 		};
 	}
 
@@ -62,7 +56,7 @@ export async function runKickDiscovery(
 		categoriesScanned: 0,
 		categoryListPagesFetched: 0,
 		streamsSeen: 0,
-		channelsUpserted: 0
+		channelsUpserted: 0,
 	};
 
 	const categories: { id: number; name: string }[] = [];
@@ -71,7 +65,7 @@ export async function runKickDiscovery(
 	while (categories.length < categoriesToScan) {
 		const page = await client.getCategoriesV2({
 			cursor,
-			limit: DISCOVERY_CATEGORY_LIST_LIMIT
+			limit: DISCOVERY_CATEGORY_LIST_LIMIT,
 		});
 		stats.categoryListPagesFetched++;
 
@@ -92,7 +86,7 @@ export async function runKickDiscovery(
 
 		const liveStreams = await client.getLivestreamsByCategoryId(category.id, {
 			limit: DISCOVERY_CATEGORY_LIVESTREAMS_LIMIT,
-			sort: 'viewer_count'
+			sort: 'viewer_count',
 		});
 
 		stats.streamsSeen += liveStreams.length;
@@ -103,7 +97,7 @@ export async function runKickDiscovery(
 			db,
 			liveStreams,
 			{ minViewers, promoteToTracked: true, directoryListing: true },
-			{ env, scope: 'kick:discover:channels' }
+			{ env, scope: 'kick:discover:channels' },
 		);
 
 		for (const stream of liveStreams) {

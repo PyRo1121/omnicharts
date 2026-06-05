@@ -3,7 +3,7 @@ import { loadGameRankings } from './game-rankings';
 import { testLoadContext } from './test-helpers';
 
 vi.mock('$env/dynamic/private', () => ({
-	env: { INGEST_URL: 'http://ingest.test' }
+	env: { INGEST_URL: 'http://ingest.test' },
 }));
 
 describe('loadGameRankings (twitch)', () => {
@@ -19,10 +19,10 @@ describe('loadGameRankings (twitch)', () => {
 						name: 'VALORANT',
 						average_viewers: 50_000,
 						hours_watched: 1_000_000,
-						box_art_url: null
-					}
-				]
-			})
+						box_art_url: null,
+					},
+				],
+			}),
 		});
 
 		const load = await loadGameRankings(testLoadContext(fetchFn as typeof fetch), 'twitch', '7d', 10);
@@ -52,10 +52,10 @@ describe('loadGameRankings (twitch)', () => {
 						name: 'Just Chatting',
 						average_viewers: 8500,
 						hours_watched: 120000,
-						box_art_url: null
-					}
-				]
-			})
+						box_art_url: null,
+					},
+				],
+			}),
 		});
 
 		const load = await loadGameRankings(testLoadContext(fetchFn as typeof fetch), 'kick', '7d', 20);
@@ -70,8 +70,8 @@ describe('loadGameRankings (twitch)', () => {
 				platform: 'youtube',
 				period: '7d',
 				updated_at: '2026-06-01T00:00:00Z',
-				items: []
-			})
+				items: [],
+			}),
 		});
 
 		const load = await loadGameRankings(testLoadContext(fetchFn as typeof fetch), 'youtube', '7d', 20);

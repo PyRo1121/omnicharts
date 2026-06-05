@@ -10,10 +10,10 @@ async function generateTestRsaKeyPair(): Promise<{ publicPem: string; privateKey
 			name: 'RSASSA-PKCS1-v1_5',
 			modulusLength: 2048,
 			publicExponent: new Uint8Array([1, 0, 1]),
-			hash: 'SHA-256'
+			hash: 'SHA-256',
 		},
 		true,
-		['sign', 'verify']
+		['sign', 'verify'],
 	);
 	const spki = await crypto.subtle.exportKey('spki', publicKey);
 	const b64 = btoa(String.fromCharCode(...new Uint8Array(spki)));
@@ -30,17 +30,13 @@ async function signedKickRequest(
 		timestamp?: string;
 		tamperSignature?: boolean;
 	},
-	keys: { publicPem: string; privateKey: CryptoKey }
+	keys: { publicPem: string; privateKey: CryptoKey },
 ): Promise<Request> {
 	const messageId = opts.messageId ?? '01JMSG001';
 	const timestamp = opts.timestamp ?? new Date().toISOString();
 	const rawBody = opts.body;
 	const payload = buildKickWebhookSignedPayload(messageId, timestamp, rawBody);
-	const sig = await crypto.subtle.sign(
-		'RSASSA-PKCS1-v1_5',
-		keys.privateKey,
-		new TextEncoder().encode(payload)
-	);
+	const sig = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', keys.privateKey, new TextEncoder().encode(payload));
 	const signature = btoa(String.fromCharCode(...new Uint8Array(sig)));
 
 	return new Request('http://localhost/webhooks/kick/events', {
@@ -51,9 +47,9 @@ async function signedKickRequest(
 			'Kick-Event-Signature': opts.tamperSignature ? 'invalid' : signature,
 			'Kick-Event-Type': opts.eventType ?? 'livestream.status.updated',
 			'Kick-Event-Version': '1',
-			'Kick-Event-Subscription-Id': '01JSUB001'
+			'Kick-Event-Subscription-Id': '01JSUB001',
 		},
-		body: rawBody
+		body: rawBody,
 	});
 }
 
@@ -93,12 +89,12 @@ describe('handleKickWebhook', () => {
 								return { id: 'kick-ch-123' };
 							}
 							return null;
-						}
-					})
+						},
+					}),
 				};
 			},
-			batch: async () => [{}]
-		}
+			batch: async () => [{}],
+		},
 	} as unknown as Env;
 
 	beforeAll(async () => {
@@ -112,18 +108,12 @@ describe('handleKickWebhook', () => {
 	});
 
 	it('503 when KICK_WEBHOOK_PUBLIC_KEY missing', async () => {
-		const res = await handleKickWebhook(
-			new Request('http://x', { method: 'POST' }),
-			{} as Env
-		);
+		const res = await handleKickWebhook(new Request('http://x', { method: 'POST' }), {} as Env);
 		expect(res.status).toBe(503);
 	});
 
 	it('400 when Kick webhook headers missing', async () => {
-		const res = await handleKickWebhook(
-			new Request('http://x', { method: 'POST', body: '{}' }),
-			env
-		);
+		const res = await handleKickWebhook(new Request('http://x', { method: 'POST', body: '{}' }), env);
 		expect(res.status).toBe(400);
 	});
 
@@ -139,12 +129,12 @@ describe('handleKickWebhook', () => {
 			broadcaster: {
 				user_id: 123,
 				username: 'caster',
-				channel_slug: 'caster'
+				channel_slug: 'caster',
 			},
 			is_live: true,
 			title: 'Live now',
 			started_at: '2026-06-01T12:00:00Z',
-			ended_at: null
+			ended_at: null,
 		});
 		const req = await signedKickRequest({ body }, keys);
 		const res = await handleKickWebhook(req, env);
@@ -156,12 +146,12 @@ describe('handleKickWebhook', () => {
 			broadcaster: {
 				user_id: 123,
 				username: 'caster',
-				channel_slug: 'caster'
+				channel_slug: 'caster',
 			},
 			is_live: false,
 			title: 'Was live',
 			started_at: '2026-06-01T12:00:00Z',
-			ended_at: '2026-06-01T15:00:00Z'
+			ended_at: '2026-06-01T15:00:00Z',
 		});
 		const req = await signedKickRequest({ body, messageId: '01JMSG002' }, keys);
 		const res = await handleKickWebhook(req, env);
@@ -171,29 +161,24 @@ describe('handleKickWebhook', () => {
 	it('204 and warns for unsupported event type', async () => {
 		const warn = vi.spyOn(ingestLog, 'ingestWarn').mockImplementation(() => {});
 		const body = JSON.stringify({ chat: true });
-		const req = await signedKickRequest(
-			{ body, eventType: 'chat.message.sent', messageId: '01JMSG003' },
-			keys
-		);
+		const req = await signedKickRequest({ body, eventType: 'chat.message.sent', messageId: '01JMSG003' }, keys);
 		const res = await handleKickWebhook(req, env);
 		expect(res.status).toBe(204);
 		expect(warn).toHaveBeenCalled();
 	});
 
 	it('500 and releases claim when lifecycle handler throws', async () => {
-		vi.spyOn(lifecycle, 'applyKickLivestreamStatusUpdated')
-			.mockRejectedValueOnce(new Error('d1 down'))
-			.mockResolvedValueOnce(undefined);
+		vi.spyOn(lifecycle, 'applyKickLivestreamStatusUpdated').mockRejectedValueOnce(new Error('d1 down')).mockResolvedValueOnce(undefined);
 		const body = JSON.stringify({
 			broadcaster: {
 				user_id: 123,
 				username: 'caster',
-				channel_slug: 'caster'
+				channel_slug: 'caster',
 			},
 			is_live: true,
 			title: 'Live now',
 			started_at: '2026-06-01T12:00:00Z',
-			ended_at: null
+			ended_at: null,
 		});
 		const req = await signedKickRequest({ body, messageId: '01JFAIL001' }, keys);
 		const res = await handleKickWebhook(req, env);
@@ -217,7 +202,7 @@ describe('handleKickWebhook', () => {
 		const body = JSON.stringify({
 			broadcaster: { user_id: 99, channel_slug: 'dup' },
 			is_live: true,
-			started_at: '2026-06-01T12:00:00Z'
+			started_at: '2026-06-01T12:00:00Z',
 		});
 		const req1 = await signedKickRequest({ body, messageId: '01JDUP001' }, keys);
 		const req2 = await signedKickRequest({ body, messageId: '01JDUP001' }, keys);

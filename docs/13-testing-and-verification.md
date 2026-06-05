@@ -79,6 +79,9 @@ Root `package.json` scripts — **do not duplicate bash blocks** in docs 23/24/2
 | `bun run d1:verify-schema:remote` | Pre-deploy / freeze **G2** — parity through **0010** | Wrangler login |
 | `bun run verify:wrangler-production` | Pre-deploy guard: prod vars 60m airtime / 20 min viewers | — |
 | `bun run check:web` | Wrangler types + svelte-check | — |
+| `bun run lint` | Oxlint (apps/web, packages, workers/ingest, scripts) | — |
+| `bun run format` | Oxfmt write (same scope) | — |
+| `bun run format:check` | Oxfmt check (CI / verify gate) | — |
 | `bun run build:web` | Production Pages build | — |
 
 Implementation: `scripts/verify/twitch-e2e-verify.ts` (`verify:twitch` and `twitch:freeze-proof` share one script; `--proof-matrix` selects M1 path). Kick: `scripts/verify/kick-e2e-verify.ts`. YouTube stub: `scripts/verify/youtube-e2e-verify.ts`. All verify scripts: [`scripts/verify/`](../scripts/verify/) · [`scripts/README.md`](../scripts/README.md).
@@ -122,12 +125,14 @@ From repo root (ingest must be running for checkpoint: `bun run dev:ingest`):
 1. `bun run test:ingest` — ingest Vitest
 2. `bun run test:ingest:coverage` — gated ingest globs ≥80%
 3. `bun run test:web` — server load mocks
-4. Fail fast if `GET http://127.0.0.1:8787/health` unreachable (skipped when `VERIFY_SKIP_CHECKPOINT=1` or `CI=true` without `VERIFY_FULL=1`)
-5. `bun run twitch:checkpoint --no-start-ingest`
-6. `bun run check:web` — `svelte-check`
-7. `bun run build:web`
+4. `bun run lint` — oxlint
+5. `bun run format:check` — oxfmt
+6. Fail fast if `GET http://127.0.0.1:8787/health` unreachable (skipped when `VERIFY_SKIP_CHECKPOINT=1` or `CI=true` without `VERIFY_FULL=1`)
+7. `bun run twitch:checkpoint --no-start-ingest`
+8. `bun run check:web` — `svelte-check`
+9. `bun run build:web`
 
-**CI (`.github/workflows/verify-twitch.yml`, REM-030):** runs ingest unit tests, web tests, `check:web`, `build:web`, OpenAPI lint (`npx @redocly/cli lint openapi/v1.yaml --config openapi/redocly.yaml`), and `verify:twitch` with `VERIFY_SKIP_CHECKPOINT=1` (and `CI=true`) so the **checkpoint is skipped** — no Helix secrets or wrangler ingest on PRs. **Playwright smoke (REM-035):** same workflow, `continue-on-error: true` after `bun run test:e2e` (Chromium installed in prior step). Channel test skips when ingest is down.
+**CI (`.github/workflows/verify-twitch.yml`, REM-030):** runs `lint`, `format:check`, ingest unit tests, web tests, `check:web`, `build:web`, OpenAPI lint (`npx @redocly/cli lint openapi/v1.yaml --config openapi/redocly.yaml`), and `verify:twitch` with `VERIFY_SKIP_CHECKPOINT=1` (and `CI=true`) so the **checkpoint is skipped** — no Helix secrets or wrangler ingest on PRs. **Playwright smoke (REM-035):** same workflow, `continue-on-error: true` after `bun run test:e2e` (Chromium installed in prior step). Channel test skips when ingest is down.
 
 **Optional full gate in CI (`VERIFY_FULL=1`):** Unset `VERIFY_SKIP_CHECKPOINT`, set `VERIFY_FULL=1`, and provide Twitch + admin secrets — then step 5 runs `twitch:checkpoint --no-start-ingest` like local dev.
 

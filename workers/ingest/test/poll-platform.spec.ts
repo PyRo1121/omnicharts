@@ -2,13 +2,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { runTwitchPollPlatform } from '../src/twitch/poll-platform';
 
 vi.mock('../src/twitch/poll', () => ({
-	enqueueTwitchPollShards: vi.fn()
+	enqueueTwitchPollShards: vi.fn(),
 }));
 vi.mock('../src/twitch/sweep', () => ({
-	runTwitchLiveSweep: vi.fn()
+	runTwitchLiveSweep: vi.fn(),
 }));
 vi.mock('../src/twitch/coverage', () => ({
-	runTwitchCoverageCycle: vi.fn()
+	runTwitchCoverageCycle: vi.fn(),
 }));
 
 import { enqueueTwitchPollShards } from '../src/twitch/poll';

@@ -26,7 +26,7 @@ const vars = parseProductionVars();
 const expected: Record<string, string> = {
 	ENVIRONMENT: 'production',
 	TWITCH_RANKING_MIN_AIRTIME_MINUTES: '60',
-	TWITCH_MIN_VIEWERS: '20'
+	TWITCH_MIN_VIEWERS: '20',
 };
 
 let failed = false;

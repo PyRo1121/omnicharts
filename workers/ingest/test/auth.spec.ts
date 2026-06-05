@@ -26,10 +26,10 @@ describe('getAppAccessToken', () => {
 				calls++;
 				return Promise.resolve(
 					new Response(JSON.stringify({ access_token: 'tok-a', expires_in: 3600 }), {
-						status: 200
-					})
+						status: 200,
+					}),
 				);
-			})
+			}),
 		);
 
 		const env = { TWITCH_CLIENT_ID: 'id', TWITCH_CLIENT_SECRET: 'secret' } as Env;

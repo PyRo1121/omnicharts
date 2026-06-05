@@ -24,18 +24,12 @@ test.describe('YouTube platform UX (docs/09, docs/05)', () => {
 		await expect(streamers.locator('table tbody td').first()).toBeVisible({ timeout: 10_000 });
 	});
 
-	test('overview ?platform=youtube loads rollup-backed shell without Phase 3 banner', async ({
-		page
-	}) => {
+	test('overview ?platform=youtube loads rollup-backed shell without Phase 3 banner', async ({ page }) => {
 		const res = await page.goto('/overview?platform=youtube');
 		expect(res?.status()).toBe(200);
 
-		await expect(
-			page.getByText(/YouTube overview cards ship when YouTube ingest is live/i)
-		).not.toBeVisible();
-		await expect(
-			page.getByText(/YouTube rollup-backed counts when ingest has data|YouTube ingest unavailable/i)
-		).toBeVisible();
+		await expect(page.getByText(/YouTube overview cards ship when YouTube ingest is live/i)).not.toBeVisible();
+		await expect(page.getByText(/YouTube rollup-backed counts when ingest has data|YouTube ingest unavailable/i)).toBeVisible();
 		await expectPlatformSelected(page, 'YouTube');
 		await expect(page.getByText(/Channels tracked/i)).toBeVisible();
 	});
@@ -45,9 +39,7 @@ test.describe('YouTube platform UX (docs/09, docs/05)', () => {
 		expect(res?.status()).toBe(200);
 
 		await expect(page.getByText(/ship in Phase 3/i)).not.toBeVisible();
-		await expect(
-			page.getByText(/Top YouTube channels by hours watched|Ingest unavailable|No channels ranked/i).first()
-		).toBeVisible();
+		await expect(page.getByText(/Top YouTube channels by hours watched|Ingest unavailable|No channels ranked/i).first()).toBeVisible();
 	});
 
 	test('games page ?platform=youtube loads without Phase 3 banner', async ({ page }) => {
@@ -56,11 +48,7 @@ test.describe('YouTube platform UX (docs/09, docs/05)', () => {
 
 		await expect(page.getByText(/YouTube game rankings ship/i)).not.toBeVisible();
 		await expect(
-			page
-				.getByText(
-					/Top YouTube categories by average viewers|Ingest unavailable|No games ranked for this period yet/i
-				)
-				.first()
+			page.getByText(/Top YouTube categories by average viewers|Ingest unavailable|No games ranked for this period yet/i).first(),
 		).toBeVisible();
 	});
 });

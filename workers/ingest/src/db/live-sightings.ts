@@ -9,17 +9,13 @@ function windowStartIso(): string {
 }
 
 /** Record a qualifying live hit (caller checks viewer threshold). */
-export async function recordChannelLiveSighting(
-	db: D1Database,
-	channelId: string,
-	viewerCount: number
-): Promise<void> {
+export async function recordChannelLiveSighting(db: D1Database, channelId: string, viewerCount: number): Promise<void> {
 	const now = nowIso();
 	await db
 		.prepare(
 			`INSERT INTO channel_live_sightings (channel_id, sighted_at, viewer_count)
        VALUES (?, ?, ?)
-       ON CONFLICT(channel_id, sighted_at) DO NOTHING`
+       ON CONFLICT(channel_id, sighted_at) DO NOTHING`,
 		)
 		.bind(channelId, now, viewerCount)
 		.run();
@@ -27,21 +23,18 @@ export async function recordChannelLiveSighting(
 	await db
 		.prepare(
 			`DELETE FROM channel_live_sightings
-       WHERE channel_id = ? AND sighted_at < ?`
+       WHERE channel_id = ? AND sighted_at < ?`,
 		)
 		.bind(channelId, windowStartIso())
 		.run();
 }
 
 /** Count live sightings in rolling 14d window (docs/12 promotion rule). */
-export async function countChannelLiveSightings14d(
-	db: D1Database,
-	channelId: string
-): Promise<number> {
+export async function countChannelLiveSightings14d(db: D1Database, channelId: string): Promise<number> {
 	const row = await db
 		.prepare(
 			`SELECT COUNT(*) AS n FROM channel_live_sightings
-       WHERE channel_id = ? AND sighted_at >= ?`
+       WHERE channel_id = ? AND sighted_at >= ?`,
 		)
 		.bind(channelId, windowStartIso())
 		.first<{ n: number }>();

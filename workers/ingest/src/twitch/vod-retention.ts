@@ -4,20 +4,14 @@ export const VOD_RETENTION_DAYS_DEFAULT = 7;
 export const VOD_RETENTION_DAYS_AFFILIATE = 14;
 export const VOD_RETENTION_DAYS_PARTNER = 60;
 
-export function vodRetentionDaysForBroadcasterType(
-	broadcasterType: string | null | undefined
-): number {
+export function vodRetentionDaysForBroadcasterType(broadcasterType: string | null | undefined): number {
 	const t = (broadcasterType ?? '').trim().toLowerCase();
 	if (t === 'partner') return VOD_RETENTION_DAYS_PARTNER;
 	if (t === 'affiliate') return VOD_RETENTION_DAYS_AFFILIATE;
 	return VOD_RETENTION_DAYS_DEFAULT;
 }
 
-export function isVideoWithinRetention(
-	publishedAt: string,
-	retentionDays: number,
-	nowMs = Date.now()
-): boolean {
+export function isVideoWithinRetention(publishedAt: string, retentionDays: number, nowMs = Date.now()): boolean {
 	const publishedMs = Date.parse(publishedAt);
 	if (!Number.isFinite(publishedMs)) return false;
 	const cutoffMs = nowMs - retentionDays * 24 * 60 * 60 * 1000;
@@ -37,7 +31,7 @@ export function parseIso8601DurationMs(duration: string): number | null {
 
 export function vodSessionTimes(
 	video: { created_at: string; duration: string },
-	nowMs = Date.now()
+	nowMs = Date.now(),
 ): { started_at: string; ended_at: string | null } {
 	const startedMs = Date.parse(video.created_at);
 	if (!Number.isFinite(startedMs)) {
@@ -50,6 +44,6 @@ export function vodSessionTimes(
 	const endedMs = Math.min(startedMs + durationMs, nowMs);
 	return {
 		started_at: new Date(startedMs).toISOString(),
-		ended_at: new Date(endedMs).toISOString()
+		ended_at: new Date(endedMs).toISOString(),
 	};
 }

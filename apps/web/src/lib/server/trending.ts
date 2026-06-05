@@ -8,10 +8,7 @@ export type TrendingSearch = {
 };
 
 /** Top-N channel rankings for search chips; mock fallback only when `mockEnabled`. */
-export function trendingFromRankings(
-	rows: ChannelRow[],
-	options?: { platform?: PlatformId; mockEnabled?: boolean }
-): TrendingSearch[] {
+export function trendingFromRankings(rows: ChannelRow[], options?: { platform?: PlatformId; mockEnabled?: boolean }): TrendingSearch[] {
 	if (!rows.length) {
 		if (!options?.mockEnabled) return [];
 		const platform = options?.platform;
@@ -23,6 +20,6 @@ export function trendingFromRankings(
 	return rows.slice(0, 5).map((row) => ({
 		slug: row.slug,
 		name: row.displayName,
-		platform: row.platform
+		platform: row.platform,
 	}));
 }

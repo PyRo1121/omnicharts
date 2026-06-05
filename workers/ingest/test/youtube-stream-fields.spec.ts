@@ -1,9 +1,9 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
 	isYoutubeConcurrentViewersKnown,
 	isYoutubeLive,
 	parseYoutubeConcurrentViewers,
-	youtubeStreamEnded
+	youtubeStreamEnded,
 } from '../src/youtube/stream-fields';
 
 describe('youtube stream-fields', () => {
@@ -24,14 +24,14 @@ describe('youtube stream-fields', () => {
 		expect(
 			isYoutubeLive({
 				id: 'v',
-				snippet: { channelId: 'UC', title: 't', liveBroadcastContent: 'live' }
-			})
+				snippet: { channelId: 'UC', title: 't', liveBroadcastContent: 'live' },
+			}),
 		).toBe(true);
 		expect(
 			isYoutubeLive({
 				id: 'v',
-				snippet: { channelId: 'UC', title: 't', liveBroadcastContent: 'none' }
-			})
+				snippet: { channelId: 'UC', title: 't', liveBroadcastContent: 'none' },
+			}),
 		).toBe(false);
 	});
 
@@ -40,20 +40,20 @@ describe('youtube stream-fields', () => {
 			youtubeStreamEnded({
 				id: 'v',
 				snippet: { channelId: 'UC', title: 't', liveBroadcastContent: 'live' },
-				liveStreamingDetails: { actualEndTime: '2026-06-01T01:00:00Z' }
-			})
+				liveStreamingDetails: { actualEndTime: '2026-06-01T01:00:00Z' },
+			}),
 		).toBe(true);
 		expect(
 			youtubeStreamEnded({
 				id: 'v',
-				snippet: { channelId: 'UC', title: 't', liveBroadcastContent: 'none' }
-			})
+				snippet: { channelId: 'UC', title: 't', liveBroadcastContent: 'none' },
+			}),
 		).toBe(true);
 		expect(
 			youtubeStreamEnded({
 				id: 'v',
-				snippet: { channelId: 'UC', title: 't', liveBroadcastContent: 'upcoming' }
-			})
+				snippet: { channelId: 'UC', title: 't', liveBroadcastContent: 'upcoming' },
+			}),
 		).toBe(false);
 	});
 });

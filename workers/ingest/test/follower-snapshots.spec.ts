@@ -3,7 +3,7 @@ import {
 	computeFollowersDelta,
 	fetchFollowerCountsByChannelId,
 	fetchPriorFollowerSnapshots,
-	storeFollowerSnapshots
+	storeFollowerSnapshots,
 } from '../src/db/follower-snapshots';
 
 /** D1 bind cap is below stock SQLite 999; keep batches conservative. */
@@ -17,11 +17,11 @@ function mockDbCountingInQueries() {
 				bind(...args: unknown[]) {
 					if (sql.includes(' IN (')) bindArgCounts.push(args.length);
 					return {
-						all: async () => ({ results: [] as { id: string; follower_count: number | null }[] })
+						all: async () => ({ results: [] as { id: string; follower_count: number | null }[] }),
 					};
-				}
+				},
 			};
-		}
+		},
 	} as unknown as D1Database;
 	return { db, bindArgCounts };
 }
@@ -58,12 +58,10 @@ describe('storeFollowerSnapshots', () => {
 	it('writes metadata via DB.batch in chunks of 50', async () => {
 		const batch = vi.fn().mockResolvedValue([]);
 		const prepare = vi.fn((sql: string) => ({
-			bind: (...args: unknown[]) => ({ sql, args })
+			bind: (...args: unknown[]) => ({ sql, args }),
 		}));
 		const db = { prepare, batch } as unknown as D1Database;
-		const snapshots = new Map(
-			Array.from({ length: 75 }, (_, i) => [`ch-${i}`, 1000 + i] as const)
-		);
+		const snapshots = new Map(Array.from({ length: 75 }, (_, i) => [`ch-${i}`, 1000 + i] as const));
 
 		await storeFollowerSnapshots(db, snapshots);
 

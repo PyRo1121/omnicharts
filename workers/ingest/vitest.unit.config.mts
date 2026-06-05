@@ -131,7 +131,7 @@ export default defineConfig({
 			'test/vod-backfill.spec.ts',
 			'test/vod-admin-routes.spec.ts',
 			'test/helix-videos.spec.ts',
-			'test/db-vod-sessions.spec.ts'
+			'test/db-vod-sessions.spec.ts',
 		],
 		coverage: {
 			provider: 'v8',
@@ -142,7 +142,7 @@ export default defineConfig({
 				'src/kick/**/*.ts',
 				'src/youtube/**/*.ts',
 				'src/r2/**/*.ts',
-				'src/watchlist/**/*.ts'
+				'src/watchlist/**/*.ts',
 			],
 			exclude: ['src/twitch/**/index.ts', '**/types.ts', 'src/db/d1-meta.ts'],
 			thresholds: {
@@ -150,39 +150,39 @@ export default defineConfig({
 					lines: 80,
 					functions: 80,
 					branches: 80,
-					statements: 80
+					statements: 80,
 				},
 				'src/db/**': {
 					lines: 80,
 					functions: 80,
 					branches: 80,
-					statements: 80
+					statements: 80,
 				},
 				'src/kick/**': {
 					lines: 80,
 					functions: 80,
 					branches: 80,
-					statements: 80
+					statements: 80,
 				},
 				'src/youtube/**': {
 					lines: 80,
 					functions: 80,
 					branches: 80,
-					statements: 80
+					statements: 80,
 				},
 				'src/r2/**': {
 					lines: 80,
 					functions: 80,
 					branches: 80,
-					statements: 80
+					statements: 80,
 				},
 				'src/watchlist/**': {
 					lines: 80,
 					functions: 80,
 					branches: 80,
-					statements: 80
-				}
-			}
-		}
-	}
+					statements: 80,
+				},
+			},
+		},
+	},
 });

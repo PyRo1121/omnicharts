@@ -2,11 +2,11 @@
 
 Root `package.json` exposes thin aliases only — implementation lives here.
 
-| Directory | Purpose | Entry points |
-|-----------|---------|--------------|
-| [`verify/`](./verify/) | Gates, schema, Lighthouse, checkpoint | `verify:twitch`, `twitch:freeze-proof`, `lighthouse:smoke`, `d1:verify-schema*`, `verify:wrangler-production`, `twitch:checkpoint*` |
-| [`ingest/`](./ingest/) | Admin curl, cron trigger, EventSub local proof | `twitch:discover`, `twitch:sweep`, `ingest:cron`, `twitch:eventsub-local-proof`, … |
-| [`dev/`](./dev/) | Local dev ergonomics | `dev:ingest` (wrangler skills prompt), ingest `test` (vitest noise filter) |
+| Directory              | Purpose                                        | Entry points                                                                                                                        |
+| ---------------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| [`verify/`](./verify/) | Gates, schema, Lighthouse, checkpoint          | `verify:twitch`, `twitch:freeze-proof`, `lighthouse:smoke`, `d1:verify-schema*`, `verify:wrangler-production`, `twitch:checkpoint*` |
+| [`ingest/`](./ingest/) | Admin curl, cron trigger, EventSub local proof | `twitch:discover`, `twitch:sweep`, `ingest:cron`, `twitch:eventsub-local-proof`, …                                                  |
+| [`dev/`](./dev/)       | Local dev ergonomics                           | `dev:ingest` (wrangler skills prompt), ingest `test` (vitest noise filter)                                                          |
 
 **Verify subcommands:** `bun run scripts/verify/index.ts twitch|freeze-proof|lighthouse|d1|wrangler|checkpoint`
 

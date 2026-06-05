@@ -22,36 +22,32 @@ describe('kick discover', () => {
 		vi.spyOn(KickPublicApiClient.prototype, 'getCategoriesV2').mockResolvedValue({
 			data: [
 				{ id: 1, name: 'Slots' },
-				{ id: 2, name: 'IRL' }
+				{ id: 2, name: 'IRL' },
 			],
-			pagination: { next_cursor: '' }
+			pagination: { next_cursor: '' },
 		});
-		vi.spyOn(KickPublicApiClient.prototype, 'getLivestreamsByCategoryId').mockImplementation(
-			async (categoryId: number) => [
-				{
-					broadcaster_user_id: categoryId * 10,
-					channel_id: categoryId * 100,
-					slug: `user-${categoryId}`,
-					stream_title: 'Live',
-					started_at: '2026-06-01T00:00:00Z',
-					viewer_count: 25,
-					category: { id: categoryId, name: 'Game' }
-				}
-			]
-		);
+		vi.spyOn(KickPublicApiClient.prototype, 'getLivestreamsByCategoryId').mockImplementation(async (categoryId: number) => [
+			{
+				broadcaster_user_id: categoryId * 10,
+				channel_id: categoryId * 100,
+				slug: `user-${categoryId}`,
+				stream_title: 'Live',
+				started_at: '2026-06-01T00:00:00Z',
+				viewer_count: 25,
+				category: { id: categoryId, name: 'Game' },
+			},
+		]);
 		const gameSpy = vi.spyOn(kickDb, 'batchUpsertKickGameCategories').mockResolvedValue(new Map());
-		const channelSpy = vi
-			.spyOn(kickDb, 'batchUpsertKickChannelsFromLivestreams')
-			.mockResolvedValue(new Map());
+		const channelSpy = vi.spyOn(kickDb, 'batchUpsertKickChannelsFromLivestreams').mockResolvedValue(new Map());
 
 		const result = await runKickDiscovery(
 			{
 				KICK_CLIENT_ID: 'id',
 				KICK_CLIENT_SECRET: 'secret',
 				KICK_MIN_VIEWERS: '2',
-				DB: {} as D1Database
+				DB: {} as D1Database,
 			} as Env,
-			{ quick: true }
+			{ quick: true },
 		);
 
 		expect(result.categoriesScanned).toBe(2);
@@ -63,7 +59,7 @@ describe('kick discover', () => {
 			expect.anything(),
 			expect.any(Array),
 			expect.objectContaining({ directoryListing: true, promoteToTracked: true }),
-			expect.objectContaining({ scope: 'kick:discover:channels' })
+			expect.objectContaining({ scope: 'kick:discover:channels' }),
 		);
 	});
 
@@ -74,12 +70,12 @@ describe('kick discover', () => {
 			if (categoriesCall === 1) {
 				return {
 					data: [{ id: 1, name: 'A' }],
-					pagination: { next_cursor: 'page2' }
+					pagination: { next_cursor: 'page2' },
 				};
 			}
 			return {
 				data: [{ id: 2, name: 'B' }],
-				pagination: {}
+				pagination: {},
 			};
 		});
 		vi.spyOn(KickPublicApiClient.prototype, 'getLivestreamsByCategoryId').mockResolvedValue([]);
@@ -91,9 +87,9 @@ describe('kick discover', () => {
 				KICK_CLIENT_ID: 'id',
 				KICK_CLIENT_SECRET: 'secret',
 				KICK_MIN_VIEWERS: '2',
-				DB: {} as D1Database
+				DB: {} as D1Database,
 			} as Env,
-			{ quick: true }
+			{ quick: true },
 		);
 
 		expect(result.categoryListPagesFetched).toBe(2);

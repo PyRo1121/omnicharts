@@ -3,7 +3,7 @@ import {
 	batchRecordKickLiveSamples,
 	batchUpsertKickChannelsFromLivestreams,
 	batchUpsertKickGameCategories,
-	type KickLiveSampleInput
+	type KickLiveSampleInput,
 } from '../db/kick-live-batch';
 import { listKickChannelIdsToPoll } from '../db/kick';
 import { runD1Batches } from '../db/d1-batch';
@@ -12,12 +12,7 @@ import { archiveSampleBatch } from '../r2/sample-archive';
 import { ingestWarn } from '../log';
 import { requireDb } from '../worker-bindings';
 import { KickPublicApiClient } from './api';
-import {
-	kickCredentialsConfigured,
-	kickMaxTrackedFromEnv,
-	kickMinViewersFromEnv,
-	KICK_LIVESTREAMS_BATCH_SIZE
-} from './config';
+import { kickCredentialsConfigured, kickMaxTrackedFromEnv, kickMinViewersFromEnv, KICK_LIVESTREAMS_BATCH_SIZE } from './config';
 import { isKickViewerCountKnown, kickBroadcasterId } from './stream-fields';
 
 export type KickPollResult = {
@@ -58,17 +53,14 @@ export async function runKickCatalogPoll(env: Env): Promise<KickPollResult> {
 	return totals;
 }
 
-export async function runKickPollBatch(
-	env: Env,
-	broadcasterIds: string[]
-): Promise<KickPollResult> {
+export async function runKickPollBatch(env: Env, broadcasterIds: string[]): Promise<KickPollResult> {
 	const db = requireDb(env);
 	const client = new KickPublicApiClient(env);
 	const minViewers = kickMinViewersFromEnv(env);
 	const result: KickPollResult = {
 		batches: 1,
 		liveStreams: 0,
-		samplesWritten: 0
+		samplesWritten: 0,
 	};
 
 	const liveStreams = await client.getLivestreamsByBroadcasterIds(broadcasterIds);
@@ -82,13 +74,13 @@ export async function runKickPollBatch(
 
 	const gameMap = await batchUpsertKickGameCategories(
 		db,
-		games.map((g) => ({ id: g.id, name: g.name }))
+		games.map((g) => ({ id: g.id, name: g.name })),
 	);
 	const channelMap = await batchUpsertKickChannelsFromLivestreams(
 		db,
 		liveStreams,
 		{ minViewers, promoteToTracked: true },
-		{ env, scope: 'kick:poll:channels' }
+		{ env, scope: 'kick:poll:channels' },
 	);
 
 	const sampleInputs: KickLiveSampleInput[] = [];
@@ -103,13 +95,13 @@ export async function runKickPollBatch(
 		sampleInputs.push({
 			channelId,
 			stream,
-			gameCategoryId: catId != null ? (gameMap.get(String(catId)) ?? null) : null
+			gameCategoryId: catId != null ? (gameMap.get(String(catId)) ?? null) : null,
 		});
 	}
 
 	const archiveRows = await batchRecordKickLiveSamples(db, sampleInputs, {
 		env,
-		scope: 'kick:poll:samples'
+		scope: 'kick:poll:samples',
 	});
 	result.samplesWritten = archiveRows.length;
 	await archiveSampleBatch(env, archiveRows);
@@ -117,19 +109,15 @@ export async function runKickPollBatch(
 	const now = new Date().toISOString();
 	const offlineIds = broadcasterIds.filter((id) => !liveSet.has(id));
 	const offlineStatements = offlineIds.map((id) =>
-		db
-			.prepare(
-				`UPDATE channels SET last_seen_at = ? WHERE platform_id = ? AND platform_channel_id = ?`
-			)
-			.bind(now, PLATFORM_KICK, id)
+		db.prepare(`UPDATE channels SET last_seen_at = ? WHERE platform_id = ? AND platform_channel_id = ?`).bind(now, PLATFORM_KICK, id),
 	);
 	await runD1Batches(db, offlineStatements, {
 		env,
-		scope: 'kick:poll:offline_last_seen'
+		scope: 'kick:poll:offline_last_seen',
 	});
 	await closeOpenSessionsForPlatformChannelIds(db, PLATFORM_KICK, offlineIds, now, {
 		env,
-		scope: 'kick:poll:offline_close_sessions'
+		scope: 'kick:poll:offline_close_sessions',
 	});
 
 	return result;

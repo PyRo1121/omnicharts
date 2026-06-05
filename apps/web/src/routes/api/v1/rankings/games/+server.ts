@@ -5,7 +5,7 @@ import {
 	gameRankingsToCsv,
 	parseRankingsGamesQuery,
 	parseResponseFormat,
-	rankingsGamesQueryErrorResponse
+	rankingsGamesQueryErrorResponse,
 } from '@omnicharts/rollup';
 import { ROLLUP_CACHE_CONTROL } from '$lib/server/cache';
 import { getIngestBaseUrl } from '$lib/server/ingest';
@@ -23,33 +23,27 @@ export const GET: RequestHandler = async ({ url, fetch, platform }) => {
 	}
 	const parsed = parseRankingsGamesQuery(url);
 
-	if (
-		parsed.ok &&
-		db &&
-		(parsed.platform === 'twitch' || parsed.platform === 'kick' || parsed.platform === 'youtube')
-	) {
+	if (parsed.ok && db && (parsed.platform === 'twitch' || parsed.platform === 'kick' || parsed.platform === 'youtube')) {
 		const body = await buildRankingsGamesResponse(
 			db,
 			{
 				platform: parsed.platform,
 				period: parsed.period,
-				limit: parsed.limit
+				limit: parsed.limit,
 			},
-			resolveWebRankingEnv(platform?.env)
+			resolveWebRankingEnv(platform?.env),
 		);
 		if (formatParsed.format === 'csv') {
 			const csv = gameRankingsToCsv(body);
 			return new Response(csv, {
 				headers: {
-					...csvAttachmentHeaders(
-						csvDownloadFilename([parsed.platform, 'games', parsed.period])
-					),
-					'cache-control': ROLLUP_CACHE_CONTROL
-				}
+					...csvAttachmentHeaders(csvDownloadFilename([parsed.platform, 'games', parsed.period])),
+					'cache-control': ROLLUP_CACHE_CONTROL,
+				},
 			});
 		}
 		return Response.json(body, {
-			headers: { 'cache-control': ROLLUP_CACHE_CONTROL }
+			headers: { 'cache-control': ROLLUP_CACHE_CONTROL },
 		});
 	}
 
@@ -61,7 +55,7 @@ export const GET: RequestHandler = async ({ url, fetch, platform }) => {
 	target.search = url.searchParams.toString();
 
 	const res = await fetch(target.toString(), {
-		headers: { accept: 'application/json' }
+		headers: { accept: 'application/json' },
 	});
 
 	return proxyIngestResponse(res);

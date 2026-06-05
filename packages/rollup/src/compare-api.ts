@@ -1,10 +1,4 @@
-import {
-	isComparePeriod,
-	isPlatformId,
-	parseComparePeriod,
-	type ComparePeriod,
-	PLATFORM_TWITCH
-} from '@omnicharts/domain';
+import { isComparePeriod, isPlatformId, parseComparePeriod, type ComparePeriod, PLATFORM_TWITCH } from '@omnicharts/domain';
 import type { D1Database } from './d1';
 import { buildChannelDetailResponse, type ChannelDetailResponse } from './channel-api';
 
@@ -55,23 +49,23 @@ export function parseCompareChannelsQuery(url: URL): ParsedCompareChannelsQuery 
 
 async function loadCompareSide(
 	db: D1Database,
-	opts: { platform: string; slug: string; period: ComparePeriod }
+	opts: { platform: string; slug: string; period: ComparePeriod },
 ): Promise<CompareChannelSide> {
 	const channel = await buildChannelDetailResponse(db, opts);
 	return {
 		slug: opts.slug,
 		found: channel != null,
-		channel
+		channel,
 	};
 }
 
 export async function buildCompareChannelsResponse(
 	db: D1Database,
-	opts: { platform: string; period: ComparePeriod; a: string; b: string }
+	opts: { platform: string; period: ComparePeriod; a: string; b: string },
 ): Promise<CompareChannelsResponse> {
 	const [a, b] = await Promise.all([
 		loadCompareSide(db, { platform: opts.platform, slug: opts.a, period: opts.period }),
-		loadCompareSide(db, { platform: opts.platform, slug: opts.b, period: opts.period })
+		loadCompareSide(db, { platform: opts.platform, slug: opts.b, period: opts.period }),
 	]);
 
 	return {
@@ -79,6 +73,6 @@ export async function buildCompareChannelsResponse(
 		period: opts.period,
 		updated_at: new Date().toISOString(),
 		a,
-		b
+		b,
 	};
 }

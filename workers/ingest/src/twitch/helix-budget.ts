@@ -13,7 +13,7 @@ import {
 	HELIX_POINTS_PER_MINUTE,
 	ingestCoverageModeFromEnv,
 	maxTrackedFromEnv,
-	STREAMS_BATCH_SIZE
+	STREAMS_BATCH_SIZE,
 } from './config';
 
 /** Amortized reserve for 6h discovery / EventSub bursts (points/min). */
@@ -49,9 +49,7 @@ export function liveSweepMaxPagesFromEnv(env: Env): number {
 		const n = Number(raw);
 		if (Number.isFinite(n) && n > 0) return Math.floor(n);
 	}
-	return ingestCoverageModeFromEnv(env) === 'full'
-		? DEFAULT_LIVE_SWEEP_MAX_PAGES
-		: DEFAULT_LIVE_SWEEP_MAX_PAGES_LIGHT;
+	return ingestCoverageModeFromEnv(env) === 'full' ? DEFAULT_LIVE_SWEEP_MAX_PAGES : DEFAULT_LIVE_SWEEP_MAX_PAGES_LIGHT;
 }
 
 export function gamePassGamesPerCycleFromEnv(env: Env): number {
@@ -60,7 +58,5 @@ export function gamePassGamesPerCycleFromEnv(env: Env): number {
 		const n = Number(raw);
 		if (Number.isFinite(n) && n > 0) return Math.floor(n);
 	}
-	return ingestCoverageModeFromEnv(env) === 'full'
-		? DEFAULT_GAME_PASS_GAMES_PRODUCTION
-		: DEFAULT_GAME_PASS_GAMES_LIGHT;
+	return ingestCoverageModeFromEnv(env) === 'full' ? DEFAULT_GAME_PASS_GAMES_PRODUCTION : DEFAULT_GAME_PASS_GAMES_LIGHT;
 }

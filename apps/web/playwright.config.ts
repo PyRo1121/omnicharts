@@ -12,18 +12,17 @@ export default defineConfig({
 	reporter: 'list',
 	use: {
 		baseURL,
-		trace: 'on-first-retry'
+		trace: 'on-first-retry',
 	},
 	projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 	webServer: {
-		command:
-			'bun run wrangler d1 migrations apply omnicharts --local && bun run dev -- --port 4173 --host 127.0.0.1',
+		command: 'bun run wrangler d1 migrations apply omnicharts --local && bun run dev -- --port 4173 --host 127.0.0.1',
 		url: baseURL,
 		reuseExistingServer: false,
 		timeout: 120_000,
 		env: {
 			...process.env,
-			INGEST_URL: process.env.INGEST_URL ?? 'http://127.0.0.1:8787'
-		}
-	}
+			INGEST_URL: process.env.INGEST_URL ?? 'http://127.0.0.1:8787',
+		},
+	},
 });

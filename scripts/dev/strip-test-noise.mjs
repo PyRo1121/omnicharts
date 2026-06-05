@@ -6,10 +6,7 @@ function dropLine(line) {
 	const t = line.trimEnd();
 	if (!t) return false;
 	return (
-		t.startsWith('[vpw:debug]') ||
-		t.startsWith('[vpw:info]') ||
-		t.startsWith('[mf:warn]') ||
-		t === 'Using secrets defined in .dev.vars'
+		t.startsWith('[vpw:debug]') || t.startsWith('[vpw:info]') || t.startsWith('[mf:warn]') || t === 'Using secrets defined in .dev.vars'
 	);
 }
 
@@ -30,7 +27,7 @@ function pipe(src, dest) {
 
 const child = spawn('vitest', ['run', ...process.argv.slice(2)], {
 	stdio: ['inherit', 'pipe', 'pipe'],
-	env: process.env
+	env: process.env,
 });
 
 pipe(child.stdout, process.stdout);

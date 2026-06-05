@@ -20,14 +20,14 @@ describe('game-api edge cases', () => {
 		const db = {
 			prepare() {
 				return {
-					bind: () => ({ first: async () => null })
+					bind: () => ({ first: async () => null }),
 				};
-			}
+			},
 		} as unknown as D1Database;
 		const res = await buildGameDetailResponse(db, {
 			platform: 'youtube',
 			slug: 'valorant',
-			period: '7d'
+			period: '7d',
 		});
 		expect(res).toBeNull();
 	});
@@ -37,7 +37,7 @@ describe('game-api edge cases', () => {
 		const res = await buildGameDetailResponse(db, {
 			platform: 'twitch',
 			slug: '',
-			period: '7d'
+			period: '7d',
 		});
 		expect(res).toBeNull();
 	});

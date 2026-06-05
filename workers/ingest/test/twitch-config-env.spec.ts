@@ -4,9 +4,7 @@ import { liveSweepMaxPagesFromEnv } from '../src/twitch/helix-budget';
 
 describe('twitch config env', () => {
 	it('defaults LIVE_SWEEP_MAX_PAGES to production cap in full mode', () => {
-		expect(liveSweepMaxPagesFromEnv({ INGEST_COVERAGE_MODE: 'full' } as Env)).toBe(
-			DEFAULT_LIVE_SWEEP_MAX_PAGES
-		);
+		expect(liveSweepMaxPagesFromEnv({ INGEST_COVERAGE_MODE: 'full' } as Env)).toBe(DEFAULT_LIVE_SWEEP_MAX_PAGES);
 	});
 
 	it('parses LIVE_SWEEP_MAX_PAGES override', () => {
@@ -18,11 +16,7 @@ describe('twitch config env', () => {
 	});
 
 	it('accepts shards_only and sweep_only', () => {
-		expect(ingestCoverageModeFromEnv({ INGEST_COVERAGE_MODE: 'shards_only' } as Env)).toBe(
-			'shards_only'
-		);
-		expect(ingestCoverageModeFromEnv({ INGEST_COVERAGE_MODE: 'sweep_only' } as Env)).toBe(
-			'sweep_only'
-		);
+		expect(ingestCoverageModeFromEnv({ INGEST_COVERAGE_MODE: 'shards_only' } as Env)).toBe('shards_only');
+		expect(ingestCoverageModeFromEnv({ INGEST_COVERAGE_MODE: 'sweep_only' } as Env)).toBe('sweep_only');
 	});
 });

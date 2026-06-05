@@ -1,9 +1,4 @@
-import {
-	minViewersFromEnv,
-	RECONCILE_MAX_CHANNELS,
-	RECONCILE_RECENT_HOURS,
-	STREAMS_BATCH_SIZE
-} from './config';
+import { minViewersFromEnv, RECONCILE_MAX_CHANNELS, RECONCILE_RECENT_HOURS, STREAMS_BATCH_SIZE } from './config';
 import { TwitchHelixClient } from './helix';
 import { listRecentlyTrackedPlatformIds } from '../db/twitch';
 import { PLATFORM_TWITCH } from '@omnicharts/domain';
@@ -30,10 +25,7 @@ export type ReconcileOptions = {
  * Direct GET /streams?user_id=… for recently tracked channels.
  * Authoritative per-ID lookup; catches streams dropped from paginated directory sweeps.
  */
-export async function runTwitchReconcileRecent(
-	env: Env,
-	opts: ReconcileOptions = {}
-): Promise<ReconcileStats> {
+export async function runTwitchReconcileRecent(env: Env, opts: ReconcileOptions = {}): Promise<ReconcileStats> {
 	const db = requireDb(env);
 	const client = opts.client ?? new TwitchHelixClient(env);
 	const minViewers = minViewersFromEnv(env);
@@ -43,14 +35,10 @@ export async function runTwitchReconcileRecent(
 		batches: 0,
 		liveFound: 0,
 		samplesWritten: 0,
-		retired: 0
+		retired: 0,
 	};
 
-	const userIds = await listRecentlyTrackedPlatformIds(
-		db,
-		RECONCILE_RECENT_HOURS,
-		RECONCILE_MAX_CHANNELS
-	);
+	const userIds = await listRecentlyTrackedPlatformIds(db, RECONCILE_RECENT_HOURS, RECONCILE_MAX_CHANNELS);
 	stats.candidates = userIds.length;
 	stats.platformChannelIds = userIds;
 	if (userIds.length === 0) return stats;
@@ -73,7 +61,7 @@ export async function runTwitchReconcileRecent(
 		stats.samplesWritten += archiveRows.length;
 		await closeOpenSessionsForPlatformChannelIds(db, PLATFORM_TWITCH, offlineIds, now, {
 			env,
-			scope: 'reconcile:offline_close_sessions'
+			scope: 'reconcile:offline_close_sessions',
 		});
 	}
 

@@ -3,14 +3,14 @@ import { HELIX_429_MAX_RETRIES, TwitchHelixClient } from '../src/twitch/helix';
 import { helixRateLimitWaitMs } from '../src/twitch/rate-limit';
 
 vi.mock('../src/twitch/auth', () => ({
-	getAppAccessToken: vi.fn().mockResolvedValue('test-token')
+	getAppAccessToken: vi.fn().mockResolvedValue('test-token'),
 }));
 
 describe('helixRateLimitWaitMs', () => {
 	it('waits until Ratelimit-Reset unix timestamp', () => {
 		const resetSec = Math.floor(Date.now() / 1000) + 30;
 		const headers = new Headers({
-			'Ratelimit-Reset': String(resetSec)
+			'Ratelimit-Reset': String(resetSec),
 		});
 		const waitMs = helixRateLimitWaitMs(headers);
 		expect(waitMs).toBeGreaterThanOrEqual(100);
@@ -46,9 +46,9 @@ describe('TwitchHelixClient 429 handling', () => {
 							status: 429,
 							headers: {
 								'Ratelimit-Remaining': '0',
-								'Ratelimit-Reset': String(Math.floor(Date.now() / 1000) + 2)
-							}
-						})
+								'Ratelimit-Reset': String(Math.floor(Date.now() / 1000) + 2),
+							},
+						}),
 					);
 				}
 				return Promise.resolve(
@@ -56,11 +56,11 @@ describe('TwitchHelixClient 429 handling', () => {
 						status: 200,
 						headers: {
 							'Ratelimit-Remaining': '700',
-							'Ratelimit-Reset': String(Math.floor(Date.now() / 1000) + 60)
-						}
-					})
+							'Ratelimit-Reset': String(Math.floor(Date.now() / 1000) + 60),
+						},
+					}),
 				);
-			})
+			}),
 		);
 
 		const client = new TwitchHelixClient(env);
@@ -84,9 +84,9 @@ describe('TwitchHelixClient 429 handling', () => {
 							status: 200,
 							headers: {
 								'Ratelimit-Remaining': '0',
-								'Ratelimit-Reset': String(Math.floor(Date.now() / 1000) + 1)
-							}
-						})
+								'Ratelimit-Reset': String(Math.floor(Date.now() / 1000) + 1),
+							},
+						}),
 					);
 				}
 				return Promise.resolve(
@@ -103,20 +103,20 @@ describe('TwitchHelixClient 429 handling', () => {
 									title: 'T',
 									viewer_count: 10,
 									started_at: '2026-06-01T00:00:00Z',
-									type: 'live'
-								}
-							]
+									type: 'live',
+								},
+							],
 						}),
 						{
 							status: 200,
 							headers: {
 								'Ratelimit-Remaining': '699',
-								'Ratelimit-Reset': String(Math.floor(Date.now() / 1000) + 60)
-							}
-						}
-					)
+								'Ratelimit-Reset': String(Math.floor(Date.now() / 1000) + 60),
+							},
+						},
+					),
 				);
-			})
+			}),
 		);
 
 		const client = new TwitchHelixClient(env);
@@ -136,10 +136,10 @@ describe('TwitchHelixClient 429 handling', () => {
 					status: 429,
 					headers: {
 						'Ratelimit-Remaining': '0',
-						'Ratelimit-Reset': String(Math.floor(Date.now() / 1000) + 1)
-					}
-				})
-			)
+						'Ratelimit-Reset': String(Math.floor(Date.now() / 1000) + 1),
+					},
+				}),
+			),
 		);
 
 		const client = new TwitchHelixClient(env);

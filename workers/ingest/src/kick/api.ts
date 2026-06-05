@@ -1,13 +1,7 @@
 import { getKickAppAccessToken, invalidateKickTokenCache } from './auth';
 import { KICK_API_BASE, KICK_LIVESTREAMS_BATCH_SIZE } from './config';
 import { KickRateBudget, kickRetryAfterMs, sleepMs } from './rate-limit';
-import type {
-	KickApiListResponse,
-	KickCategoryWithTags,
-	KickChannel,
-	KickLivestream,
-	KickPaginatedResponse
-} from './types';
+import type { KickApiListResponse, KickCategoryWithTags, KickChannel, KickLivestream, KickPaginatedResponse } from './types';
 import { chunkArray } from '../db/d1-batch';
 
 const KICK_429_MAX_RETRIES = 5;
@@ -19,7 +13,10 @@ export type KickPublicApiClientOptions = {
 export class KickPublicApiClient {
 	private readonly budget: KickRateBudget;
 
-	constructor(private readonly env: Env, opts: KickPublicApiClientOptions = {}) {
+	constructor(
+		private readonly env: Env,
+		opts: KickPublicApiClientOptions = {},
+	) {
 		this.budget = opts.budget ?? new KickRateBudget();
 	}
 
@@ -27,10 +24,12 @@ export class KickPublicApiClient {
 		return this.budget;
 	}
 
-	async getCategoriesV2(opts: {
-		cursor?: string;
-		limit?: number;
-	} = {}): Promise<KickPaginatedResponse<KickCategoryWithTags>> {
+	async getCategoriesV2(
+		opts: {
+			cursor?: string;
+			limit?: number;
+		} = {},
+	): Promise<KickPaginatedResponse<KickCategoryWithTags>> {
 		const params = new URLSearchParams();
 		if (opts.cursor) params.set('cursor', opts.cursor);
 		params.set('limit', String(opts.limit ?? 100));
@@ -39,17 +38,14 @@ export class KickPublicApiClient {
 
 	async getLivestreamsByCategoryId(
 		categoryId: number,
-		opts: { limit?: number; sort?: 'viewer_count' | 'started_at' } = {}
+		opts: { limit?: number; sort?: 'viewer_count' | 'started_at' } = {},
 	): Promise<KickLivestream[]> {
 		const params = new URLSearchParams();
 		params.set('category_id', String(categoryId));
 		params.set('limit', String(opts.limit ?? 100));
 		params.set('sort', opts.sort ?? 'viewer_count');
 
-		const json = await this.get<KickApiListResponse<KickLivestream>>(
-			'/public/v1/livestreams',
-			params
-		);
+		const json = await this.get<KickApiListResponse<KickLivestream>>('/public/v1/livestreams', params);
 		return json.data ?? [];
 	}
 
@@ -81,10 +77,7 @@ export class KickPublicApiClient {
 		}
 		params.set('sort', 'viewer_count');
 
-		const json = await this.get<KickApiListResponse<KickLivestream>>(
-			'/public/v1/livestreams',
-			params
-		);
+		const json = await this.get<KickApiListResponse<KickLivestream>>('/public/v1/livestreams', params);
 		return json.data ?? [];
 	}
 
@@ -101,8 +94,8 @@ export class KickPublicApiClient {
 			const res = await fetch(url.toString(), {
 				headers: {
 					Authorization: `Bearer ${token}`,
-					Accept: 'application/json'
-				}
+					Accept: 'application/json',
+				},
 			});
 
 			if (res.status === 401 && attempt === 0) {

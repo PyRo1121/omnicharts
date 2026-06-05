@@ -12,12 +12,12 @@ const stream = (userId: string, viewers: number): HelixStream => ({
 	title: 'T',
 	viewer_count: viewers,
 	started_at: '2026-06-01T00:00:00Z',
-	type: 'live'
+	type: 'live',
 });
 
 vi.mock('../src/twitch/ingest-stream', () => ({
 	ingestHelixStreamsBatch: vi.fn().mockResolvedValue([]),
-	flushSampleArchivePage: vi.fn().mockResolvedValue(undefined)
+	flushSampleArchivePage: vi.fn().mockResolvedValue(undefined),
 }));
 
 describe('ingestStreamPage', () => {
@@ -32,16 +32,10 @@ describe('ingestStreamPage', () => {
 		const stats = {
 			streamsSeen: 0,
 			channelsIngested: 0,
-			duplicatesSkipped: 0
+			duplicatesSkipped: 0,
 		};
 
-		await ingestStreamPage(
-			env,
-			[stream('u1', 100), stream('u1', 90), stream('u2', 50)],
-			2,
-			seen,
-			stats
-		);
+		await ingestStreamPage(env, [stream('u1', 100), stream('u1', 90), stream('u2', 50)], 2, seen, stats);
 
 		expect(stats.streamsSeen).toBe(2);
 		expect(stats.duplicatesSkipped).toBe(1);
@@ -53,15 +47,9 @@ describe('ingestStreamPage', () => {
 		const stats = {
 			streamsSeen: 0,
 			channelsIngested: 0,
-			duplicatesSkipped: 0
+			duplicatesSkipped: 0,
 		};
-		const { pageMaxViewers } = await ingestStreamPage(
-			env,
-			[stream('a', 10), stream('b', 99)],
-			0,
-			new Set(),
-			stats
-		);
+		const { pageMaxViewers } = await ingestStreamPage(env, [stream('a', 10), stream('b', 99)], 0, new Set(), stats);
 		expect(pageMaxViewers).toBe(99);
 	});
 });

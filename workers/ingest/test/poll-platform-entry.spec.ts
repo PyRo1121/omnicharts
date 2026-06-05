@@ -12,7 +12,7 @@ describe('platform poll entrypoints', () => {
 	it('runKickPollPlatform delegates to runKickCatalogPoll', async () => {
 		const spy = vi.spyOn(kickPoll, 'runKickCatalogPoll').mockResolvedValue({
 			batches: 0,
-			skipped: 'NEEDS_API'
+			skipped: 'NEEDS_API',
 		});
 		await runKickPollPlatform({} as Env);
 		expect(spy).toHaveBeenCalledOnce();
@@ -21,7 +21,7 @@ describe('platform poll entrypoints', () => {
 	it('runYoutubePollPlatform delegates to runYoutubeCatalogPoll', async () => {
 		const spy = vi.spyOn(youtubePoll, 'runYoutubeCatalogPoll').mockResolvedValue({
 			batches: 0,
-			skipped: 'NEEDS_API'
+			skipped: 'NEEDS_API',
 		});
 		await runYoutubePollPlatform({} as Env);
 		expect(spy).toHaveBeenCalledOnce();

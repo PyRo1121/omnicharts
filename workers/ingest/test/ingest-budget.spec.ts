@@ -14,16 +14,13 @@ import {
 	multiPlatformCronMessages,
 	plannedLiveStreamCap,
 	queueFanoutMessagesPerPoll,
-	twitchCronEnqueueMessages
+	twitchCronEnqueueMessages,
 } from '../src/ingest-budget';
 import { coverageMessagesForPlatform } from '../src/platform-coverage';
 
 describe('ingest budget allocator', () => {
 	it('splits D1 write budget three ways (sums to target)', () => {
-		const total = (['twitch', 'kick', 'youtube'] as const).reduce(
-			(sum, p) => sum + d1WritesBudgetPerDay(p),
-			0
-		);
+		const total = (['twitch', 'kick', 'youtube'] as const).reduce((sum, p) => sum + d1WritesBudgetPerDay(p), 0);
 		expect(total).toBeLessThanOrEqual(PAID_D1_WRITES_PER_DAY_TARGET);
 		expect(PLATFORM_BUDGET_SHARE.twitch + PLATFORM_BUDGET_SHARE.kick + PLATFORM_BUDGET_SHARE.youtube).toBe(1);
 	});
@@ -42,19 +39,13 @@ describe('ingest budget allocator', () => {
 	});
 
 	it('multiPlatformCronMessages enqueues kick and youtube tracked poll', () => {
-		expect(multiPlatformCronMessages()).toEqual([
-			{ type: 'poll_kick_tracked' },
-			{ type: 'poll_youtube_tracked' }
-		]);
+		expect(multiPlatformCronMessages()).toEqual([{ type: 'poll_kick_tracked' }, { type: 'poll_youtube_tracked' }]);
 	});
 
 	it('full cron uses two messages without poll_platform hop', () => {
 		expect(messagesPerTwitchCronTick('full', 3000)).toBe(2);
 		const msgs = twitchCronEnqueueMessages({ INGEST_COVERAGE_MODE: 'full' } as Env);
-		expect(msgs.map((m) => m.type)).toEqual([
-			'poll_twitch_sweep',
-			'poll_twitch_reconcile'
-		]);
+		expect(msgs.map((m) => m.type)).toEqual(['poll_twitch_sweep', 'poll_twitch_reconcile']);
 	});
 
 	it('shards_only at 3k upgrades to full fan-out (not 31 legacy shard msgs)', () => {
@@ -82,10 +73,7 @@ describe('platform coverage messages', () => {
 
 	it('twitch keeps sweep+reconcile fan-out (game pass runs inside sweep)', () => {
 		const twitch = coverageMessagesForPlatform('twitch');
-		expect(twitch).toEqual([
-			{ type: 'poll_twitch_sweep' },
-			{ type: 'poll_twitch_reconcile' }
-		]);
+		expect(twitch).toEqual([{ type: 'poll_twitch_sweep' }, { type: 'poll_twitch_reconcile' }]);
 	});
 });
 
@@ -93,17 +81,15 @@ describe('estimateIngestQueueBudget', () => {
 	it('adds kick+youtube */2 load without tripling twitch fan-out', () => {
 		const twitchOnly = estimateIngestQueueBudget({
 			twitchCronTicksPerDay: 1440,
-			multiPlatformCronTicksPerDay: 0
+			multiPlatformCronTicksPerDay: 0,
 		});
 		const threePlatform = estimateIngestQueueBudget({
 			twitchCronTicksPerDay: 1440,
-			multiPlatformCronTicksPerDay: 720
+			multiPlatformCronTicksPerDay: 720,
 		});
 		expect(threePlatform.kickMessagesPerDay).toBe(720);
 		expect(threePlatform.youtubeMessagesPerDay).toBe(720);
-		expect(threePlatform.totalMessagesPerDay).toBe(
-			twitchOnly.totalMessagesPerDay + 720 + 720
-		);
+		expect(threePlatform.totalMessagesPerDay).toBe(twitchOnly.totalMessagesPerDay + 720 + 720);
 		expect(threePlatform.queueOpsPerMonth).toBeLessThan(1_000_000);
 	});
 });

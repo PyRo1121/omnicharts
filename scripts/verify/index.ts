@@ -17,7 +17,7 @@ const COMMANDS: Record<string, string> = {
 	lighthouse: 'lighthouse-smoke.ts',
 	d1: 'verify-d1-schema.ts',
 	wrangler: 'verify-wrangler-production-env.ts',
-	checkpoint: 'twitch-phase1-checkpoint.ts'
+	checkpoint: 'twitch-phase1-checkpoint.ts',
 };
 
 const [cmd, ...rest] = process.argv.slice(2);

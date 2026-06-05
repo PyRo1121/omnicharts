@@ -14,7 +14,7 @@ export async function listKickChannelIdsToPoll(db: D1Database, limit: number): P
 			`SELECT platform_channel_id FROM channels
        WHERE ${TRACKED_KICK_CHANNEL_SQL}
        ORDER BY last_seen_at DESC NULLS LAST
-       LIMIT ?`
+       LIMIT ?`,
 		)
 		.bind(PLATFORM_KICK, limit)
 		.all<{ platform_channel_id: string }>();

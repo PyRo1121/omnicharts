@@ -19,7 +19,7 @@ const BUDGETS = {
 	performance: Number(process.env.LH_MIN_PERFORMANCE ?? '75'),
 	accessibility: Number(process.env.LH_MIN_ACCESSIBILITY ?? '90'),
 	'best-practices': Number(process.env.LH_MIN_BEST_PRACTICES ?? '90'),
-	seo: Number(process.env.LH_MIN_SEO ?? '90')
+	seo: Number(process.env.LH_MIN_SEO ?? '90'),
 } as const;
 
 function run(cmd: string[], cwd = REPO_ROOT): Promise<{ ok: boolean; output: string }> {
@@ -60,7 +60,7 @@ async function main() {
 	const preview = spawn('bun', ['run', 'preview'], {
 		cwd: WEB_DIR,
 		stdio: ['ignore', 'pipe', 'pipe'],
-		env: { ...process.env, PORT: String(PREVIEW_PORT) }
+		env: { ...process.env, PORT: String(PREVIEW_PORT) },
 	});
 
 	let previewOut = '';
@@ -101,9 +101,9 @@ async function main() {
 			'--chrome-flags=--headless=new --no-sandbox --disable-gpu',
 			'--only-categories=performance,accessibility,best-practices,seo',
 			'--output=json',
-			`--output-path=${reportPath}`
+			`--output-path=${reportPath}`,
 		],
-		REPO_ROOT
+		REPO_ROOT,
 	);
 
 	killPreview();

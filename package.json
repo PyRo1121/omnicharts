@@ -30,6 +30,9 @@
     "d1:verify-schema": "bun run scripts/verify/verify-d1-schema.ts",
     "d1:verify-schema:remote": "bun run scripts/verify/verify-d1-schema.ts --remote",
     "verify:wrangler-production": "bun run scripts/verify/verify-wrangler-production-env.ts",
+    "lint": "oxlint apps/web packages workers/ingest scripts",
+    "format": "oxfmt apps/web packages workers/ingest scripts",
+    "format:check": "oxfmt --check apps/web packages workers/ingest scripts",
     "ingest:cron": "bun run scripts/ingest/ingest-cron-curl.ts",
     "kick:discover": "bun run scripts/ingest/ingest-admin-curl.ts POST /admin/kick/discover",
     "twitch:discover": "bun run scripts/ingest/ingest-admin-curl.ts POST /admin/twitch/discover",
@@ -43,5 +46,9 @@
     "dev:seed-rankings": "bun run scripts/ingest/ingest-admin-curl.ts POST /admin/dev/seed-rankings",
     "twitch:checkpoint": "bun run scripts/verify/twitch-phase1-checkpoint.ts",
     "twitch:checkpoint:full": "bun run scripts/verify/twitch-phase1-checkpoint.ts --full"
+  },
+  "devDependencies": {
+    "oxfmt": "^0.53.0",
+    "oxlint": "^1.68.0"
   }
 }

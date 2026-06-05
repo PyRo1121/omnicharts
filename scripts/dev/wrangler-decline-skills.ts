@@ -33,9 +33,9 @@ writeFileSync(
 			version: 1,
 			accepted: false,
 			date: new Date().toISOString(),
-			detectedAgents: []
+			detectedAgents: [],
 		},
 		null,
-		'\t'
-	)}\n`
+		'\t',
+	)}\n`,
 );

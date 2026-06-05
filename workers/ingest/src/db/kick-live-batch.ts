@@ -1,10 +1,5 @@
 import { PLATFORM_KICK } from '@omnicharts/domain';
-import {
-	chunkArray,
-	D1_BATCH_MAX_STATEMENTS,
-	maxRowsPerInsert,
-	runD1Batches
-} from './d1-batch';
+import { chunkArray, D1_BATCH_MAX_STATEMENTS, maxRowsPerInsert, runD1Batches } from './d1-batch';
 import { batchCloseStaleOpenSessionsForChannels } from './session-lifecycle';
 import { shouldPromoteDiscoveredToTracked } from './live-sightings';
 import type { SampleArchiveRow } from '../r2/sample-archive';
@@ -16,7 +11,7 @@ import {
 	kickBroadcasterId,
 	kickPlatformStreamId,
 	kickSessionRowId,
-	kickStreamSessionPersist
+	kickStreamSessionPersist,
 } from '../kick/stream-fields';
 
 const nowIso = () => new Date().toISOString();
@@ -29,10 +24,7 @@ type ExistingChannel = {
 	platform_channel_id: string;
 };
 
-async function fetchExistingKickChannels(
-	db: D1Database,
-	broadcasterIds: string[]
-): Promise<Map<string, ExistingChannel>> {
+async function fetchExistingKickChannels(db: D1Database, broadcasterIds: string[]): Promise<Map<string, ExistingChannel>> {
 	const map = new Map<string, ExistingChannel>();
 	if (broadcasterIds.length === 0) return map;
 
@@ -42,7 +34,7 @@ async function fetchExistingKickChannels(
 			.prepare(
 				`SELECT id, slug, ingest_state, first_observed_at, platform_channel_id
          FROM channels
-         WHERE platform_id = ? AND platform_channel_id IN (${placeholders})`
+         WHERE platform_id = ? AND platform_channel_id IN (${placeholders})`,
 			)
 			.bind(PLATFORM_KICK, ...batch)
 			.all<ExistingChannel>();
@@ -64,7 +56,7 @@ async function fetchKickSlugOwners(db: D1Database, slugs: string[]): Promise<Map
 		const { results } = await db
 			.prepare(
 				`SELECT slug, platform_channel_id FROM channels
-         WHERE platform_id = ? AND slug IN (${placeholders})`
+         WHERE platform_id = ? AND slug IN (${placeholders})`,
 			)
 			.bind(PLATFORM_KICK, ...batch)
 			.all<{ slug: string; platform_channel_id: string }>();
@@ -78,7 +70,7 @@ async function fetchKickSlugOwners(db: D1Database, slugs: string[]): Promise<Map
 
 async function fetchOpenSessionsByChannelId(
 	db: D1Database,
-	channelIds: string[]
+	channelIds: string[],
 ): Promise<Map<string, { id: string; platform_stream_id: string; started_at: string }>> {
 	const latest = new Map<string, { id: string; platform_stream_id: string; started_at: string }>();
 	if (channelIds.length === 0) return latest;
@@ -88,7 +80,7 @@ async function fetchOpenSessionsByChannelId(
 		const { results } = await db
 			.prepare(
 				`SELECT id, channel_id, platform_stream_id, started_at FROM stream_sessions
-         WHERE channel_id IN (${placeholders}) AND ended_at IS NULL`
+         WHERE channel_id IN (${placeholders}) AND ended_at IS NULL`,
 			)
 			.bind(...batch)
 			.all<{ id: string; channel_id: string; platform_stream_id: string; started_at: string }>();
@@ -99,7 +91,7 @@ async function fetchOpenSessionsByChannelId(
 				latest.set(row.channel_id, {
 					id: row.id,
 					platform_stream_id: row.platform_stream_id,
-					started_at: row.started_at
+					started_at: row.started_at,
 				});
 			}
 		}
@@ -107,10 +99,7 @@ async function fetchOpenSessionsByChannelId(
 	return latest;
 }
 
-async function fetchSightingCounts14d(
-	db: D1Database,
-	channelIds: string[]
-): Promise<Map<string, number>> {
+async function fetchSightingCounts14d(db: D1Database, channelIds: string[]): Promise<Map<string, number>> {
 	const map = new Map<string, number>();
 	if (channelIds.length === 0) return map;
 
@@ -122,7 +111,7 @@ async function fetchSightingCounts14d(
 			.prepare(
 				`SELECT channel_id, COUNT(*) AS n FROM channel_live_sightings
          WHERE channel_id IN (${placeholders}) AND sighted_at >= ?
-         GROUP BY channel_id`
+         GROUP BY channel_id`,
 			)
 			.bind(...batch, windowStart)
 			.all<{ channel_id: string; n: number }>();
@@ -138,7 +127,7 @@ const GAME_UPSERT_COLS = 5;
 
 export async function batchUpsertKickGameCategories(
 	db: D1Database,
-	categories: Pick<KickCategory, 'id' | 'name'>[]
+	categories: Pick<KickCategory, 'id' | 'name'>[],
 ): Promise<Map<string, string>> {
 	const byPlatformId = new Map<number, Pick<KickCategory, 'id' | 'name'>>();
 	for (const cat of categories) {
@@ -168,7 +157,7 @@ export async function batchUpsertKickGameCategories(
          VALUES ${placeholders}
          ON CONFLICT(platform_id, platform_category_id) DO UPDATE SET
            name = excluded.name,
-           slug = excluded.slug`
+           slug = excluded.slug`,
 			)
 			.bind(...binds)
 			.run();
@@ -186,7 +175,7 @@ export async function batchUpsertKickChannelsFromLivestreams(
 		/** Category/game directory top-N — promote discovered → tracked (docs/12) */
 		directoryListing?: boolean;
 	},
-	batchOpts?: { env?: Env; scope?: string }
+	batchOpts?: { env?: Env; scope?: string },
 ): Promise<Map<string, string>> {
 	const channelIdByBroadcaster = new Map<string, string>();
 	if (streams.length === 0) return channelIdByBroadcaster;
@@ -229,9 +218,9 @@ export async function batchUpsertKickChannelsFromLivestreams(
 					.prepare(
 						`INSERT INTO slug_history (channel_id, old_slug, new_slug, platform_id, changed_at)
              VALUES (?, ?, ?, ?, ?)
-             ON CONFLICT(platform_id, old_slug) DO NOTHING`
+             ON CONFLICT(platform_id, old_slug) DO NOTHING`,
 					)
-					.bind(existing.id, existing.slug, slug, PLATFORM_KICK, now)
+					.bind(existing.id, existing.slug, slug, PLATFORM_KICK, now),
 			);
 		}
 
@@ -242,11 +231,7 @@ export async function batchUpsertKickChannelsFromLivestreams(
 			// unchanged
 		} else if (ingestState === 'tracked') {
 			ingestState = 'tracked';
-		} else if (
-			opts.promoteToTracked &&
-			isKickViewerCountKnown(stream.viewer_count) &&
-			viewerCount >= opts.minViewers
-		) {
+		} else if (opts.promoteToTracked && isKickViewerCountKnown(stream.viewer_count) && viewerCount >= opts.minViewers) {
 			if (opts.directoryListing && ingestState === 'discovered') {
 				ingestState = 'tracked';
 			} else if (ingestState === 'dormant') {
@@ -277,19 +262,9 @@ export async function batchUpsertKickChannelsFromLivestreams(
                WHEN channels.ingest_state = 'retired' THEN channels.ingest_state
                WHEN excluded.ingest_state = 'tracked' THEN 'tracked'
                ELSE channels.ingest_state
-             END`
+             END`,
 				)
-				.bind(
-					channelId,
-					PLATFORM_KICK,
-					bid,
-					slug,
-					stream.slug,
-					firstObserved,
-					now,
-					ingestState,
-					language
-				)
+				.bind(channelId, PLATFORM_KICK, bid, slug, stream.slug, firstObserved, now, ingestState, language),
 		);
 
 		if (recordSighting && isKickViewerCountKnown(stream.viewer_count)) {
@@ -299,35 +274,35 @@ export async function batchUpsertKickChannelsFromLivestreams(
 					.prepare(
 						`INSERT INTO channel_live_sightings (channel_id, sighted_at, viewer_count)
              VALUES (?, ?, ?)
-             ON CONFLICT(channel_id, sighted_at) DO NOTHING`
+             ON CONFLICT(channel_id, sighted_at) DO NOTHING`,
 					)
-					.bind(channelId, now, stream.viewer_count)
+					.bind(channelId, now, stream.viewer_count),
 			);
 			sightingStatements.push(
 				db
 					.prepare(
 						`DELETE FROM channel_live_sightings
-             WHERE channel_id = ? AND sighted_at < ?`
+             WHERE channel_id = ? AND sighted_at < ?`,
 					)
-					.bind(channelId, new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString())
+					.bind(channelId, new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()),
 			);
 		}
 	}
 
 	await runD1Batches(db, slugHistoryStatements, {
 		scope: batchOpts?.scope ? `${batchOpts.scope}:slug_history` : undefined,
-		env: batchOpts?.env
+		env: batchOpts?.env,
 	});
 	await runD1Batches(db, channelUpsertStatements, {
 		scope: batchOpts?.scope ? `${batchOpts.scope}:channels` : undefined,
-		env: batchOpts?.env
+		env: batchOpts?.env,
 	});
 	for (const stream of streams) {
 		await recordKickApiChannelId(db, kickBroadcasterId(stream), stream.channel_id);
 	}
 	await runD1Batches(db, sightingStatements, {
 		scope: batchOpts?.scope ? `${batchOpts.scope}:sightings` : undefined,
-		env: batchOpts?.env
+		env: batchOpts?.env,
 	});
 
 	if (sightingChannelIds.length > 0) {
@@ -336,14 +311,12 @@ export async function batchUpsertKickChannelsFromLivestreams(
 		for (const channelId of sightingChannelIds) {
 			const n = counts.get(channelId) ?? 0;
 			if (shouldPromoteDiscoveredToTracked(n)) {
-				promoteStatements.push(
-					db.prepare(`UPDATE channels SET ingest_state = 'tracked' WHERE id = ?`).bind(channelId)
-				);
+				promoteStatements.push(db.prepare(`UPDATE channels SET ingest_state = 'tracked' WHERE id = ?`).bind(channelId));
 			}
 		}
 		await runD1Batches(db, promoteStatements, {
 			scope: batchOpts?.scope ? `${batchOpts.scope}:promote` : undefined,
-			env: batchOpts?.env
+			env: batchOpts?.env,
 		});
 	}
 
@@ -358,7 +331,7 @@ export type KickLiveSampleInput = {
 
 async function insertViewerSamplesMultiRow(
 	db: D1Database,
-	rows: { sessionRowId: string; sampledAt: string; viewerCount: number }[]
+	rows: { sessionRowId: string; sampledAt: string; viewerCount: number }[],
 ): Promise<void> {
 	if (rows.length === 0) return;
 	const cols = 3;
@@ -371,7 +344,7 @@ async function insertViewerSamplesMultiRow(
 			.prepare(
 				`INSERT INTO viewer_samples (stream_session_id, sampled_at, viewer_count)
          VALUES ${placeholders}
-         ON CONFLICT(stream_session_id, sampled_at) DO NOTHING`
+         ON CONFLICT(stream_session_id, sampled_at) DO NOTHING`,
 			)
 			.bind(...binds)
 			.run();
@@ -381,7 +354,7 @@ async function insertViewerSamplesMultiRow(
 export async function batchRecordKickLiveSamples(
 	db: D1Database,
 	inputs: KickLiveSampleInput[],
-	batchOpts?: { env?: Env; scope?: string }
+	batchOpts?: { env?: Env; scope?: string },
 ): Promise<SampleArchiveRow[]> {
 	if (inputs.length === 0) return [];
 
@@ -440,7 +413,7 @@ export async function batchRecordKickLiveSamples(
                language = excluded.language,
                tags_json = excluded.tags_json,
                thumbnail_url = excluded.thumbnail_url,
-               stream_type = excluded.stream_type`
+               stream_type = excluded.stream_type`,
 					)
 					.bind(
 						sessionRowId,
@@ -452,8 +425,8 @@ export async function batchRecordKickLiveSamples(
 						sessionFields.language,
 						sessionFields.tags_json,
 						sessionFields.thumbnail_url,
-						sessionFields.stream_type
-					)
+						sessionFields.stream_type,
+					),
 			);
 		} else {
 			sessionUpdateStatements.push(
@@ -466,7 +439,7 @@ export async function batchRecordKickLiveSamples(
                tags_json = ?,
                thumbnail_url = ?,
                stream_type = ?
-             WHERE id = ?`
+             WHERE id = ?`,
 					)
 					.bind(
 						stream.stream_title,
@@ -475,35 +448,35 @@ export async function batchRecordKickLiveSamples(
 						sessionFields.tags_json,
 						sessionFields.thumbnail_url,
 						sessionFields.stream_type,
-						sessionRowId
-					)
+						sessionRowId,
+					),
 			);
 		}
 
 		sampleRows.push({
 			sessionRowId,
 			sampledAt: now,
-			viewerCount: stream.viewer_count
+			viewerCount: stream.viewer_count,
 		});
 		archive.push({
 			stream_session_id: sessionRowId,
 			sampled_at: now,
 			viewer_count: stream.viewer_count,
-			platform: 'kick'
+			platform: 'kick',
 		});
 	}
 
 	await batchCloseStaleOpenSessionsForChannels(db, staleSessionCloses, now, {
 		scope: batchOpts?.scope ? `${batchOpts.scope}:stale_session_close` : undefined,
-		env: batchOpts?.env
+		env: batchOpts?.env,
 	});
 	await runD1Batches(db, sessionInsertStatements, {
 		scope: batchOpts?.scope ? `${batchOpts.scope}:session_insert` : undefined,
-		env: batchOpts?.env
+		env: batchOpts?.env,
 	});
 	await runD1Batches(db, sessionUpdateStatements, {
 		scope: batchOpts?.scope ? `${batchOpts.scope}:session_update` : undefined,
-		env: batchOpts?.env
+		env: batchOpts?.env,
 	});
 	await insertViewerSamplesMultiRow(db, sampleRows);
 

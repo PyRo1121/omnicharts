@@ -23,7 +23,7 @@ describe('wrangler ingest bindings (lane 4)', () => {
 	it('aliases @omnicharts workspace packages to package src', () => {
 		expect(config.alias).toEqual({
 			'@omnicharts/domain': '../../packages/domain/src/index.ts',
-			'@omnicharts/rollup': '../../packages/rollup/src/index.ts'
+			'@omnicharts/rollup': '../../packages/rollup/src/index.ts',
 		});
 	});
 
@@ -37,8 +37,7 @@ describe('wrangler ingest bindings (lane 4)', () => {
 	});
 
 	it('defaults consumer batch for Free-safe local deploy', () => {
-		const consumers = (config.queues as { consumers: { max_batch_size: number; max_retries: number }[] })
-			.consumers;
+		const consumers = (config.queues as { consumers: { max_batch_size: number; max_retries: number }[] }).consumers;
 		expect(consumers[0]?.max_batch_size).toBe(5);
 		expect(consumers[0]?.max_retries).toBe(2);
 	});
@@ -46,7 +45,7 @@ describe('wrangler ingest bindings (lane 4)', () => {
 	it('staging uses */5 twitch, */2 kick+youtube cron, and shards_only', () => {
 		const staging = (config.env as Record<string, Record<string, unknown>>).staging;
 		expect(staging.triggers).toEqual({
-			crons: ['*/5 * * * *', '*/2 * * * *', '15 0 * * *', '0 */6 * * *']
+			crons: ['*/5 * * * *', '*/2 * * * *', '15 0 * * *', '0 */6 * * *'],
 		});
 		expect((staging.vars as Record<string, string>).INGEST_COVERAGE_MODE).toBe('shards_only');
 	});
@@ -55,10 +54,9 @@ describe('wrangler ingest bindings (lane 4)', () => {
 		const production = (config.env as Record<string, Record<string, unknown>>).production;
 		expect(production.limits).toEqual({ cpu_ms: 30000 });
 		expect(production.triggers).toEqual({
-			crons: ['*/1 * * * *', '15 0 * * *', '0 */6 * * *']
+			crons: ['*/1 * * * *', '15 0 * * *', '0 */6 * * *'],
 		});
-		const consumers = (production.queues as { consumers: { max_batch_size: number; max_retries: number }[] })
-			.consumers;
+		const consumers = (production.queues as { consumers: { max_batch_size: number; max_retries: number }[] }).consumers;
 		expect(consumers[0]?.max_batch_size).toBe(3);
 		expect(consumers[0]?.max_retries).toBe(3);
 		const vars = production.vars as Record<string, string>;

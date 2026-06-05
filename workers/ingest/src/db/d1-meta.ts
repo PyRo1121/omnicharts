@@ -17,7 +17,7 @@ export function logD1Meta(scope: string, result: D1RunResult, env: Env): void {
 	console.log(`d1:${scope}`, {
 		rows_read: meta.rows_read ?? 0,
 		rows_written: meta.rows_written ?? 0,
-		changes: meta.changes ?? 0
+		changes: meta.changes ?? 0,
 	});
 }
 

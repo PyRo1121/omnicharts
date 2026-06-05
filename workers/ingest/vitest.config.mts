@@ -3,9 +3,9 @@ import { omnichartsResolveAlias } from './omnicharts-resolve.mts';
 
 export default defineConfig({
 	resolve: {
-		alias: { ...omnichartsResolveAlias }
+		alias: { ...omnichartsResolveAlias },
 	},
 	test: {
-		projects: ['./vitest.unit.config.mts', './vitest.workers.config.mts']
-	}
+		projects: ['./vitest.unit.config.mts', './vitest.workers.config.mts'],
+	},
 });

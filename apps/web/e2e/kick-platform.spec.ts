@@ -1,10 +1,5 @@
 import { test, expect } from '@playwright/test';
-import {
-	clickPlatform,
-	expectPlatformSelected,
-	ingestReachable,
-	INGEST_URL
-} from './helpers';
+import { clickPlatform, expectPlatformSelected, ingestReachable, INGEST_URL } from './helpers';
 
 test.describe('Kick platform UX (docs/09, docs/16)', () => {
 	test('homepage ?platform=kick shows rankings UI without Phase 3 banner', async ({ page }) => {
@@ -31,18 +26,14 @@ test.describe('Kick platform UX (docs/09, docs/16)', () => {
 		const res = await page.goto('/games?platform=kick');
 		expect(res?.status()).toBe(200);
 		await expect(page.getByText(/Kick game rankings ship in Phase 3/i)).not.toBeVisible();
-		await expect(
-			page.getByText(/Top Kick categories by average viewers|Ingest unavailable/i)
-		).toBeVisible();
+		await expect(page.getByText(/Top Kick categories by average viewers|Ingest unavailable/i)).toBeVisible();
 	});
 
 	test('overview ?platform=kick loads without Phase 3 banner', async ({ page }) => {
 		const res = await page.goto('/overview?platform=kick');
 		expect(res?.status()).toBe(200);
 		await expect(page.getByText(/Kick overview cards ship in Phase 3/i)).not.toBeVisible();
-		await expect(
-			page.getByText(/Kick (rollup-backed counts when ingest has data|ingest unavailable)/i)
-		).toBeVisible();
+		await expect(page.getByText(/Kick (rollup-backed counts when ingest has data|ingest unavailable)/i)).toBeVisible();
 		await expectPlatformSelected(page, 'Kick');
 		await expect(page.getByText(/Channels tracked/i)).toBeVisible();
 	});
@@ -52,9 +43,7 @@ test.describe('Kick platform UX (docs/09, docs/16)', () => {
 		expect(res?.status()).toBe(200);
 		await expect(page.getByRole('heading', { name: 'Platform overview' })).toBeVisible();
 		await expectPlatformSelected(page, 'YouTube');
-		await expect(
-			page.getByText(/YouTube (rollup-backed counts|ingest unavailable)/i).first()
-		).toBeVisible();
+		await expect(page.getByText(/YouTube (rollup-backed counts|ingest unavailable)/i).first()).toBeVisible();
 	});
 
 	test('homepage ?platform=youtube selects YouTube tab and leaderboard shell', async ({ page }) => {
@@ -74,9 +63,7 @@ test.describe('Kick platform UX (docs/09, docs/16)', () => {
 		const res = await page.goto('/games?platform=youtube');
 		expect(res?.status()).toBe(200);
 		await expectPlatformSelected(page, 'YouTube');
-		await expect(
-			page.getByText(/Top YouTube categories|Ingest unavailable/i).first()
-		).toBeVisible();
+		await expect(page.getByText(/Top YouTube categories|Ingest unavailable/i).first()).toBeVisible();
 	});
 
 	test('search page accepts platform=kick query param', async ({ page }) => {
@@ -96,9 +83,10 @@ test.describe('Kick platform UX (docs/09, docs/16)', () => {
 		await page.setViewportSize({ width: 1280, height: 720 });
 		await page.goto('/channels?platform=kick');
 		await expectPlatformSelected(page, 'Kick');
-		await expect(
-			page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Games' })
-		).toHaveAttribute('href', /platform=kick/);
+		await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Games' })).toHaveAttribute(
+			'href',
+			/platform=kick/,
+		);
 
 		await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Games' }).click();
 		await expect(page).toHaveURL(/\/games\?.*platform=kick/);
@@ -131,9 +119,7 @@ test.describe('Kick platform UX (docs/09, docs/16)', () => {
 			test.skip(true, `ingest not reachable at ${INGEST_URL} — start: bun run dev:ingest`);
 		}
 
-		const searchRes = await fetch(
-			`${INGEST_URL}/v1/search/channels?q=te&platform=kick&limit=1`
-		);
+		const searchRes = await fetch(`${INGEST_URL}/v1/search/channels?q=te&platform=kick&limit=1`);
 		if (!searchRes.ok) {
 			test.skip(true, 'kick search endpoint unavailable');
 		}

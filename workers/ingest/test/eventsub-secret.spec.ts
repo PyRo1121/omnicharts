@@ -3,7 +3,7 @@ import {
 	EVENTSUB_SECRET_MAX_LENGTH,
 	EVENTSUB_SECRET_MIN_LENGTH,
 	isValidTwitchEventSubSecret,
-	twitchEventSubSecretLengthMessage
+	twitchEventSubSecretLengthMessage,
 } from '../src/twitch/eventsub/secret';
 import { syncTwitchEventSubSubscriptions } from '../src/twitch/eventsub/sync';
 
@@ -29,7 +29,7 @@ describe('Twitch EventSub secret length', () => {
 			TWITCH_CLIENT_ID: 'id',
 			TWITCH_CLIENT_SECRET: 'sec',
 			TWITCH_EVENTSUB_SECRET: 'tiny',
-			TWITCH_EVENTSUB_CALLBACK_URL: 'https://example.com/hook'
+			TWITCH_EVENTSUB_CALLBACK_URL: 'https://example.com/hook',
 		} as Env);
 
 		expect(stats.errors).toBe(1);

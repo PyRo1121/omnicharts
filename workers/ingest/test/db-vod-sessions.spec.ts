@@ -4,29 +4,29 @@ import {
 	helixVideoToVodSessionRow,
 	listChannelsForVodBackfill,
 	listChannelsForVodBackfillByPlatformIds,
-	markChannelsVodBackfilled
+	markChannelsVodBackfilled,
 } from '../src/db/vod-sessions';
 import type { HelixVideo } from '../src/twitch/helix';
 
 function mockDb(results: unknown[] = []) {
 	const runs: unknown[][] = [];
 	const db = {
-		prepare(sql: string) {
+		prepare(_sql: string) {
 			return {
 				bind: (...args: unknown[]) => ({
 					run: async () => {
 						runs.push(args);
 						return {};
 					},
-					all: async () => ({ results })
-				})
+					all: async () => ({ results }),
+				}),
 			};
 		},
 		batch: async (statements: unknown[]) => {
 			for (const stmt of statements) {
 				await (stmt as { run: () => Promise<unknown> }).run();
 			}
-		}
+		},
 	} as unknown as D1Database;
 	return { db, runs };
 }
@@ -48,12 +48,12 @@ describe('helixVideoToVodSessionRow', () => {
 			view_count: 500,
 			language: 'en',
 			type: 'archive',
-			duration: 'PT1H'
+			duration: 'PT1H',
 		};
 
 		const row = helixVideoToVodSessionRow('ch-1', video, {
 			started_at: '2026-06-01T10:00:00.000Z',
-			ended_at: '2026-06-01T11:00:00.000Z'
+			ended_at: '2026-06-01T11:00:00.000Z',
 		});
 
 		expect(row.view_count).toBe(500);
@@ -68,12 +68,12 @@ describe('helixVideoToVodSessionRow', () => {
 			thumbnail_url: '',
 			type: '',
 			duration: '',
-			view_count: Number.NaN
+			view_count: Number.NaN,
 		} as HelixVideo;
 
 		const row = helixVideoToVodSessionRow('ch-1', video, {
 			started_at: '2026-06-01T10:00:00.000Z',
-			ended_at: null
+			ended_at: null,
 		});
 
 		expect(row.language).toBeNull();
@@ -85,9 +85,7 @@ describe('helixVideoToVodSessionRow', () => {
 
 describe('listChannelsForVodBackfill', () => {
 	it('returns tracked channel rows', async () => {
-		const rows = [
-			{ id: 'ch-1', platform_channel_id: '111', broadcaster_type: 'partner' }
-		];
+		const rows = [{ id: 'ch-1', platform_channel_id: '111', broadcaster_type: 'partner' }];
 		const { db } = mockDb(rows);
 		const result = await listChannelsForVodBackfill(db, 5, '2026-01-01T00:00:00.000Z');
 		expect(result).toEqual(rows);
@@ -125,8 +123,8 @@ describe('batchUpsertVodSessions', () => {
 				thumbnail_url: 'https://thumb',
 				stream_type: 'archive',
 				duration: 'PT1H',
-				view_count: 10
-			}
+				view_count: 10,
+			},
 		]);
 		expect(count).toBe(1);
 		expect(runs[0]?.[0]).toBe('twitch-vod-999');

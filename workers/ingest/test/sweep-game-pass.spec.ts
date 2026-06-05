@@ -4,10 +4,10 @@ import * as sweep from '../src/twitch/sweep';
 import * as gamePass from '../src/twitch/game-pass';
 
 vi.mock('../src/twitch/sweep', () => ({
-	runTwitchLiveSweep: vi.fn()
+	runTwitchLiveSweep: vi.fn(),
 }));
 vi.mock('../src/twitch/game-pass', () => ({
-	runTwitchGamePass: vi.fn()
+	runTwitchGamePass: vi.fn(),
 }));
 
 describe('runTwitchSweepAndGamePass', () => {
@@ -21,7 +21,7 @@ describe('runTwitchSweepAndGamePass', () => {
 			streamsSeen: 1,
 			channelsIngested: 1,
 			duplicatesSkipped: 0,
-			stoppedBecause: 'end_of_catalog' as const
+			stoppedBecause: 'end_of_catalog' as const,
 		};
 		const gameStats = {
 			gamesScanned: 1,
@@ -30,7 +30,7 @@ describe('runTwitchSweepAndGamePass', () => {
 			channelsIngested: 0,
 			duplicatesSkipped: 1,
 			startGameIndex: 0,
-			topGamesHelixPoints: 0
+			topGamesHelixPoints: 0,
 		};
 		vi.mocked(sweep.runTwitchLiveSweep).mockResolvedValue(sweepStats);
 		vi.mocked(gamePass.runTwitchGamePass).mockResolvedValue(gameStats);

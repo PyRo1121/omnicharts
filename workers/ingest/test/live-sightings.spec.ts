@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-	countChannelLiveSightings14d,
-	recordChannelLiveSighting,
-	shouldPromoteDiscoveredToTracked
-} from '../src/db/live-sightings';
+import { countChannelLiveSightings14d, recordChannelLiveSighting, shouldPromoteDiscoveredToTracked } from '../src/db/live-sightings';
 
 describe('live-sightings promotion', () => {
 	it('shouldPromoteDiscoveredToTracked requires 2 sightings', () => {
@@ -18,9 +14,9 @@ describe('live-sightings promotion', () => {
 			prepare(sql: string) {
 				runs.push(sql);
 				return {
-					bind: () => ({ run: async () => ({}) })
+					bind: () => ({ run: async () => ({}) }),
 				};
-			}
+			},
 		} as unknown as D1Database;
 
 		await recordChannelLiveSighting(db, 'ch-1', 100);
@@ -36,10 +32,10 @@ describe('live-sightings promotion', () => {
 						first: async () => {
 							expect(sql).toContain('channel_live_sightings');
 							return { n: 2 };
-						}
-					})
+						},
+					}),
 				};
-			}
+			},
 		} as unknown as D1Database;
 
 		expect(await countChannelLiveSightings14d(db, 'ch-1')).toBe(2);
@@ -49,9 +45,9 @@ describe('live-sightings promotion', () => {
 		const db = {
 			prepare: () => ({
 				bind: () => ({
-					first: async () => null
-				})
-			})
+					first: async () => null,
+				}),
+			}),
 		} as unknown as D1Database;
 		expect(await countChannelLiveSightings14d(db, 'ch-1')).toBe(0);
 	});

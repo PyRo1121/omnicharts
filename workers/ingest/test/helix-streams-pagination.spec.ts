@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { TwitchHelixClient } from '../src/twitch/helix';
 
 vi.mock('../src/twitch/auth', () => ({
-	getAppAccessToken: vi.fn().mockResolvedValue('test-token')
+	getAppAccessToken: vi.fn().mockResolvedValue('test-token'),
 }));
 
 describe('TwitchHelixClient streams pagination', () => {
@@ -29,19 +29,19 @@ describe('TwitchHelixClient streams pagination', () => {
 										title: 'T',
 										viewer_count: 50,
 										started_at: '2026-06-01T00:00:00Z',
-										type: 'live'
-									}
+										type: 'live',
+									},
 								],
-								pagination: { cursor: 'page2' }
+								pagination: { cursor: 'page2' },
 							}),
 							{
 								status: 200,
 								headers: {
 									'Ratelimit-Remaining': '700',
-									'Ratelimit-Reset': String(Math.floor(Date.now() / 1000) + 60)
-								}
-							}
-						)
+									'Ratelimit-Reset': String(Math.floor(Date.now() / 1000) + 60),
+								},
+							},
+						),
 					);
 				}
 				if (url.includes('/helix/streams')) {
@@ -61,19 +61,19 @@ describe('TwitchHelixClient streams pagination', () => {
 											title: 'T2',
 											viewer_count: 200,
 											started_at: '2026-06-01T00:00:00Z',
-											type: 'live'
-										}
+											type: 'live',
+										},
 									],
-									pagination: { cursor: 'next-cursor' }
+									pagination: { cursor: 'next-cursor' },
 								}),
 								{
 									status: 200,
 									headers: {
 										'Ratelimit-Remaining': '699',
-										'Ratelimit-Reset': String(Math.floor(Date.now() / 1000) + 60)
-									}
-								}
-							)
+										'Ratelimit-Reset': String(Math.floor(Date.now() / 1000) + 60),
+									},
+								},
+							),
 						);
 					}
 					return Promise.resolve(
@@ -81,9 +81,9 @@ describe('TwitchHelixClient streams pagination', () => {
 							status: 200,
 							headers: {
 								'Ratelimit-Remaining': '698',
-								'Ratelimit-Reset': String(Math.floor(Date.now() / 1000) + 60)
-							}
-						})
+								'Ratelimit-Reset': String(Math.floor(Date.now() / 1000) + 60),
+							},
+						}),
 					);
 				}
 				if (url.includes('/helix/games/top')) {
@@ -92,13 +92,13 @@ describe('TwitchHelixClient streams pagination', () => {
 							status: 200,
 							headers: {
 								'Ratelimit-Remaining': '797',
-								'Ratelimit-Reset': String(Math.floor(Date.now() / 1000) + 60)
-							}
-						})
+								'Ratelimit-Reset': String(Math.floor(Date.now() / 1000) + 60),
+							},
+						}),
 					);
 				}
 				return Promise.resolve(new Response('{}', { status: 404 }));
-			})
+			}),
 		);
 	});
 

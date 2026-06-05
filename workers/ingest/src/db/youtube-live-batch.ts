@@ -1,24 +1,15 @@
 import { PLATFORM_YOUTUBE } from '@omnicharts/domain';
-import {
-	chunkArray,
-	D1_BATCH_MAX_STATEMENTS,
-	maxRowsPerInsert,
-	runD1Batches
-} from './d1-batch';
+import { chunkArray, D1_BATCH_MAX_STATEMENTS, maxRowsPerInsert, runD1Batches } from './d1-batch';
 import { batchCloseStaleOpenSessionsForChannels } from './session-lifecycle';
 import type { SampleArchiveRow } from '../r2/sample-archive';
 import type { YoutubeVideoItem } from '../youtube/types';
-import {
-	parseYoutubeConcurrentViewers,
-	youtubePlatformStreamId,
-	youtubeSessionRowId
-} from '../youtube/stream-fields';
+import { parseYoutubeConcurrentViewers, youtubePlatformStreamId, youtubeSessionRowId } from '../youtube/stream-fields';
 
 const nowIso = () => new Date().toISOString();
 
 async function fetchOpenSessionsByChannelId(
 	db: D1Database,
-	channelIds: string[]
+	channelIds: string[],
 ): Promise<Map<string, { id: string; platform_stream_id: string; started_at: string }>> {
 	const latest = new Map<string, { id: string; platform_stream_id: string; started_at: string }>();
 	if (channelIds.length === 0) return latest;
@@ -28,7 +19,7 @@ async function fetchOpenSessionsByChannelId(
 		const { results } = await db
 			.prepare(
 				`SELECT id, channel_id, platform_stream_id, started_at FROM stream_sessions
-         WHERE channel_id IN (${placeholders}) AND ended_at IS NULL`
+         WHERE channel_id IN (${placeholders}) AND ended_at IS NULL`,
 			)
 			.bind(...batch)
 			.all<{ id: string; channel_id: string; platform_stream_id: string; started_at: string }>();
@@ -39,7 +30,7 @@ async function fetchOpenSessionsByChannelId(
 				latest.set(row.channel_id, {
 					id: row.id,
 					platform_stream_id: row.platform_stream_id,
-					started_at: row.started_at
+					started_at: row.started_at,
 				});
 			}
 		}
@@ -49,7 +40,7 @@ async function fetchOpenSessionsByChannelId(
 
 async function insertViewerSamplesMultiRow(
 	db: D1Database,
-	rows: { sessionRowId: string; sampledAt: string; viewerCount: number }[]
+	rows: { sessionRowId: string; sampledAt: string; viewerCount: number }[],
 ): Promise<void> {
 	if (rows.length === 0) return;
 	const cols = 3;
@@ -62,7 +53,7 @@ async function insertViewerSamplesMultiRow(
 			.prepare(
 				`INSERT INTO viewer_samples (stream_session_id, sampled_at, viewer_count)
          VALUES ${placeholders}
-         ON CONFLICT(stream_session_id, sampled_at) DO NOTHING`
+         ON CONFLICT(stream_session_id, sampled_at) DO NOTHING`,
 			)
 			.bind(...binds)
 			.run();
@@ -77,7 +68,7 @@ export type YoutubeLiveSampleInput = {
 export async function batchRecordYoutubeLiveSamples(
 	db: D1Database,
 	inputs: YoutubeLiveSampleInput[],
-	batchOpts?: { env?: Env; scope?: string }
+	batchOpts?: { env?: Env; scope?: string },
 ): Promise<SampleArchiveRow[]> {
 	if (inputs.length === 0) return [];
 
@@ -117,42 +108,38 @@ export async function batchRecordYoutubeLiveSamples(
              ) VALUES (?, ?, ?, ?, ?, ?)
              ON CONFLICT(channel_id, platform_stream_id) DO UPDATE SET
                title = excluded.title,
-               stream_type = excluded.stream_type`
+               stream_type = excluded.stream_type`,
 					)
-					.bind(sessionRowId, channelId, platformStreamId, video.snippet.title, startedAt, 'live')
+					.bind(sessionRowId, channelId, platformStreamId, video.snippet.title, startedAt, 'live'),
 			);
 		} else {
-			sessionUpdateStatements.push(
-				db
-					.prepare(`UPDATE stream_sessions SET title = ? WHERE id = ?`)
-					.bind(video.snippet.title, sessionRowId)
-			);
+			sessionUpdateStatements.push(db.prepare(`UPDATE stream_sessions SET title = ? WHERE id = ?`).bind(video.snippet.title, sessionRowId));
 		}
 
 		sampleRows.push({
 			sessionRowId,
 			sampledAt: now,
-			viewerCount: viewers
+			viewerCount: viewers,
 		});
 		archive.push({
 			stream_session_id: sessionRowId,
 			sampled_at: now,
 			viewer_count: viewers,
-			platform: PLATFORM_YOUTUBE
+			platform: PLATFORM_YOUTUBE,
 		});
 	}
 
 	await batchCloseStaleOpenSessionsForChannels(db, staleSessionCloses, now, {
 		scope: batchOpts?.scope ? `${batchOpts.scope}:stale_session_close` : undefined,
-		env: batchOpts?.env
+		env: batchOpts?.env,
 	});
 	await runD1Batches(db, sessionInsertStatements, {
 		scope: batchOpts?.scope ? `${batchOpts.scope}:session_insert` : undefined,
-		env: batchOpts?.env
+		env: batchOpts?.env,
 	});
 	await runD1Batches(db, sessionUpdateStatements, {
 		scope: batchOpts?.scope ? `${batchOpts.scope}:session_update` : undefined,
-		env: batchOpts?.env
+		env: batchOpts?.env,
 	});
 	await insertViewerSamplesMultiRow(db, sampleRows);
 
@@ -162,7 +149,7 @@ export async function batchRecordYoutubeLiveSamples(
 export async function clearYoutubeLiveVideoIds(
 	db: D1Database,
 	channelRowIds: string[],
-	batchOpts?: { env?: Env; scope?: string }
+	batchOpts?: { env?: Env; scope?: string },
 ): Promise<void> {
 	if (channelRowIds.length === 0) return;
 
@@ -173,14 +160,14 @@ export async function clearYoutubeLiveVideoIds(
 			db
 				.prepare(
 					`UPDATE channels SET youtube_live_video_id = NULL
-           WHERE platform_id = ? AND id IN (${placeholders})`
+           WHERE platform_id = ? AND id IN (${placeholders})`,
 				)
-				.bind(PLATFORM_YOUTUBE, ...batch)
+				.bind(PLATFORM_YOUTUBE, ...batch),
 		);
 	}
 
 	await runD1Batches(db, statements, {
 		scope: batchOpts?.scope ?? 'youtube:poll:clear_live_video_id',
-		env: batchOpts?.env
+		env: batchOpts?.env,
 	});
 }

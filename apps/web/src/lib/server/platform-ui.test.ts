@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-	channelRankingsEmptyMessage,
-	parseUiPeriod,
-	uiPeriods
-} from '$lib/ui/platform.svelte';
+import { channelRankingsEmptyMessage, parseUiPeriod, uiPeriods } from '$lib/ui/platform.svelte';
 
 describe('ui periods (Phase 4 slice 4.2)', () => {
 	it('uiPeriods includes 90d', () => {

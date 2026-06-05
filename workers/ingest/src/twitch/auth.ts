@@ -7,10 +7,7 @@ type TokenCache = {
 
 let cached: TokenCache | null = null;
 
-export async function getAppAccessToken(
-	env: Env,
-	budget: HelixRateBudget
-): Promise<string> {
+export async function getAppAccessToken(env: Env, _budget: HelixRateBudget): Promise<string> {
 	const now = Date.now();
 	if (cached && cached.expiresAtMs > now + 60_000) {
 		return cached.accessToken;
@@ -23,13 +20,13 @@ export async function getAppAccessToken(
 	const body = new URLSearchParams({
 		client_id: env.TWITCH_CLIENT_ID,
 		client_secret: env.TWITCH_CLIENT_SECRET,
-		grant_type: 'client_credentials'
+		grant_type: 'client_credentials',
 	});
 
 	const res = await fetch('https://id.twitch.tv/oauth2/token', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-		body
+		body,
 	});
 
 	if (!res.ok) {
@@ -40,7 +37,7 @@ export async function getAppAccessToken(
 	const data = (await res.json()) as { access_token: string; expires_in: number };
 	cached = {
 		accessToken: data.access_token,
-		expiresAtMs: now + data.expires_in * 1000
+		expiresAtMs: now + data.expires_in * 1000,
 	};
 	return cached.accessToken;
 }

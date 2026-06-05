@@ -13,10 +13,7 @@ describe('importWatchlistRows', () => {
 	});
 
 	it('returns NEEDS_API for twitch rows when credentials missing', async () => {
-		const stats = await importWatchlistRows(
-			{ DB: dbStub } as Env,
-			[{ line: 2, platform: 'twitch', slug: 'ninja' }]
-		);
+		const stats = await importWatchlistRows({ DB: dbStub } as Env, [{ line: 2, platform: 'twitch', slug: 'ninja' }]);
 
 		expect(stats.needs_api).toMatch(/TWITCH/);
 		expect(stats.results[0]?.status).toBe('needs_api');
@@ -33,23 +30,23 @@ describe('importWatchlistRows', () => {
 				broadcaster_type: 'partner',
 				description: '',
 				profile_image_url: 'https://example.com/ninja.jpg',
-				created_at: '2011-01-01T00:00:00Z'
-			}
+				created_at: '2011-01-01T00:00:00Z',
+			},
 		]);
 		vi.spyOn(watchlistUpsert, 'upsertTwitchChannelFromUser').mockResolvedValue({
 			channelId: 'twitch-ch-123',
 			created: true,
 			promoted: false,
-			skipped: false
+			skipped: false,
 		});
 
 		const stats = await importWatchlistRows(
 			{
 				TWITCH_CLIENT_ID: 'id',
 				TWITCH_CLIENT_SECRET: 'sec',
-				DB: dbStub
+				DB: dbStub,
 			} as Env,
-			[{ line: 2, platform: 'twitch', slug: 'ninja' }]
+			[{ line: 2, platform: 'twitch', slug: 'ninja' }],
 		);
 
 		expect(stats.imported).toBe(1);
@@ -66,23 +63,23 @@ describe('importWatchlistRows', () => {
 				broadcaster_type: 'partner',
 				description: '',
 				profile_image_url: 'https://example.com/ninja.jpg',
-				created_at: '2011-01-01T00:00:00Z'
-			}
+				created_at: '2011-01-01T00:00:00Z',
+			},
 		]);
 		vi.spyOn(watchlistUpsert, 'upsertTwitchChannelFromUser').mockResolvedValue({
 			channelId: 'twitch-ch-123',
 			created: false,
 			promoted: true,
-			skipped: false
+			skipped: false,
 		});
 
 		const stats = await importWatchlistRows(
 			{
 				TWITCH_CLIENT_ID: 'id',
 				TWITCH_CLIENT_SECRET: 'sec',
-				DB: dbStub
+				DB: dbStub,
 			} as Env,
-			[{ line: 2, platform: 'twitch', slug: 'ninja' }]
+			[{ line: 2, platform: 'twitch', slug: 'ninja' }],
 		);
 
 		expect(stats.promoted).toBe(1);
@@ -99,23 +96,23 @@ describe('importWatchlistRows', () => {
 				broadcaster_type: 'partner',
 				description: '',
 				profile_image_url: 'https://example.com/ninja.jpg',
-				created_at: '2011-01-01T00:00:00Z'
-			}
+				created_at: '2011-01-01T00:00:00Z',
+			},
 		]);
 		vi.spyOn(watchlistUpsert, 'upsertTwitchChannelFromUser').mockResolvedValue({
 			channelId: 'twitch-ch-123',
 			created: false,
 			promoted: false,
-			skipped: true
+			skipped: true,
 		});
 
 		const stats = await importWatchlistRows(
 			{
 				TWITCH_CLIENT_ID: 'id',
 				TWITCH_CLIENT_SECRET: 'sec',
-				DB: dbStub
+				DB: dbStub,
 			} as Env,
-			[{ line: 2, platform: 'twitch', slug: 'ninja' }]
+			[{ line: 2, platform: 'twitch', slug: 'ninja' }],
 		);
 
 		expect(stats.skipped_rows).toBe(1);
@@ -129,9 +126,9 @@ describe('importWatchlistRows', () => {
 			{
 				TWITCH_CLIENT_ID: 'id',
 				TWITCH_CLIENT_SECRET: 'sec',
-				DB: dbStub
+				DB: dbStub,
 			} as Env,
-			[{ line: 2, platform: 'twitch', slug: 'missing-user' }]
+			[{ line: 2, platform: 'twitch', slug: 'missing-user' }],
 		);
 
 		expect(stats.not_found).toBe(1);
@@ -139,10 +136,7 @@ describe('importWatchlistRows', () => {
 	});
 
 	it('returns NEEDS_API for youtube when key missing', async () => {
-		const stats = await importWatchlistRows(
-			{ DB: dbStub } as Env,
-			[{ line: 2, platform: 'youtube', slug: 'mrbeast' }]
-		);
+		const stats = await importWatchlistRows({ DB: dbStub } as Env, [{ line: 2, platform: 'youtube', slug: 'mrbeast' }]);
 
 		expect(stats.results[0]?.status).toBe('needs_api');
 	});
@@ -153,27 +147,26 @@ describe('importWatchlistRows', () => {
 			slug: 'mrbeast',
 			display_name: 'MrBeast',
 			avatar_url: null,
-			platform_id: 'youtube'
+			platform_id: 'youtube',
 		});
 
 		const youtubeDb = {
 			prepare: () => ({
 				bind: () => ({
-					first: async () => null
-				})
-			})
+					first: async () => null,
+				}),
+			}),
 		} as unknown as D1Database;
 
-		const stats = await importWatchlistRows(
-			{ YOUTUBE_API_KEY: 'key', DB: youtubeDb } as Env,
-			[{ line: 2, platform: 'youtube', slug: 'mrbeast' }]
-		);
+		const stats = await importWatchlistRows({ YOUTUBE_API_KEY: 'key', DB: youtubeDb } as Env, [
+			{ line: 2, platform: 'youtube', slug: 'mrbeast' },
+		]);
 
 		expect(stats.imported).toBe(1);
 		expect(youtubeSeedModule.seedYoutubeChannelByQuery).toHaveBeenCalledWith(
 			expect.anything(),
 			'mrbeast',
-			expect.objectContaining({ promoteToTracked: true })
+			expect.objectContaining({ promoteToTracked: true }),
 		);
 	});
 
@@ -181,15 +174,14 @@ describe('importWatchlistRows', () => {
 		const youtubeDb = {
 			prepare: () => ({
 				bind: () => ({
-					first: async () => ({ id: 'youtube-ch-1', ingest_state: 'tracked' })
-				})
-			})
+					first: async () => ({ id: 'youtube-ch-1', ingest_state: 'tracked' }),
+				}),
+			}),
 		} as unknown as D1Database;
 
-		const stats = await importWatchlistRows(
-			{ YOUTUBE_API_KEY: 'key', DB: youtubeDb } as Env,
-			[{ line: 2, platform: 'youtube', slug: 'mrbeast' }]
-		);
+		const stats = await importWatchlistRows({ YOUTUBE_API_KEY: 'key', DB: youtubeDb } as Env, [
+			{ line: 2, platform: 'youtube', slug: 'mrbeast' },
+		]);
 
 		expect(stats.skipped_rows).toBe(1);
 		expect(stats.results[0]?.status).toBe('skipped');
@@ -201,21 +193,20 @@ describe('importWatchlistRows', () => {
 			slug: 'mrbeast',
 			display_name: 'MrBeast',
 			avatar_url: null,
-			platform_id: 'youtube'
+			platform_id: 'youtube',
 		});
 
 		const youtubeDb = {
 			prepare: () => ({
 				bind: () => ({
-					first: async () => ({ id: 'youtube-ch-UCabc', ingest_state: 'discovered' })
-				})
-			})
+					first: async () => ({ id: 'youtube-ch-UCabc', ingest_state: 'discovered' }),
+				}),
+			}),
 		} as unknown as D1Database;
 
-		const stats = await importWatchlistRows(
-			{ YOUTUBE_API_KEY: 'key', DB: youtubeDb } as Env,
-			[{ line: 2, platform: 'youtube', slug: 'mrbeast' }]
-		);
+		const stats = await importWatchlistRows({ YOUTUBE_API_KEY: 'key', DB: youtubeDb } as Env, [
+			{ line: 2, platform: 'youtube', slug: 'mrbeast' },
+		]);
 
 		expect(stats.promoted).toBe(1);
 	});
@@ -226,53 +217,47 @@ describe('importWatchlistRows', () => {
 		const youtubeDb = {
 			prepare: () => ({
 				bind: () => ({
-					first: async () => null
-				})
-			})
+					first: async () => null,
+				}),
+			}),
 		} as unknown as D1Database;
 
-		const stats = await importWatchlistRows(
-			{ YOUTUBE_API_KEY: 'key', DB: youtubeDb } as Env,
-			[{ line: 2, platform: 'youtube', slug: 'missing' }]
-		);
+		const stats = await importWatchlistRows({ YOUTUBE_API_KEY: 'key', DB: youtubeDb } as Env, [
+			{ line: 2, platform: 'youtube', slug: 'missing' },
+		]);
 
 		expect(stats.not_found).toBe(1);
 	});
 
 	it('returns error when youtube import throws', async () => {
-		vi.spyOn(youtubeSeedModule, 'seedYoutubeChannelByQuery').mockRejectedValue(
-			new Error('youtube down')
-		);
+		vi.spyOn(youtubeSeedModule, 'seedYoutubeChannelByQuery').mockRejectedValue(new Error('youtube down'));
 
 		const youtubeDb = {
 			prepare: () => ({
 				bind: () => ({
-					first: async () => null
-				})
-			})
+					first: async () => null,
+				}),
+			}),
 		} as unknown as D1Database;
 
-		const stats = await importWatchlistRows(
-			{ YOUTUBE_API_KEY: 'key', DB: youtubeDb } as Env,
-			[{ line: 2, platform: 'youtube', slug: 'mrbeast' }]
-		);
+		const stats = await importWatchlistRows({ YOUTUBE_API_KEY: 'key', DB: youtubeDb } as Env, [
+			{ line: 2, platform: 'youtube', slug: 'mrbeast' },
+		]);
 
 		expect(stats.errors).toBe(1);
 		expect(stats.results[0]?.status).toBe('error');
 	});
 
 	it('returns error when kick import throws', async () => {
-		vi.spyOn(kickApiModule.KickPublicApiClient.prototype, 'getChannelsBySlug').mockRejectedValue(
-			new Error('kick down')
-		);
+		vi.spyOn(kickApiModule.KickPublicApiClient.prototype, 'getChannelsBySlug').mockRejectedValue(new Error('kick down'));
 
 		const stats = await importWatchlistRows(
 			{
 				KICK_CLIENT_ID: 'id',
 				KICK_CLIENT_SECRET: 'sec',
-				DB: dbStub
+				DB: dbStub,
 			} as Env,
-			[{ line: 2, platform: 'kick', slug: 'xqc' }]
+			[{ line: 2, platform: 'kick', slug: 'xqc' }],
 		);
 
 		expect(stats.errors).toBe(1);
@@ -280,34 +265,30 @@ describe('importWatchlistRows', () => {
 	});
 
 	it('returns not_found when kick channel missing', async () => {
-		vi.spyOn(kickApiModule.KickPublicApiClient.prototype, 'getChannelsBySlug').mockResolvedValue(
-			[]
-		);
+		vi.spyOn(kickApiModule.KickPublicApiClient.prototype, 'getChannelsBySlug').mockResolvedValue([]);
 
 		const stats = await importWatchlistRows(
 			{
 				KICK_CLIENT_ID: 'id',
 				KICK_CLIENT_SECRET: 'sec',
-				DB: dbStub
+				DB: dbStub,
 			} as Env,
-			[{ line: 2, platform: 'kick', slug: 'missing' }]
+			[{ line: 2, platform: 'kick', slug: 'missing' }],
 		);
 
 		expect(stats.not_found).toBe(1);
 	});
 
 	it('returns error when twitch import throws', async () => {
-		vi.spyOn(helixModule.TwitchHelixClient.prototype, 'getUsersByLogins').mockRejectedValue(
-			new Error('helix down')
-		);
+		vi.spyOn(helixModule.TwitchHelixClient.prototype, 'getUsersByLogins').mockRejectedValue(new Error('helix down'));
 
 		const stats = await importWatchlistRows(
 			{
 				TWITCH_CLIENT_ID: 'id',
 				TWITCH_CLIENT_SECRET: 'sec',
-				DB: dbStub
+				DB: dbStub,
 			} as Env,
-			[{ line: 2, platform: 'twitch', slug: 'ninja' }]
+			[{ line: 2, platform: 'twitch', slug: 'ninja' }],
 		);
 
 		expect(stats.errors).toBe(1);
@@ -315,10 +296,7 @@ describe('importWatchlistRows', () => {
 	});
 
 	it('importWatchlistCsv returns parse stats for empty valid rows', async () => {
-		const stats = await importWatchlistCsv(
-			{ DB: dbStub } as Env,
-			'platform,slug\nfacebook,foo'
-		);
+		const stats = await importWatchlistCsv({ DB: dbStub } as Env, 'platform,slug\nfacebook,foo');
 
 		expect(stats.parse.rows).toEqual([]);
 		expect(stats.parse.errors.length).toBeGreaterThan(0);
@@ -330,24 +308,24 @@ describe('importWatchlistRows', () => {
 				broadcaster_user_id: 99,
 				channel_id: 1,
 				slug: 'xqc',
-				stream_title: 'live'
-			}
+				stream_title: 'live',
+			},
 		]);
 
 		vi.spyOn(watchlistUpsert, 'upsertKickChannelFromLookup').mockResolvedValue({
 			channelId: 'kick-ch-99',
 			created: true,
 			promoted: false,
-			skipped: false
+			skipped: false,
 		});
 
 		const stats = await importWatchlistRows(
 			{
 				KICK_CLIENT_ID: 'id',
 				KICK_CLIENT_SECRET: 'sec',
-				DB: dbStub
+				DB: dbStub,
 			} as Env,
-			[{ line: 2, platform: 'kick', slug: 'xqc' }]
+			[{ line: 2, platform: 'kick', slug: 'xqc' }],
 		);
 
 		expect(stats.imported).toBe(1);

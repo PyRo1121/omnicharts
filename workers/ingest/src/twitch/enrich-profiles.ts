@@ -1,18 +1,9 @@
-import {
-	ENRICH_BEFORE_ROLLUP_MAX_CHANNELS,
-	ENRICH_MAX_CHANNELS_PER_RUN,
-	ENRICH_STALE_HOURS,
-	STREAMS_BATCH_SIZE
-} from './config';
+import { ENRICH_BEFORE_ROLLUP_MAX_CHANNELS, ENRICH_MAX_CHANNELS_PER_RUN, ENRICH_STALE_HOURS, STREAMS_BATCH_SIZE } from './config';
 import { TwitchHelixClient } from './helix';
 import { mergeUserAndChannelProfile } from './profile-fields';
 import { batchMarkChannelsRetired } from '../db/channel-state';
 import { deleteEventSubForRetiredChannels } from './eventsub/retire-cleanup';
-import {
-	batchApplyChannelProfileEnrichment,
-	listPlatformIdsForProfileEnrichment,
-	listPlatformIdsForRollupDate
-} from '../db/twitch';
+import { batchApplyChannelProfileEnrichment, listPlatformIdsForProfileEnrichment, listPlatformIdsForRollupDate } from '../db/twitch';
 import { filterHelixTwitchUserIds } from './platform-id';
 import { hasTwitchAppCredentials } from './credentials';
 import { requireDb } from '../worker-bindings';
@@ -34,15 +25,11 @@ export async function enrichFollowersBeforeRollup(env: Env, rollupDate: string):
 	if (!hasTwitchAppCredentials(env)) return;
 
 	const db = requireDb(env);
-	const ids = await listPlatformIdsForRollupDate(
-		db,
-		rollupDate,
-		ENRICH_BEFORE_ROLLUP_MAX_CHANNELS
-	);
+	const ids = await listPlatformIdsForRollupDate(db, rollupDate, ENRICH_BEFORE_ROLLUP_MAX_CHANNELS);
 	if (ids.length === 0) return;
 
 	await runTwitchProfileEnrichment(env, {
-		platformChannelIds: ids.slice(0, ENRICH_BEFORE_ROLLUP_MAX_CHANNELS)
+		platformChannelIds: ids.slice(0, ENRICH_BEFORE_ROLLUP_MAX_CHANNELS),
 	});
 }
 
@@ -52,7 +39,7 @@ export async function enrichFollowersBeforeRollup(env: Env, rollupDate: string):
  */
 export async function runTwitchProfileEnrichment(
 	env: Env,
-	opts: { platformChannelIds?: string[]; includeFollowers?: boolean } = {}
+	opts: { platformChannelIds?: string[]; includeFollowers?: boolean } = {},
 ): Promise<ProfileEnrichmentStats> {
 	const client = new TwitchHelixClient(env);
 	const db = requireDb(env);
@@ -62,17 +49,12 @@ export async function runTwitchProfileEnrichment(
 		channelBatches: 0,
 		updated: 0,
 		skipped: 0,
-		retired: 0
+		retired: 0,
 	};
 
-	const rawIds =
-		opts.platformChannelIds?.length
-			? [...new Set(opts.platformChannelIds)]
-			: await listPlatformIdsForProfileEnrichment(
-					db,
-					ENRICH_MAX_CHANNELS_PER_RUN,
-					ENRICH_STALE_HOURS
-				);
+	const rawIds = opts.platformChannelIds?.length
+		? [...new Set(opts.platformChannelIds)]
+		: await listPlatformIdsForProfileEnrichment(db, ENRICH_MAX_CHANNELS_PER_RUN, ENRICH_STALE_HOURS);
 
 	const includeFollowers = opts.includeFollowers !== false;
 	const ids = filterHelixTwitchUserIds(rawIds);
@@ -90,9 +72,7 @@ export async function runTwitchProfileEnrichment(
 		const channels = await client.getChannelsByBroadcasterIds(batch);
 		const channelById = new Map(channels.map((c) => [c.broadcaster_id, c]));
 
-		const followerTotals = includeFollowers
-			? await client.getChannelFollowerTotals(batch)
-			: new Map<string, number>();
+		const followerTotals = includeFollowers ? await client.getChannelFollowerTotals(batch) : new Map<string, number>();
 
 		const toUpdate: ReturnType<typeof mergeUserAndChannelProfile>[] = [];
 		const toRetire: string[] = [];
@@ -102,13 +82,7 @@ export async function runTwitchProfileEnrichment(
 				toRetire.push(platformId);
 				continue;
 			}
-			toUpdate.push(
-				mergeUserAndChannelProfile(
-					user,
-					channelById.get(platformId),
-					followerTotals.get(platformId) ?? null
-				)
-			);
+			toUpdate.push(mergeUserAndChannelProfile(user, channelById.get(platformId), followerTotals.get(platformId) ?? null));
 		}
 		if (toRetire.length > 0) {
 			stats.retired += await batchMarkChannelsRetired(db, toRetire);

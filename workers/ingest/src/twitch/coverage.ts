@@ -23,7 +23,7 @@ export type CoverageCycleStats = {
  */
 export async function runTwitchCoverageCycle(env: Env): Promise<CoverageCycleStats> {
 	const client = new TwitchHelixClient(env, {
-		budgetPoints: helixSafePointsPerMinuteFromEnv(env)
+		budgetPoints: helixSafePointsPerMinuteFromEnv(env),
 	});
 	const seenUserIds = new Set<string>();
 	const passOpts = { client, seenUserIds };
@@ -39,30 +39,24 @@ export async function runTwitchCoverageCycle(env: Env): Promise<CoverageCycleSta
 		channelBatches: 0,
 		updated: 0,
 		skipped: 0,
-		retired: 0
+		retired: 0,
 	};
 	try {
 		profileEnrichment = await runTwitchProfileEnrichment(env, {
 			platformChannelIds: enrichIds.length > 0 ? enrichIds : undefined,
-			includeFollowers: false
+			includeFollowers: false,
 		});
 	} catch (err) {
 		ingestNonFatalError('coverage profile enrichment failed (non-fatal)', err);
 	}
 
-	const enrichPoints =
-		profileEnrichment.userBatches + profileEnrichment.channelBatches;
+	const enrichPoints = profileEnrichment.userBatches + profileEnrichment.channelBatches;
 
 	return {
 		global,
 		gamePass,
 		reconcile,
 		profileEnrichment,
-		helixPointsUsed:
-			global.pagesFetched +
-			gamePass.pagesFetched +
-			gamePass.topGamesHelixPoints +
-			reconcile.batches +
-			enrichPoints
+		helixPointsUsed: global.pagesFetched + gamePass.pagesFetched + gamePass.topGamesHelixPoints + reconcile.batches + enrichPoints,
 	};
 }

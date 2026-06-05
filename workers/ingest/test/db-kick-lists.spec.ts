@@ -5,11 +5,11 @@ import { listKickChannelIdsToPoll } from '../src/db/kick';
 describe('listKickChannelIdsToPoll', () => {
 	it('queries tracked kick channels ordered by last_seen_at', async () => {
 		const all = vi.fn().mockResolvedValue({
-			results: [{ platform_channel_id: '42' }, { platform_channel_id: '7' }]
+			results: [{ platform_channel_id: '42' }, { platform_channel_id: '7' }],
 		});
 		const bind = vi.fn().mockReturnValue({ all });
 		const prepare = vi.fn((sql: string) => {
-			expect(sql).toContain("platform_id = ?");
+			expect(sql).toContain('platform_id = ?');
 			expect(sql).toContain("ingest_state = 'tracked'");
 			return { bind };
 		});

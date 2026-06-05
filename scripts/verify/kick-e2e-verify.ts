@@ -17,9 +17,7 @@ const REPO_ROOT = join(import.meta.dir, '../..');
 const DEV_VARS = join(REPO_ROOT, 'workers/ingest/.dev.vars');
 const INGEST_BASE = process.env.INGEST_URL ?? 'http://127.0.0.1:8787';
 /** CI default: unit tests only. Set VERIFY_KICK_FULL=1 + ingest + KICK_* for live discover. */
-const SKIP_LIVE =
-	process.env.VERIFY_SKIP_KICK_LIVE === '1' ||
-	(process.env.CI === 'true' && process.env.VERIFY_KICK_FULL !== '1');
+const SKIP_LIVE = process.env.VERIFY_SKIP_KICK_LIVE === '1' || (process.env.CI === 'true' && process.env.VERIFY_KICK_FULL !== '1');
 
 type Step = { name: string; pass: boolean; detail: string };
 
@@ -84,101 +82,86 @@ type RankingsGamesBody = {
 
 function isValidRankingsGamesBody(body: RankingsGamesBody): boolean {
 	return (
-		typeof body.platform === 'string' &&
-		typeof body.period === 'string' &&
-		typeof body.updated_at === 'string' &&
-		Array.isArray(body.items)
+		typeof body.platform === 'string' && typeof body.period === 'string' && typeof body.updated_at === 'string' && Array.isArray(body.items)
 	);
 }
 
 async function kickRankingsChannelsCheckpoint(): Promise<Step> {
 	try {
-		const res = await fetch(
-			`${INGEST_BASE}/v1/rankings/channels?platform=kick&period=7d&limit=5`,
-			{ signal: AbortSignal.timeout(15_000) }
-		);
+		const res = await fetch(`${INGEST_BASE}/v1/rankings/channels?platform=kick&period=7d&limit=5`, { signal: AbortSignal.timeout(15_000) });
 		const body = (await res.json()) as RankingsGamesBody;
 		if (!res.ok) {
 			return {
 				name: 'kick rankings channels',
 				pass: false,
-				detail: `HTTP ${res.status}: ${JSON.stringify(body).slice(0, 200)}`
+				detail: `HTTP ${res.status}: ${JSON.stringify(body).slice(0, 200)}`,
 			};
 		}
 		if (!isValidRankingsGamesBody(body)) {
 			return {
 				name: 'kick rankings channels',
 				pass: false,
-				detail: `invalid JSON shape: ${JSON.stringify(body).slice(0, 200)}`
+				detail: `invalid JSON shape: ${JSON.stringify(body).slice(0, 200)}`,
 			};
 		}
 		if (body.platform !== 'kick') {
 			return {
 				name: 'kick rankings channels',
 				pass: false,
-				detail: `expected platform kick, got ${body.platform}`
+				detail: `expected platform kick, got ${body.platform}`,
 			};
 		}
 		const count = body.items?.length ?? 0;
 		return {
 			name: 'kick rankings channels',
 			pass: true,
-			detail:
-				count > 0
-					? `GET /v1/rankings/channels ok — ${count} item(s)`
-					: 'GET /v1/rankings/channels ok — empty items (no rollups yet)'
+			detail: count > 0 ? `GET /v1/rankings/channels ok — ${count} item(s)` : 'GET /v1/rankings/channels ok — empty items (no rollups yet)',
 		};
 	} catch (err) {
 		return {
 			name: 'kick rankings channels',
 			pass: false,
-			detail: err instanceof Error ? err.message : String(err)
+			detail: err instanceof Error ? err.message : String(err),
 		};
 	}
 }
 
 async function kickRankingsGamesCheckpoint(): Promise<Step> {
 	try {
-		const res = await fetch(
-			`${INGEST_BASE}/v1/rankings/games?platform=kick&period=7d&limit=5`,
-			{ signal: AbortSignal.timeout(15_000) }
-		);
+		const res = await fetch(`${INGEST_BASE}/v1/rankings/games?platform=kick&period=7d&limit=5`, { signal: AbortSignal.timeout(15_000) });
 		const body = (await res.json()) as RankingsGamesBody;
 		if (!res.ok) {
 			return {
 				name: 'kick rankings games',
 				pass: false,
-				detail: `HTTP ${res.status}: ${JSON.stringify(body).slice(0, 200)}`
+				detail: `HTTP ${res.status}: ${JSON.stringify(body).slice(0, 200)}`,
 			};
 		}
 		if (!isValidRankingsGamesBody(body)) {
 			return {
 				name: 'kick rankings games',
 				pass: false,
-				detail: `invalid JSON shape: ${JSON.stringify(body).slice(0, 200)}`
+				detail: `invalid JSON shape: ${JSON.stringify(body).slice(0, 200)}`,
 			};
 		}
 		if (body.platform !== 'kick') {
 			return {
 				name: 'kick rankings games',
 				pass: false,
-				detail: `expected platform kick, got ${body.platform}`
+				detail: `expected platform kick, got ${body.platform}`,
 			};
 		}
 		const count = body.items?.length ?? 0;
 		return {
 			name: 'kick rankings games',
 			pass: true,
-			detail:
-				count > 0
-					? `GET /v1/rankings/games ok — ${count} item(s)`
-					: 'GET /v1/rankings/games ok — empty items (no rollups yet)'
+			detail: count > 0 ? `GET /v1/rankings/games ok — ${count} item(s)` : 'GET /v1/rankings/games ok — empty items (no rollups yet)',
 		};
 	} catch (err) {
 		return {
 			name: 'kick rankings games',
 			pass: false,
-			detail: err instanceof Error ? err.message : String(err)
+			detail: err instanceof Error ? err.message : String(err),
 		};
 	}
 }
@@ -193,33 +176,33 @@ async function kickDiscoverCheckpoint(): Promise<Step> {
 			method: 'POST',
 			headers,
 			body: JSON.stringify({ quick: true }),
-			signal: AbortSignal.timeout(120_000)
+			signal: AbortSignal.timeout(120_000),
 		});
 		const body = (await res.json()) as { ok?: boolean; skipped?: boolean; stats?: unknown };
 		if (!res.ok) {
 			return {
 				name: 'kick discover (quick)',
 				pass: false,
-				detail: `HTTP ${res.status}: ${JSON.stringify(body).slice(0, 200)}`
+				detail: `HTTP ${res.status}: ${JSON.stringify(body).slice(0, 200)}`,
 			};
 		}
 		if (body.skipped) {
 			return {
 				name: 'kick discover (quick)',
 				pass: true,
-				detail: 'NEEDS_API — KICK_CLIENT_ID/SECRET not configured in running ingest'
+				detail: 'NEEDS_API — KICK_CLIENT_ID/SECRET not configured in running ingest',
 			};
 		}
 		return {
 			name: 'kick discover (quick)',
 			pass: body.ok === true,
-			detail: `POST /admin/kick/discover ok — ${JSON.stringify(body.stats ?? {}).slice(0, 120)}`
+			detail: `POST /admin/kick/discover ok — ${JSON.stringify(body.stats ?? {}).slice(0, 120)}`,
 		};
 	} catch (err) {
 		return {
 			name: 'kick discover (quick)',
 			pass: false,
-			detail: err instanceof Error ? err.message : String(err)
+			detail: err instanceof Error ? err.message : String(err),
 		};
 	}
 }
@@ -231,7 +214,7 @@ async function main() {
 	log({
 		name: 'ingest unit tests',
 		pass: ingestTests.ok,
-		detail: ingestTests.ok ? 'vitest green' : ingestTests.output.slice(-400)
+		detail: ingestTests.ok ? 'vitest green' : ingestTests.output.slice(-400),
 	});
 	if (!ingestTests.ok) {
 		printSummary();
@@ -249,23 +232,23 @@ async function main() {
 		log({
 			name: 'kick discover (quick)',
 			pass: true,
-			detail: skipDetail
+			detail: skipDetail,
 		});
 		log({
 			name: 'kick rankings channels',
 			pass: true,
-			detail: skipDetail
+			detail: skipDetail,
 		});
 		log({
 			name: 'kick rankings games',
 			pass: true,
-			detail: skipDetail
+			detail: skipDetail,
 		});
 	} else if (!(await ingestReachable())) {
 		log({
 			name: 'ingest health',
 			pass: false,
-			detail: `ingest not reachable at ${INGEST_BASE} — start: bun run dev:ingest`
+			detail: `ingest not reachable at ${INGEST_BASE} — start: bun run dev:ingest`,
 		});
 		printSummary();
 		process.exit(1);
@@ -274,7 +257,7 @@ async function main() {
 		log({
 			name: 'ingest health',
 			pass: healthOk.ok,
-			detail: healthOk.ok ? 'GET /health ok' : `HTTP ${healthOk.status}`
+			detail: healthOk.ok ? 'GET /health ok' : `HTTP ${healthOk.status}`,
 		});
 		if (!healthOk.ok) {
 			printSummary();

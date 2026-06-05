@@ -4,11 +4,7 @@
  */
 import { ingestWarn } from '../../log';
 import { requireDb } from '../../worker-bindings';
-import {
-	claimKickWebhookMessageId,
-	recordKickWebhookMessageId,
-	releaseKickWebhookMessageId
-} from './message-dedup';
+import { claimKickWebhookMessageId, recordKickWebhookMessageId, releaseKickWebhookMessageId } from './message-dedup';
 import { applyKickLivestreamStatusUpdated, parseLivestreamStatusUpdated } from './lifecycle';
 import type { KickWebhookHeaders } from './types';
 import { isKickWebhookTimestampFresh, verifyKickWebhookSignature } from './verify';
@@ -38,7 +34,7 @@ function parseKickWebhookHeaders(request: Request): KickWebhookHeaders | null {
 		signature,
 		messageTimestamp,
 		eventType,
-		eventVersion
+		eventVersion,
 	};
 }
 
@@ -63,7 +59,7 @@ export async function handleKickWebhook(request: Request, env: Env): Promise<Res
 		messageId: headers.messageId,
 		timestamp: headers.messageTimestamp,
 		signatureHeader: headers.signature,
-		rawBody
+		rawBody,
 	});
 	if (!valid) {
 		return new Response('Invalid Kick webhook signature', { status: 401 });

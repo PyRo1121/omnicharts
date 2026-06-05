@@ -4,12 +4,9 @@ import {
 	kickPlatformStreamId,
 	kickPlatformStreamIdFromChannelId,
 	kickSessionRowId,
-	kickSessionRowIdFromChannelId
+	kickSessionRowIdFromChannelId,
 } from '../src/kick/stream-fields';
-import {
-	applyKickLivestreamStatusUpdated,
-	parseLivestreamStatusUpdated
-} from '../src/kick/webhook/lifecycle';
+import { applyKickLivestreamStatusUpdated, parseLivestreamStatusUpdated } from '../src/kick/webhook/lifecycle';
 import type { KickLivestreamStatusUpdatedEvent } from '../src/kick/webhook/types';
 
 const sampleStream = {
@@ -17,7 +14,7 @@ const sampleStream = {
 	channel_id: 99,
 	slug: 'caster',
 	stream_title: 'Live',
-	started_at: '2026-06-01T12:00:00Z'
+	started_at: '2026-06-01T12:00:00Z',
 };
 
 describe('kick webhook lifecycle vs poll session keys', () => {
@@ -29,27 +26,21 @@ describe('kick webhook lifecycle vs poll session keys', () => {
 			broadcaster: {
 				user_id: 42,
 				channel_slug: 'caster',
-				channel_id: 99
+				channel_id: 99,
 			},
 			channel_id: 99,
 			is_live: true,
 			started_at: '2026-06-01T12:00:00Z',
-			title: 'Live'
+			title: 'Live',
 		};
 
-		expect(kickPlatformStreamIdFromChannelId(99, event.started_at!)).toBe(
-			kickPlatformStreamId(sampleStream)
-		);
-		expect(kickSessionRowIdFromChannelId(99, event.started_at!)).toBe(
-			kickSessionRowId(sampleStream)
-		);
+		expect(kickPlatformStreamIdFromChannelId(99, event.started_at!)).toBe(kickPlatformStreamId(sampleStream));
+		expect(kickSessionRowIdFromChannelId(99, event.started_at!)).toBe(kickSessionRowId(sampleStream));
 	});
 
 	it('applyKickLivestreamStatusUpdated upserts poll-aligned session row and closes stale sessions', async () => {
 		const sessionInserts: { sessionId: string; platformStreamId: string }[] = [];
-		const closeStale = vi
-			.spyOn(sessionLifecycle, 'closeStaleOpenSessionsForChannel')
-			.mockResolvedValue(undefined);
+		const closeStale = vi.spyOn(sessionLifecycle, 'closeStaleOpenSessionsForChannel').mockResolvedValue(undefined);
 
 		const db = {
 			prepare(sql: string) {
@@ -58,7 +49,7 @@ describe('kick webhook lifecycle vs poll session keys', () => {
 				}
 				if (sql.includes('SELECT id FROM channels')) {
 					return {
-						bind: () => ({ first: async () => ({ id: 'kick-ch-42' }) })
+						bind: () => ({ first: async () => ({ id: 'kick-ch-42' }) }),
 					};
 				}
 				if (sql.includes('INSERT INTO ingest_metadata')) {
@@ -69,43 +60,31 @@ describe('kick webhook lifecycle vs poll session keys', () => {
 				}
 				if (sql.includes('INSERT INTO stream_sessions')) {
 					return {
-						bind: (
-							sessionId: string,
-							_channelId: string,
-							platformStreamId: string
-						) => ({
+						bind: (sessionId: string, _channelId: string, platformStreamId: string) => ({
 							run: async () => {
 								sessionInserts.push({ sessionId, platformStreamId });
-							}
-						})
+							},
+						}),
 					};
 				}
 				return { bind: () => ({ run: async () => ({}) }) };
-			}
+			},
 		} as unknown as D1Database;
 
-		await applyKickLivestreamStatusUpdated(
-			{ DB: db } as Env,
-			{
-				broadcaster: { user_id: 42, channel_slug: 'caster', channel_id: 99 },
-				channel_id: 99,
-				is_live: true,
-				started_at: '2026-06-01T12:00:00Z',
-				title: 'Live'
-			}
-		);
+		await applyKickLivestreamStatusUpdated({ DB: db } as Env, {
+			broadcaster: { user_id: 42, channel_slug: 'caster', channel_id: 99 },
+			channel_id: 99,
+			is_live: true,
+			started_at: '2026-06-01T12:00:00Z',
+			title: 'Live',
+		});
 
 		expect(sessionInserts).toHaveLength(1);
 		expect(sessionInserts[0]).toEqual({
 			sessionId: kickSessionRowId(sampleStream),
-			platformStreamId: kickPlatformStreamId(sampleStream)
+			platformStreamId: kickPlatformStreamId(sampleStream),
 		});
-		expect(closeStale).toHaveBeenCalledWith(
-			db,
-			'kick-ch-42',
-			kickPlatformStreamId(sampleStream),
-			expect.any(String)
-		);
+		expect(closeStale).toHaveBeenCalledWith(db, 'kick-ch-42', kickPlatformStreamId(sampleStream), expect.any(String));
 		closeStale.mockRestore();
 	});
 
@@ -120,21 +99,18 @@ describe('kick webhook lifecycle vs poll session keys', () => {
 								updates.push(String(args[0]));
 							}
 						},
-						first: async () => ({ id: 'kick-ch-42' })
-					})
+						first: async () => ({ id: 'kick-ch-42' }),
+					}),
 				};
-			}
+			},
 		} as unknown as D1Database;
 
-		await applyKickLivestreamStatusUpdated(
-			{ DB: db } as Env,
-			{
-				broadcaster: { user_id: 42, channel_slug: 'caster', channel_id: 99 },
-				channel_id: 99,
-				is_live: false,
-				ended_at: '2026-06-01T14:00:00Z'
-			}
-		);
+		await applyKickLivestreamStatusUpdated({ DB: db } as Env, {
+			broadcaster: { user_id: 42, channel_slug: 'caster', channel_id: 99 },
+			channel_id: 99,
+			is_live: false,
+			ended_at: '2026-06-01T14:00:00Z',
+		});
 
 		expect(updates).toContain('2026-06-01T14:00:00Z');
 	});
@@ -147,8 +123,8 @@ describe('parseLivestreamStatusUpdated', () => {
 		expect(
 			parseLivestreamStatusUpdated({
 				broadcaster: { user_id: 1, channel_slug: 'x' },
-				is_live: 'yes'
-			})
+				is_live: 'yes',
+			}),
 		).toBeNull();
 	});
 });

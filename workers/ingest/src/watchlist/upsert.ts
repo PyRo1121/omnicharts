@@ -15,21 +15,18 @@ export type WatchlistUpsertResult = {
 async function fetchChannelByPlatformSlug(
 	db: D1Database,
 	platform: string,
-	slug: string
+	slug: string,
 ): Promise<{ id: string; ingest_state: string } | null> {
 	return db
 		.prepare(
 			`SELECT id, ingest_state FROM channels
-       WHERE platform_id = ? AND lower(slug) = lower(?)`
+       WHERE platform_id = ? AND lower(slug) = lower(?)`,
 		)
 		.bind(platform, slug)
 		.first<{ id: string; ingest_state: string }>();
 }
 
-export async function upsertTwitchChannelFromUser(
-	db: D1Database,
-	user: HelixUser
-): Promise<WatchlistUpsertResult> {
+export async function upsertTwitchChannelFromUser(db: D1Database, user: HelixUser): Promise<WatchlistUpsertResult> {
 	const now = nowIso();
 	const slug = slugify(user.login) || `user-${user.id}`;
 	const channelId = `twitch-ch-${user.id}`;
@@ -50,18 +47,9 @@ export async function upsertTwitchChannelFromUser(
        ingest_state = CASE
          WHEN channels.ingest_state = 'retired' THEN channels.ingest_state
          ELSE 'tracked'
-       END`
+       END`,
 		)
-		.bind(
-			channelId,
-			PLATFORM_TWITCH,
-			user.id,
-			slug,
-			user.display_name,
-			user.profile_image_url || null,
-			now,
-			now
-		)
+		.bind(channelId, PLATFORM_TWITCH, user.id, slug, user.display_name, user.profile_image_url || null, now, now)
 		.run();
 
 	const row = await db
@@ -77,10 +65,7 @@ export async function upsertTwitchChannelFromUser(
 	return { channelId: resolvedId, created, promoted, skipped };
 }
 
-export async function upsertKickChannelFromLookup(
-	db: D1Database,
-	channel: KickChannel
-): Promise<WatchlistUpsertResult> {
+export async function upsertKickChannelFromLookup(db: D1Database, channel: KickChannel): Promise<WatchlistUpsertResult> {
 	const now = nowIso();
 	const broadcasterId = String(channel.broadcaster_user_id);
 	const slug = channel.slug.trim().toLowerCase();
@@ -101,7 +86,7 @@ export async function upsertKickChannelFromLookup(
        ingest_state = CASE
          WHEN channels.ingest_state = 'retired' THEN channels.ingest_state
          ELSE 'tracked'
-       END`
+       END`,
 		)
 		.bind(channelId, PLATFORM_KICK, broadcasterId, slug, slug, now, now)
 		.run();

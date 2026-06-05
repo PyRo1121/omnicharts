@@ -6,8 +6,8 @@ describe('twitch app credentials', () => {
 		expect(
 			hasTwitchAppCredentials({
 				TWITCH_CLIENT_ID: 'id',
-				TWITCH_CLIENT_SECRET: 'secret'
-			} as Env)
+				TWITCH_CLIENT_SECRET: 'secret',
+			} as Env),
 		).toBe(true);
 	});
 

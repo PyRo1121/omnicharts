@@ -18,15 +18,15 @@ describe('buildChannelDetailResponse', () => {
 		const db = {
 			prepare() {
 				return {
-					bind: () => ({ first: async () => null })
+					bind: () => ({ first: async () => null }),
 				};
-			}
+			},
 		} as unknown as D1Database;
 
 		const res = await buildChannelDetailResponse(db, {
 			platform: 'twitch',
 			slug: 'missing',
-			period: '7d'
+			period: '7d',
 		});
 		expect(res).toBeNull();
 	});
@@ -46,9 +46,9 @@ describe('buildChannelDetailResponse', () => {
 								first_observed_at: '2026-03-01T00:00:00.000Z',
 								ingest_state: 'tracked',
 								follower_count: 10_000,
-								description: 'bio'
-							})
-						})
+								description: 'bio',
+							}),
+						}),
 					};
 				}
 				if (sql.includes('channel_daily_rollups')) {
@@ -63,7 +63,7 @@ describe('buildChannelDetailResponse', () => {
 										peak_viewers: 20,
 										airtime_minutes: 120,
 										stream_count: 1,
-										followers_delta: null
+										followers_delta: null,
 									},
 									{
 										date: '2026-05-30',
@@ -72,21 +72,21 @@ describe('buildChannelDetailResponse', () => {
 										peak_viewers: 30,
 										airtime_minutes: 60,
 										stream_count: 2,
-										followers_delta: 5
-									}
-								]
-							})
-						})
+										followers_delta: 5,
+									},
+								],
+							}),
+						}),
 					};
 				}
 				return { bind: () => ({ first: async () => null, all: async () => ({}) }) };
-			}
+			},
 		} as unknown as D1Database;
 
 		const res = await buildChannelDetailResponse(db, {
 			platform: 'twitch',
 			slug: 'alpha',
-			period: '7d'
+			period: '7d',
 		});
 
 		expect(res).toMatchObject({
@@ -96,8 +96,8 @@ describe('buildChannelDetailResponse', () => {
 				hours_watched: 30,
 				peak_viewers: 30,
 				stream_count: 3,
-				followers_gain: 5
-			}
+				followers_gain: 5,
+			},
 		});
 		expect(res!.daily).toHaveLength(2);
 	});
@@ -110,15 +110,15 @@ describe('buildChannelDetailResponse', () => {
 				if (sql.includes('FROM channels') && sql.includes('lower(slug)')) {
 					return {
 						bind: () => ({
-							first: async () => null
-						})
+							first: async () => null,
+						}),
 					};
 				}
 				if (sql.includes('slug_history')) {
 					return {
 						bind: () => ({
-							first: async () => ({ new_slug: 'newname' })
-						})
+							first: async () => ({ new_slug: 'newname' }),
+						}),
 					};
 				}
 				if (sql.includes('FROM channels') && sql.includes('display_name')) {
@@ -133,26 +133,26 @@ describe('buildChannelDetailResponse', () => {
 								first_observed_at: '2026-03-01T00:00:00.000Z',
 								ingest_state: 'tracked',
 								follower_count: 100,
-								description: null
-							})
-						})
+								description: null,
+							}),
+						}),
 					};
 				}
 				if (sql.includes('channel_daily_rollups')) {
 					return {
 						bind: () => ({
-							all: async () => ({ results: [] })
-						})
+							all: async () => ({ results: [] }),
+						}),
 					};
 				}
 				return { bind: () => ({ first: async () => null, all: async () => ({}) }) };
-			}
+			},
 		} as unknown as D1Database;
 
 		const res = await buildChannelDetailResponse(db, {
 			platform: 'twitch',
 			slug: 'oldname',
-			period: '7d'
+			period: '7d',
 		});
 
 		expect(prepareCalls).toBeGreaterThanOrEqual(3);
@@ -165,8 +165,8 @@ describe('buildChannelDetailResponse', () => {
 				if (sql.includes('FROM channels') && sql.includes('lower(slug)')) {
 					return {
 						bind: () => ({
-							first: async () => ({ slug: 'Ninja' })
-						})
+							first: async () => ({ slug: 'Ninja' }),
+						}),
 					};
 				}
 				if (sql.includes('FROM channels') && sql.includes('display_name')) {
@@ -181,26 +181,26 @@ describe('buildChannelDetailResponse', () => {
 								first_observed_at: '2026-03-01T00:00:00.000Z',
 								ingest_state: 'tracked',
 								follower_count: 100,
-								description: null
-							})
-						})
+								description: null,
+							}),
+						}),
 					};
 				}
 				if (sql.includes('channel_daily_rollups')) {
 					return {
 						bind: () => ({
-							all: async () => ({ results: [] })
-						})
+							all: async () => ({ results: [] }),
+						}),
 					};
 				}
 				return { bind: () => ({ first: async () => null, all: async () => ({}) }) };
-			}
+			},
 		} as unknown as D1Database;
 
 		const res = await buildChannelDetailResponse(db, {
 			platform: 'twitch',
 			slug: 'ninja',
-			period: '7d'
+			period: '7d',
 		});
 
 		expect(res?.slug).toBe('Ninja');

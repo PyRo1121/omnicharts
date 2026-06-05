@@ -283,6 +283,8 @@ Root monorepo scripts live in `package.json`. **Verify / test gates:** [13-testi
 | **Create D1** | `npx wrangler d1 create omnicharts` | [d1 create](https://developers.cloudflare.com/workers/wrangler/commands/d1/#d1-create) |
 | **Migrate D1 (local)** | `bun run d1:migrate:local` (cwd `workers/ingest`) | [d1 migrations apply](https://developers.cloudflare.com/workers/wrangler/commands/d1/#d1-migrations-apply) |
 | **Verify D1 schema** | `bun run d1:verify-schema` / `d1:verify-schema:remote` | [13-testing](./13-testing-and-verification.md) |
+| **Lint (oxlint)** | `bun run lint` | [Oxlint](https://oxc.rs/docs/guide/usage/linter/cli.html) |
+| **Format (oxfmt)** | `bun run format` / `bun run format:check` | [Oxfmt](https://oxc.rs/docs/guide/usage/formatter/cli.html) |
 | **Preview built Pages** | `npm run build && npx wrangler pages dev .svelte-kit/cloudflare` | [adapter-cloudflare](https://svelte.dev/docs/kit/adapter-cloudflare) |
 | **Build** | `npm run build` | [adapter-cloudflare](https://svelte.dev/docs/kit/adapter-cloudflare) |
 | **Deploy Pages** | `npx wrangler pages deploy .svelte-kit/cloudflare --project-name=omnicharts-web` | [pages deploy](https://developers.cloudflare.com/workers/wrangler/commands/pages/#pages-deploy) |
@@ -314,3 +316,4 @@ Root monorepo scripts live in `package.json`. **Verify / test gates:** [13-testi
 | 2026-06-01 | **Bun monorepo:** `--install bun`, root `bun install`, `bun run dev` in `apps/web`. |
 | 2026-06-03 | Root scripts grouped; verify SSOT in doc 13; `d1:migrate:*` use `bun run --cwd workers/ingest`; added `test`, `verify:wrangler-production`. |
 | 2026-06-03 | Lane 4/5: `packages/*` in layout; `wrangler.jsonc` (not TOML) for Pages; monorepo import link to doc 27. |
+| 2026-06-05 | **Oxlint + Oxfmt:** root devDeps `oxlint`, `oxfmt`; configs `.oxlintrc.json`, `.oxfmtrc.json`; scripts `lint`, `format`, `format:check` scoped to apps/web, packages, workers/ingest, scripts. |

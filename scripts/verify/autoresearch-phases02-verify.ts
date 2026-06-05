@@ -20,7 +20,7 @@ function run(cmd: string[], cwd = REPO_ROOT, env?: Record<string, string>): Prom
 		const proc = spawn(cmd[0]!, cmd.slice(1), {
 			cwd,
 			stdio: ['ignore', 'pipe', 'pipe'],
-			env: { ...process.env, ...env }
+			env: { ...process.env, ...env },
 		});
 		let output = '';
 		proc.stdout?.on('data', (d) => {
@@ -52,10 +52,7 @@ function countWarnings(text: string): number {
 }
 
 function countTestNoise(text: string): number {
-	const noisy =
-		/\[vpw:(debug|info)\]/g.test(text) ||
-		/\[mf:warn\]/g.test(text) ||
-		/Using secrets defined in \.dev\.vars/.test(text);
+	const noisy = /\[vpw:(debug|info)\]/g.test(text) || /\[mf:warn\]/g.test(text) || /Using secrets defined in \.dev\.vars/.test(text);
 	return noisy ? 1 : 0;
 }
 
@@ -99,16 +96,12 @@ async function main() {
 	const checkIngest = await run(['bun', 'run', 'check:ingest']);
 	metrics.check_ingest_issues = countIssues(checkIngest.output);
 	metrics.check_ingest_warnings = countWarnings(checkIngest.output);
-	console.log(
-		`check:ingest issues=${metrics.check_ingest_issues} ${checkIngest.ok ? 'PASS' : 'FAIL'}`
-	);
+	console.log(`check:ingest issues=${metrics.check_ingest_issues} ${checkIngest.ok ? 'PASS' : 'FAIL'}`);
 
 	const testIngest = await run(['bun', 'run', 'test:ingest']);
 	metrics.test_ingest_failures = testIngest.ok ? 0 : 1;
 	metrics.test_ingest_noise = countTestNoise(testIngest.output);
-	console.log(
-		`test:ingest ${testIngest.ok ? 'PASS' : 'FAIL'} noise=${metrics.test_ingest_noise}`
-	);
+	console.log(`test:ingest ${testIngest.ok ? 'PASS' : 'FAIL'} noise=${metrics.test_ingest_noise}`);
 
 	const testWeb = await run(['bun', 'run', 'test:web']);
 	metrics.test_web_failures = testWeb.ok ? 0 : 1;
@@ -120,7 +113,7 @@ async function main() {
 	console.log(`test:e2e ${testE2e.ok ? 'PASS' : 'FAIL'}`);
 
 	const verify = await run(['bun', 'run', 'verify:twitch'], REPO_ROOT, {
-		VERIFY_SKIP_CHECKPOINT: '0'
+		VERIFY_SKIP_CHECKPOINT: '0',
 	});
 	const vt = parseSteps(verify.output, 6);
 	metrics.verify_twitch_failed_steps = vt.failed;

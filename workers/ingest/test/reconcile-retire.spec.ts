@@ -4,7 +4,7 @@ import { TwitchHelixClient } from '../src/twitch/helix';
 import { runTwitchReconcileRecent } from '../src/twitch/reconcile';
 
 vi.mock('../src/twitch/ingest-stream', () => ({
-	ingestHelixStreamsBatch: vi.fn().mockResolvedValue([])
+	ingestHelixStreamsBatch: vi.fn().mockResolvedValue([]),
 }));
 
 import { ingestHelixStreamsBatch } from '../src/twitch/ingest-stream';
@@ -16,10 +16,7 @@ describe('runTwitchReconcileRecent', () => {
 	});
 
 	it('does not call GET /users for offline channels (retire via enrich pass)', async () => {
-		vi.spyOn(twitchDb, 'listRecentlyTrackedPlatformIds').mockResolvedValue([
-			'live-id',
-			'gone-id'
-		]);
+		vi.spyOn(twitchDb, 'listRecentlyTrackedPlatformIds').mockResolvedValue(['live-id', 'gone-id']);
 
 		vi.spyOn(TwitchHelixClient.prototype, 'getStreamsByUserIds').mockResolvedValue([
 			{
@@ -32,15 +29,15 @@ describe('runTwitchReconcileRecent', () => {
 				title: 'T',
 				viewer_count: 100,
 				started_at: '2026-06-01T00:00:00Z',
-				type: 'live'
-			}
+				type: 'live',
+			},
 		]);
 		const getUsers = vi.spyOn(TwitchHelixClient.prototype, 'getUsersByIds');
 
 		const batch = vi.fn().mockResolvedValue([]);
 		const prepare = vi.fn(() => ({
 			bind: vi.fn().mockReturnThis(),
-			run: vi.fn().mockResolvedValue({ success: true })
+			run: vi.fn().mockResolvedValue({ success: true }),
 		}));
 		const stats = await runTwitchReconcileRecent({ DB: { prepare, batch } } as Env);
 		expect(stats.retired).toBe(0);

@@ -14,7 +14,7 @@ export function helixChannelProfileJson(channel: HelixChannel): string {
 		game_id: channel.game_id,
 		game_name: channel.game_name,
 		title: channel.title,
-		tags: channel.tags ?? []
+		tags: channel.tags ?? [],
 	};
 	if (channel.is_branded_content != null) {
 		payload.is_branded_content = channel.is_branded_content;
@@ -36,7 +36,7 @@ export type ChannelProfileEnrichmentRow = {
 export function mergeUserAndChannelProfile(
 	user: HelixUser,
 	channel: HelixChannel | undefined,
-	followerTotal?: number | null
+	followerTotal?: number | null,
 ): ChannelProfileEnrichmentRow {
 	return {
 		platform_channel_id: user.id,
@@ -46,6 +46,6 @@ export function mergeUserAndChannelProfile(
 		broadcaster_type: user.broadcaster_type || null,
 		platform_created_at: user.created_at ?? null,
 		channel_profile_json: channel ? helixChannelProfileJson(channel) : null,
-		follower_count: followerTotal ?? null
+		follower_count: followerTotal ?? null,
 	};
 }

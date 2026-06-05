@@ -3,7 +3,7 @@ import {
 	DAILY_ROLLUP_DELETE_BATCH_SIZE,
 	DAILY_ROLLUP_RETENTION_DAYS,
 	dailyRollupRetentionCutoffDate,
-	pruneDailyRollupsOlderThanRetention
+	pruneDailyRollupsOlderThanRetention,
 } from '../src/db/prune-rollups';
 
 describe('dailyRollupRetentionCutoffDate', () => {
@@ -30,24 +30,20 @@ describe('pruneDailyRollupsOlderThanRetention', () => {
 							run: async () => {
 								if (isChannel) {
 									channelDeletes += 1;
-									const changes =
-										channelDeletes === 1 ? DAILY_ROLLUP_DELETE_BATCH_SIZE : 4;
+									const changes = channelDeletes === 1 ? DAILY_ROLLUP_DELETE_BATCH_SIZE : 4;
 									return { meta: { changes } };
 								}
 								gameDeletes += 1;
 								const changes = gameDeletes === 1 ? DAILY_ROLLUP_DELETE_BATCH_SIZE : 0;
 								return { meta: { changes } };
-							}
+							},
 						};
-					}
+					},
 				};
-			}
+			},
 		} as unknown as D1Database;
 
-		const result = await pruneDailyRollupsOlderThanRetention(
-			db,
-			new Date('2026-06-05T12:00:00.000Z')
-		);
+		const result = await pruneDailyRollupsOlderThanRetention(db, new Date('2026-06-05T12:00:00.000Z'));
 		expect(result.channelRows).toBe(DAILY_ROLLUP_DELETE_BATCH_SIZE + 4);
 		expect(result.gameRows).toBe(DAILY_ROLLUP_DELETE_BATCH_SIZE);
 		expect(channelDeletes).toBe(2);
@@ -58,13 +54,14 @@ describe('pruneDailyRollupsOlderThanRetention', () => {
 		const db = {
 			prepare: () => ({
 				bind: () => ({
-					run: async () => ({ meta: { changes: 0 } })
-				})
-			})
+					run: async () => ({ meta: { changes: 0 } }),
+				}),
+			}),
 		} as unknown as D1Database;
 
-		await expect(
-			pruneDailyRollupsOlderThanRetention(db, new Date('2026-06-05T12:00:00.000Z'))
-		).resolves.toEqual({ channelRows: 0, gameRows: 0 });
+		await expect(pruneDailyRollupsOlderThanRetention(db, new Date('2026-06-05T12:00:00.000Z'))).resolves.toEqual({
+			channelRows: 0,
+			gameRows: 0,
+		});
 	});
 });

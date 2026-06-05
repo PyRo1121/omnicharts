@@ -6,12 +6,12 @@ import {
 	batchUpsertChannelsFromStreams,
 	batchUpsertGameCategories,
 	listChannelIdsToPoll,
-	type LiveSampleInput
+	type LiveSampleInput,
 } from '../db/twitch';
 import { runD1Batches } from '../db/d1-batch';
 import { closeOpenSessionsForPlatformChannelIds } from '../db/session-lifecycle';
 import type { IngestQueueMessage } from '../messages';
-import { archiveSampleBatch, type SampleArchiveRow } from '../r2/sample-archive';
+import { archiveSampleBatch } from '../r2/sample-archive';
 import { requireDb, requireIngestQueue } from '../worker-bindings';
 
 export type PollShardResult = {
@@ -44,17 +44,14 @@ export async function runTwitchCatalogPoll(env: Env): Promise<PollShardResult> {
 	return totals;
 }
 
-export async function runTwitchPollBatch(
-	env: Env,
-	userIds: string[]
-): Promise<PollShardResult> {
+export async function runTwitchPollBatch(env: Env, userIds: string[]): Promise<PollShardResult> {
 	const db = requireDb(env);
 	const client = new TwitchHelixClient(env);
 	const minViewers = minViewersFromEnv(env);
 	const result: PollShardResult = {
 		batches: 1,
 		liveStreams: 0,
-		samplesWritten: 0
+		samplesWritten: 0,
 	};
 
 	const liveStreams = await client.getStreamsByUserIds(userIds);
@@ -74,7 +71,7 @@ export async function runTwitchPollBatch(
 		db,
 		liveStreams,
 		{ minViewers, promoteToTracked: true },
-		{ env, scope: 'poll:channels' }
+		{ env, scope: 'poll:channels' },
 	);
 
 	const sampleInputs: LiveSampleInput[] = [];
@@ -86,13 +83,13 @@ export async function runTwitchPollBatch(
 		sampleInputs.push({
 			channelId,
 			stream,
-			gameCategoryId: gameId ? (gameMap.get(gameId) ?? null) : null
+			gameCategoryId: gameId ? (gameMap.get(gameId) ?? null) : null,
 		});
 	}
 
 	const archiveRows = await batchRecordLiveSamples(db, sampleInputs, {
 		env,
-		scope: 'poll:samples'
+		scope: 'poll:samples',
 	});
 	result.samplesWritten = archiveRows.length;
 
@@ -102,17 +99,15 @@ export async function runTwitchPollBatch(
 	const now = new Date().toISOString();
 	const offlineIds = userIds.filter((uid) => !liveSet.has(uid));
 	const offlineStatements = offlineIds.map((uid) =>
-		db.prepare(
-			`UPDATE channels SET last_seen_at = ? WHERE platform_id = 'twitch' AND platform_channel_id = ?`
-		).bind(now, uid)
+		db.prepare(`UPDATE channels SET last_seen_at = ? WHERE platform_id = 'twitch' AND platform_channel_id = ?`).bind(now, uid),
 	);
 	await runD1Batches(db, offlineStatements, {
 		env,
-		scope: 'poll:offline_last_seen'
+		scope: 'poll:offline_last_seen',
 	});
 	await closeOpenSessionsForPlatformChannelIds(db, PLATFORM_TWITCH, offlineIds, now, {
 		env,
-		scope: 'poll:offline_close_sessions'
+		scope: 'poll:offline_close_sessions',
 	});
 
 	return result;

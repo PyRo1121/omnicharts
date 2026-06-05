@@ -11,10 +11,7 @@ export function pickLiveVideoIdFromPlaylistItems(items: YoutubePlaylistItem[]): 
 	return null;
 }
 
-export async function resolveYoutubeLiveVideoId(
-	client: YoutubeDataApiClient,
-	platformChannelId: string
-): Promise<string | null> {
+export async function resolveYoutubeLiveVideoId(client: YoutubeDataApiClient, platformChannelId: string): Promise<string | null> {
 	const uploadsPlaylistId = await client.getUploadsPlaylistId(platformChannelId);
 	if (!uploadsPlaylistId) return null;
 	const items = await client.getPlaylistItems(uploadsPlaylistId, 15);

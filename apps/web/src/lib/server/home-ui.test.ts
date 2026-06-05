@@ -5,7 +5,7 @@ import {
 	platformQueryParam,
 	routeWithPlatform,
 	searchPageSubtitle,
-	searchPlatformId
+	searchPlatformId,
 } from '$lib/ui/platform.svelte';
 
 describe('parseUiPlatform', () => {
@@ -17,7 +17,7 @@ describe('parseUiPlatform', () => {
 		[null, 'twitch'],
 		['', 'twitch'],
 		['invalid', 'twitch'],
-		['TWITCH', 'twitch']
+		['TWITCH', 'twitch'],
 	] as const)('maps %s → %s', (raw, expected) => {
 		expect(parseUiPlatform(raw)).toBe(expected);
 	});
@@ -51,9 +51,7 @@ describe('routeWithPlatform', () => {
 	});
 
 	it('merges extra query params', () => {
-		expect(routeWithPlatform('/channels', 'kick', { period: '7d' })).toBe(
-			'/channels?period=7d&platform=kick'
-		);
+		expect(routeWithPlatform('/channels', 'kick', { period: '7d' })).toBe('/channels?period=7d&platform=kick');
 		expect(routeWithPlatform('/search', 'kick', { q: 'xqc' })).toBe('/search?q=xqc&platform=kick');
 	});
 });

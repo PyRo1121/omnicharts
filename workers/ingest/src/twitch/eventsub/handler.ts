@@ -27,17 +27,13 @@ function parseStreamOffline(event: Record<string, unknown>): StreamOfflineEvent 
 	const offline: StreamOfflineEvent = {
 		broadcaster_user_id: event.broadcaster_user_id,
 		broadcaster_user_login: event.broadcaster_user_login,
-		broadcaster_user_name: event.broadcaster_user_name
+		broadcaster_user_name: event.broadcaster_user_name,
 	};
 	if (typeof event.ended_at === 'string') offline.ended_at = event.ended_at;
 	return offline;
 }
 
-async function handleNotification(
-	env: Env,
-	body: EventSubWebhookBody,
-	messageTimestamp?: string
-): Promise<void> {
+async function handleNotification(env: Env, body: EventSubWebhookBody, messageTimestamp?: string): Promise<void> {
 	const subType = body.subscription?.type;
 	const event = body.event;
 	if (!subType || !event) {
@@ -82,11 +78,7 @@ function deferEventSubWork(ctx: ExecutionContext | undefined, work: Promise<void
  * POST /webhooks/twitch/eventsub
  * @see https://dev.twitch.tv/docs/eventsub/handling-webhook-events/
  */
-export async function handleTwitchEventSubWebhook(
-	request: Request,
-	env: Env,
-	ctx?: ExecutionContext
-): Promise<Response> {
+export async function handleTwitchEventSubWebhook(request: Request, env: Env, ctx?: ExecutionContext): Promise<Response> {
 	const secret = env.TWITCH_EVENTSUB_SECRET;
 	if (!secret) {
 		return new Response('EventSub webhook secret not configured', { status: 503 });
@@ -112,7 +104,7 @@ export async function handleTwitchEventSubWebhook(
 		messageId,
 		timestamp,
 		signatureHeader: signature,
-		rawBody
+		rawBody,
 	});
 
 	if (!valid) {
@@ -133,7 +125,7 @@ export async function handleTwitchEventSubWebhook(
 			const challenge = body.challenge ?? '';
 			return new Response(challenge, {
 				status: 200,
-				headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+				headers: { 'Content-Type': 'text/plain; charset=utf-8' },
 			});
 		}
 		case 'revocation': {

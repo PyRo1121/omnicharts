@@ -21,11 +21,7 @@ export function maxRowsPerInsert(columnsPerRow: number): number {
 	return Math.max(1, Math.floor(D1_MAX_BIND_PARAMS / columnsPerRow));
 }
 
-export async function runD1Batches(
-	db: D1Database,
-	statements: D1PreparedStatement[],
-	opts?: { scope?: string; env?: Env }
-): Promise<void> {
+export async function runD1Batches(db: D1Database, statements: D1PreparedStatement[], opts?: { scope?: string; env?: Env }): Promise<void> {
 	if (statements.length === 0) return;
 	for (const chunk of chunkArray(statements, D1_BATCH_MAX_STATEMENTS)) {
 		await db.batch(chunk);

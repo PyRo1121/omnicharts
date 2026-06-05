@@ -15,12 +15,7 @@ export type ChannelSearchRow = {
 };
 
 export function normalizeSearchQuery(raw: string): string {
-	return raw
-		.trim()
-		.replace(/\s+/g, ' ')
-		.replace(/^@+/, '')
-		.trim()
-		.toLowerCase();
+	return raw.trim().replace(/\s+/g, ' ').replace(/^@+/, '').trim().toLowerCase();
 }
 
 /** Escape `%`, `_`, and `\` for SQL LIKE … ESCAPE '\\'. */
@@ -63,13 +58,13 @@ export function parseSearchChannelsQuery(url: URL): ParsedSearchChannelsQuery {
 		platformId: platformRaw,
 		query: q,
 		limit,
-		language: languageParsed.language
+		language: languageParsed.language,
 	};
 }
 
 export async function searchChannels(
 	db: D1Database,
-	opts: { platformId: string; query: string; limit?: number; language?: string | null }
+	opts: { platformId: string; query: string; limit?: number; language?: string | null },
 ): Promise<ChannelSearchRow[]> {
 	const q = normalizeSearchQuery(opts.query);
 	if (q.length < 2) return [];
@@ -98,7 +93,10 @@ export async function searchChannels(
 	if (language) binds.push(language);
 	binds.push(q, limit);
 
-	const { results } = await db.prepare(sql).bind(...binds).all<ChannelSearchRow>();
+	const { results } = await db
+		.prepare(sql)
+		.bind(...binds)
+		.all<ChannelSearchRow>();
 
 	return results ?? [];
 }
@@ -107,7 +105,7 @@ export async function searchChannels(
 export async function searchChannelsWithYoutubeSeed(
 	db: D1Database,
 	env: Env,
-	opts: { platformId: string; query: string; limit?: number; language?: string | null }
+	opts: { platformId: string; query: string; limit?: number; language?: string | null },
 ): Promise<ChannelSearchRow[]> {
 	const results = await searchChannels(db, opts);
 	if (results.length > 0 || opts.platformId !== PLATFORM_YOUTUBE) return results;

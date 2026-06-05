@@ -18,18 +18,18 @@ describe('searchChannelsWithYoutubeSeed', () => {
 								slug: 'mrbeast',
 								display_name: 'MrBeast',
 								avatar_url: null,
-								platform_id: 'youtube'
-							}
-						]
-					})
-				})
-			})
+								platform_id: 'youtube',
+							},
+						],
+					}),
+				}),
+			}),
 		} as unknown as D1Database;
 
 		const seedSpy = vi.spyOn(seed, 'seedYoutubeChannelByQuery');
 		const rows = await searchChannelsWithYoutubeSeed(db, {} as Env, {
 			platformId: 'youtube',
-			query: 'mrbeast'
+			query: 'mrbeast',
 		});
 
 		expect(rows).toHaveLength(1);
@@ -40,9 +40,9 @@ describe('searchChannelsWithYoutubeSeed', () => {
 		const db = {
 			prepare: () => ({
 				bind: () => ({
-					all: async () => ({ results: [] })
-				})
-			})
+					all: async () => ({ results: [] }),
+				}),
+			}),
 		} as unknown as D1Database;
 
 		vi.spyOn(seed, 'seedYoutubeChannelByQuery').mockResolvedValue({
@@ -50,12 +50,12 @@ describe('searchChannelsWithYoutubeSeed', () => {
 			slug: 'mrbeast',
 			display_name: 'MrBeast',
 			avatar_url: 'https://example.com/a.jpg',
-			platform_id: 'youtube'
+			platform_id: 'youtube',
 		});
 
 		const rows = await searchChannelsWithYoutubeSeed(db, {} as Env, {
 			platformId: 'youtube',
-			query: 'mrbeast'
+			query: 'mrbeast',
 		});
 
 		expect(rows).toEqual([
@@ -64,8 +64,8 @@ describe('searchChannelsWithYoutubeSeed', () => {
 				slug: 'mrbeast',
 				display_name: 'MrBeast',
 				avatar_url: 'https://example.com/a.jpg',
-				platform_id: 'youtube'
-			}
+				platform_id: 'youtube',
+			},
 		]);
 	});
 });

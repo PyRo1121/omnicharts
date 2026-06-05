@@ -1,10 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import {
-	ROLLUP_CACHE_CONTROL,
-	SEARCH_CACHE_CONTROL,
-	applyRollupPageCache,
-	applySearchPageCache
-} from './cache';
+import { ROLLUP_CACHE_CONTROL, SEARCH_CACHE_CONTROL, applyRollupPageCache, applySearchPageCache } from './cache';
 
 describe('page cache headers', () => {
 	it('applyRollupPageCache sets public 60s rollup cache', () => {

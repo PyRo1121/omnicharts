@@ -34,11 +34,7 @@ const TOP_CHANNELS_BY_HW_SQL_SUFFIX = ` GROUP BY c.id
        LIMIT ?`;
 
 function topChannelsByHoursWatchedSql(language: string | null): string {
-	return (
-		TOP_CHANNELS_BY_HW_SQL_BASE +
-		(language ? TOP_CHANNELS_LANGUAGE_FILTER : '') +
-		TOP_CHANNELS_BY_HW_SQL_SUFFIX
-	);
+	return TOP_CHANNELS_BY_HW_SQL_BASE + (language ? TOP_CHANNELS_LANGUAGE_FILTER : '') + TOP_CHANNELS_BY_HW_SQL_SUFFIX;
 }
 
 export function prepareTopChannelsByHoursWatched(
@@ -50,7 +46,7 @@ export function prepareTopChannelsByHoursWatched(
 		minAirtimeMinutes?: number;
 		minAverageViewers?: number;
 		language?: string | null;
-	}
+	},
 ): D1PreparedStatement {
 	const minAirtime = opts.minAirtimeMinutes ?? MIN_RANKING_AIRTIME_MINUTES;
 	const minAv = opts.minAverageViewers ?? 0;
@@ -70,7 +66,7 @@ export async function queryTopChannelsByHoursWatched(
 		minAirtimeMinutes?: number;
 		minAverageViewers?: number;
 		language?: string | null;
-	}
+	},
 ): Promise<ChannelRollupQueryRow[]> {
 	const { results } = await prepareTopChannelsByHoursWatched(db, opts).all<ChannelRollupQueryRow>();
 	return results ?? [];
@@ -116,24 +112,14 @@ export function prepareTopGamesByAverageViewers(
 		limit: number;
 		minAirtimeMinutes?: number;
 		minAverageViewers?: number;
-	}
+	},
 ): D1PreparedStatement {
 	const minAirtime = opts.minAirtimeMinutes ?? MIN_RANKING_AIRTIME_MINUTES;
 	const minAv = opts.minAverageViewers ?? 0;
 	const days = String(opts.days);
 	return db
 		.prepare(TOP_GAMES_BY_AV_SQL)
-		.bind(
-			opts.platformId,
-			days,
-			days,
-			minAirtime,
-			minAv,
-			opts.platformId,
-			days,
-			minAirtime,
-			opts.limit
-		);
+		.bind(opts.platformId, days, days, minAirtime, minAv, opts.platformId, days, minAirtime, opts.limit);
 }
 
 export async function queryTopGamesByAverageViewers(
@@ -144,7 +130,7 @@ export async function queryTopGamesByAverageViewers(
 		limit: number;
 		minAirtimeMinutes?: number;
 		minAverageViewers?: number;
-	}
+	},
 ): Promise<GameRollupQueryRow[]> {
 	const { results } = await prepareTopGamesByAverageViewers(db, opts).all<GameRollupQueryRow>();
 	return results ?? [];

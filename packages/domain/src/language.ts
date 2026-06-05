@@ -11,9 +11,7 @@ export function isValidLanguageCode(code: string): boolean {
 	return LANGUAGE_CODE_RE.test(code);
 }
 
-export type LanguageParseResult =
-	| { ok: true; language: string | null }
-	| { ok: false; error: 'invalid_language' };
+export type LanguageParseResult = { ok: true; language: string | null } | { ok: false; error: 'invalid_language' };
 
 /** Parse optional `language` query param; absent/blank = no filter. */
 export function parseOptionalLanguageParam(raw: string | null | undefined): LanguageParseResult {

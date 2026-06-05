@@ -7,7 +7,7 @@ import {
 	TWITCH_LIVE_COUNT_SQL,
 	TWITCH_MAX_SAMPLE_SQL,
 	TWITCH_TRACKED_COUNT_SQL,
-	type D1BatchResult
+	type D1BatchResult,
 } from '@omnicharts/rollup';
 import { DISCOVERY_SEED_KEY } from '../discovery/seed';
 import type { PlatformIngestCounts } from './ingest-counts';
@@ -15,7 +15,7 @@ import {
 	fetchIngestOperationalMetrics,
 	healthStatusFromLag,
 	ingestLagSecondsFromMaxSample,
-	type IngestOperationalMetrics
+	type IngestOperationalMetrics,
 } from './operational-metrics';
 import { isEventSubConfigured } from '../twitch/eventsub/env';
 import { requireDb } from '../worker-bindings';
@@ -66,7 +66,7 @@ export async function buildPublicHealth(env: Env): Promise<PublicHealthPayload> 
 			twitchLiveBatch,
 			kickLiveBatch,
 			youtubeLiveBatch,
-			sampleBatch
+			sampleBatch,
 		] = await db.batch([
 			db.prepare('SELECT 1 AS ok'),
 			db.prepare(TWITCH_TRACKED_COUNT_SQL).bind(PLATFORM_TWITCH),
@@ -75,7 +75,7 @@ export async function buildPublicHealth(env: Env): Promise<PublicHealthPayload> 
 			db.prepare(TWITCH_LIVE_COUNT_SQL).bind(PLATFORM_TWITCH),
 			db.prepare(TWITCH_LIVE_COUNT_SQL).bind(PLATFORM_KICK),
 			db.prepare(TWITCH_LIVE_COUNT_SQL).bind(PLATFORM_YOUTUBE),
-			db.prepare(TWITCH_MAX_SAMPLE_SQL).bind(PLATFORM_TWITCH)
+			db.prepare(TWITCH_MAX_SAMPLE_SQL).bind(PLATFORM_TWITCH),
 		]);
 		if (!pingBatch.results?.length) throw new Error('db ping failed');
 		dbConnected = true;
@@ -85,12 +85,9 @@ export async function buildPublicHealth(env: Env): Promise<PublicHealthPayload> 
 		channelsLiveByPlatform = {
 			twitch: countFromBatchRow(twitchLiveBatch as D1BatchResult),
 			kick: countFromBatchRow(kickLiveBatch as D1BatchResult),
-			youtube: countFromBatchRow(youtubeLiveBatch as D1BatchResult)
+			youtube: countFromBatchRow(youtubeLiveBatch as D1BatchResult),
 		};
-		channelsLive =
-			channelsLiveByPlatform.twitch +
-			channelsLiveByPlatform.kick +
-			channelsLiveByPlatform.youtube;
+		channelsLive = channelsLiveByPlatform.twitch + channelsLiveByPlatform.kick + channelsLiveByPlatform.youtube;
 		twitchLag = ingestLagSecondsFromMaxSample(maxSampleFromBatchRow(sampleBatch as D1BatchResult));
 	} catch {
 		dbConnected = false;
@@ -110,7 +107,7 @@ export async function buildPublicHealth(env: Env): Promise<PublicHealthPayload> 
 		tracked_channels: { twitch: twitchTracked, kick: kickTracked, youtube: youtubeTracked },
 		channels_live: channelsLive,
 		channels_live_by_platform: channelsLiveByPlatform,
-		timestamp: new Date().toISOString()
+		timestamp: new Date().toISOString(),
 	};
 }
 
@@ -147,7 +144,7 @@ export async function buildIngestHealth(env: Env): Promise<IngestHealthPayload> 
 	let kickTracked = 0;
 	let youtubeTracked = 0;
 	let ingestStateCounts: PlatformIngestCounts = {
-		twitch: { discovered: 0, tracked: 0, dormant: 0, retired: 0 }
+		twitch: { discovered: 0, tracked: 0, dormant: 0, retired: 0 },
 	};
 	let discoverySeedAt: string | null = null;
 	let channelsLive = 0;
@@ -160,23 +157,18 @@ export async function buildIngestHealth(env: Env): Promise<IngestHealthPayload> 
 		const [batchResults, ops, multiPlatformTracked] = await Promise.all([
 			db.batch([
 				db.prepare('SELECT 1 AS ok'),
-				db.prepare(
-					`SELECT value FROM ingest_metadata WHERE key = 'last_rollup_at'`
-				),
-				db.prepare(
-					`SELECT ingest_state, COUNT(*) AS n FROM channels
+				db.prepare(`SELECT value FROM ingest_metadata WHERE key = 'last_rollup_at'`),
+				db
+					.prepare(
+						`SELECT ingest_state, COUNT(*) AS n FROM channels
          WHERE platform_id = ?
-         GROUP BY ingest_state`
-				).bind(PLATFORM_TWITCH),
-				db.prepare(`SELECT value FROM ingest_metadata WHERE key = ?`).bind(
-					DISCOVERY_SEED_KEY
-				)
+         GROUP BY ingest_state`,
+					)
+					.bind(PLATFORM_TWITCH),
+				db.prepare(`SELECT value FROM ingest_metadata WHERE key = ?`).bind(DISCOVERY_SEED_KEY),
 			]),
 			fetchIngestOperationalMetrics(db),
-			db.batch([
-				db.prepare(TWITCH_TRACKED_COUNT_SQL).bind(PLATFORM_KICK),
-				db.prepare(TWITCH_TRACKED_COUNT_SQL).bind(PLATFORM_YOUTUBE)
-			])
+			db.batch([db.prepare(TWITCH_TRACKED_COUNT_SQL).bind(PLATFORM_KICK), db.prepare(TWITCH_TRACKED_COUNT_SQL).bind(PLATFORM_YOUTUBE)]),
 		]);
 		if (!batchResults[0]?.results?.length) throw new Error('db ping failed');
 		dbConnected = true;
@@ -217,13 +209,11 @@ export async function buildIngestHealth(env: Env): Promise<IngestHealthPayload> 
 		discovery_seed_at: discoverySeedAt,
 		ingest_state_counts: ingestStateCounts,
 		discovery_new_24h: discoveryNew24h,
-		ingest_lag_seconds: ingestLagSeconds
+		ingest_lag_seconds: ingestLagSeconds,
 	};
 }
 
-export function ingestHealthHttpStatus(
-	payload: Pick<PublicHealthPayload, 'status'>
-): number {
+export function ingestHealthHttpStatus(payload: Pick<PublicHealthPayload, 'status'>): number {
 	if (payload.status === 'unavailable') return 503;
 	return 200;
 }

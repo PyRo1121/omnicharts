@@ -19,9 +19,7 @@ export function youtubeStreamEnded(item: YoutubeVideoItem): boolean {
 	return content != null && content !== 'live' && content !== 'upcoming';
 }
 
-export function parseYoutubeConcurrentViewers(
-	raw: string | number | null | undefined
-): number | null {
+export function parseYoutubeConcurrentViewers(raw: string | number | null | undefined): number | null {
 	if (raw == null) return null;
 	const n = typeof raw === 'number' ? raw : Number(raw);
 	if (!Number.isFinite(n) || n <= 0) return null;
@@ -29,8 +27,6 @@ export function parseYoutubeConcurrentViewers(
 }
 
 /** Hidden concurrent viewers — docs/05: live but no concurrentViewers is unknown. */
-export function isYoutubeConcurrentViewersKnown(
-	count: string | number | null | undefined
-): count is string | number {
+export function isYoutubeConcurrentViewersKnown(count: string | number | null | undefined): count is string | number {
 	return parseYoutubeConcurrentViewers(count) != null;
 }

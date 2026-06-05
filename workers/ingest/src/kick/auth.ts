@@ -18,13 +18,13 @@ export async function getKickAppAccessToken(env: Env): Promise<string> {
 	const body = new URLSearchParams({
 		grant_type: 'client_credentials',
 		client_id: env.KICK_CLIENT_ID,
-		client_secret: env.KICK_CLIENT_SECRET
+		client_secret: env.KICK_CLIENT_SECRET,
 	});
 
 	const res = await fetch('https://id.kick.com/oauth/token', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-		body
+		body,
 	});
 
 	if (!res.ok) {
@@ -35,7 +35,7 @@ export async function getKickAppAccessToken(env: Env): Promise<string> {
 	const data = (await res.json()) as { access_token: string; expires_in: number };
 	cached = {
 		accessToken: data.access_token,
-		expiresAtMs: now + data.expires_in * 1000
+		expiresAtMs: now + data.expires_in * 1000,
 	};
 	return cached.accessToken;
 }

@@ -13,22 +13,22 @@ describe('discovery seed metadata', () => {
 								run: async () => {
 									store.set(key, value!);
 									return {};
-								}
+								},
 							};
 						}
 						return {
-							first: async () => (store.has(key) ? { value: store.get(key)! } : null)
+							first: async () => (store.has(key) ? { value: store.get(key)! } : null),
 						};
-					}
+					},
 				};
-			}
+			},
 		} as unknown as D1Database;
 
 		await recordDiscoverySeed(db, {
 			gamesScanned: 5,
 			pagesFetched: 10,
 			streamsSeen: 100,
-			channelsUpserted: 20
+			channelsUpserted: 20,
 		});
 
 		const at = await getDiscoverySeedAt(db);

@@ -9,7 +9,7 @@ export async function upsertEventSubSubscription(
 		eventType: EventSubSubscriptionType;
 		broadcasterUserId: string;
 		status: string;
-	}
+	},
 ): Promise<void> {
 	const now = nowIso();
 	await db
@@ -20,22 +20,18 @@ export async function upsertEventSubSubscription(
        ON CONFLICT(broadcaster_user_id, event_type) DO UPDATE SET
          id = excluded.id,
          status = excluded.status,
-         updated_at = excluded.updated_at`
+         updated_at = excluded.updated_at`,
 		)
 		.bind(row.id, row.eventType, row.broadcasterUserId, row.status, now, now)
 		.run();
 }
 
-export async function markEventSubRevoked(
-	db: D1Database,
-	subscriptionId: string,
-	status: string
-): Promise<void> {
+export async function markEventSubRevoked(db: D1Database, subscriptionId: string, status: string): Promise<void> {
 	await db
 		.prepare(
 			`UPDATE twitch_eventsub_subscriptions
        SET status = ?, updated_at = ?
-       WHERE id = ?`
+       WHERE id = ?`,
 		)
 		.bind(status, nowIso(), subscriptionId)
 		.run();
@@ -43,12 +39,12 @@ export async function markEventSubRevoked(
 
 export async function listEventSubSubscriptionsForBroadcaster(
 	db: D1Database,
-	broadcasterUserId: string
+	broadcasterUserId: string,
 ): Promise<{ id: string; eventType: EventSubSubscriptionType }[]> {
 	const { results } = await db
 		.prepare(
 			`SELECT id, event_type FROM twitch_eventsub_subscriptions
-       WHERE broadcaster_user_id = ?`
+       WHERE broadcaster_user_id = ?`,
 		)
 		.bind(broadcasterUserId)
 		.all<{ id: string; event_type: EventSubSubscriptionType }>();
@@ -56,26 +52,17 @@ export async function listEventSubSubscriptionsForBroadcaster(
 	return (results ?? []).map((r) => ({ id: r.id, eventType: r.event_type }));
 }
 
-export async function deleteEventSubSubscriptionsForBroadcaster(
-	db: D1Database,
-	broadcasterUserId: string
-): Promise<void> {
-	await db
-		.prepare(`DELETE FROM twitch_eventsub_subscriptions WHERE broadcaster_user_id = ?`)
-		.bind(broadcasterUserId)
-		.run();
+export async function deleteEventSubSubscriptionsForBroadcaster(db: D1Database, broadcasterUserId: string): Promise<void> {
+	await db.prepare(`DELETE FROM twitch_eventsub_subscriptions WHERE broadcaster_user_id = ?`).bind(broadcasterUserId).run();
 }
 
-export async function listTrackedBroadcasterIds(
-	db: D1Database,
-	limit: number
-): Promise<string[]> {
+export async function listTrackedBroadcasterIds(db: D1Database, limit: number): Promise<string[]> {
 	const { results } = await db
 		.prepare(
 			`SELECT platform_channel_id FROM channels
        WHERE platform_id = 'twitch' AND ingest_state = 'tracked'
        ORDER BY last_seen_at DESC NULLS LAST
-       LIMIT ?`
+       LIMIT ?`,
 		)
 		.bind(limit)
 		.all<{ platform_channel_id: string }>();

@@ -6,9 +6,9 @@ function nullDb(): D1Database {
 	return {
 		prepare() {
 			return {
-				bind: () => ({ first: async () => null, all: async () => ({ results: [] }) })
+				bind: () => ({ first: async () => null, all: async () => ({ results: [] }) }),
 			};
-		}
+		},
 	} as unknown as D1Database;
 }
 
@@ -19,12 +19,12 @@ describe('GET /api/v1/channels/[slug]', () => {
 			params: { slug: 'missing' },
 			url: new URL('http://localhost/api/v1/channels/missing?platform=twitch'),
 			fetch: vi.fn(),
-			platform: { env: { DB: db } } as App.Platform
+			platform: { env: { DB: db } } as App.Platform,
 		} as unknown as Parameters<typeof getChannelDetail>[0]);
 
 		expect(res.status).toBe(404);
 		expect(await res.json()).toEqual({
-			error: { code: 'not_found', message: 'Channel not found' }
+			error: { code: 'not_found', message: 'Channel not found' },
 		});
 	});
 });
@@ -36,12 +36,12 @@ describe('GET /api/v1/games/[slug]', () => {
 			params: { slug: 'missing' },
 			url: new URL('http://localhost/api/v1/games/missing?platform=twitch'),
 			fetch: vi.fn(),
-			platform: { env: { DB: db } } as App.Platform
+			platform: { env: { DB: db } } as App.Platform,
 		} as unknown as Parameters<typeof getGameDetail>[0]);
 
 		expect(res.status).toBe(404);
 		expect(await res.json()).toEqual({
-			error: { code: 'not_found', message: 'Game not found' }
+			error: { code: 'not_found', message: 'Game not found' },
 		});
 	});
 
@@ -51,12 +51,12 @@ describe('GET /api/v1/games/[slug]', () => {
 			params: { slug: 'missing' },
 			url: new URL('http://localhost/api/v1/games/missing?platform=kick'),
 			fetch: vi.fn(),
-			platform: { env: { DB: db } } as App.Platform
+			platform: { env: { DB: db } } as App.Platform,
 		} as unknown as Parameters<typeof getGameDetail>[0]);
 
 		expect(res.status).toBe(404);
 		expect(await res.json()).toEqual({
-			error: { code: 'not_found', message: 'Game not found' }
+			error: { code: 'not_found', message: 'Game not found' },
 		});
 	});
 });

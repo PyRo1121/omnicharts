@@ -1,9 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import * as rankingQueries from '../../../packages/rollup/src/ranking-queries';
-import {
-	buildRankingsGamesResponse,
-	parseRankingsGamesQuery
-} from '../src/ranking/games-api';
+import { buildRankingsGamesResponse, parseRankingsGamesQuery } from '../src/ranking/games-api';
 
 describe('parseRankingsGamesQuery', () => {
 	it('defaults platform twitch and period 7d', () => {
@@ -29,27 +26,24 @@ describe('buildRankingsGamesResponse', () => {
 				slug: 'just-chatting',
 				name: 'Just Chatting',
 				hours_watched: 120000,
-				average_viewers: 8500
-			}
+				average_viewers: 8500,
+			},
 		]);
 
 		const res = await buildRankingsGamesResponse({} as D1Database, {
 			platform: 'kick',
 			period: '7d',
-			limit: 20
+			limit: 20,
 		});
 
-		expect(spy).toHaveBeenCalledWith(
-			{},
-			expect.objectContaining({ platformId: 'kick', days: 7, limit: 20 })
-		);
+		expect(spy).toHaveBeenCalledWith({}, expect.objectContaining({ platformId: 'kick', days: 7, limit: 20 }));
 		expect(res.platform).toBe('kick');
 		expect(res.items[0]).toMatchObject({
 			rank: 1,
 			slug: 'just-chatting',
 			name: 'Just Chatting',
 			average_viewers: 8500,
-			hours_watched: 120000
+			hours_watched: 120000,
 		});
 		vi.restoreAllMocks();
 	});
@@ -59,7 +53,7 @@ describe('buildRankingsGamesResponse', () => {
 		const res = await buildRankingsGamesResponse({} as D1Database, {
 			platform: 'youtube',
 			period: '7d',
-			limit: 20
+			limit: 20,
 		});
 		expect(res.items).toEqual([]);
 		vi.restoreAllMocks();
@@ -71,14 +65,14 @@ describe('buildRankingsGamesResponse', () => {
 				slug: 'league-of-legends',
 				name: 'League of Legends',
 				hours_watched: 500000,
-				average_viewers: 12000.7
-			}
+				average_viewers: 12000.7,
+			},
 		]);
 
 		const res = await buildRankingsGamesResponse({} as D1Database, {
 			platform: 'twitch',
 			period: '30d',
-			limit: 10
+			limit: 10,
 		});
 
 		expect(res.period).toBe('30d');
@@ -87,7 +81,7 @@ describe('buildRankingsGamesResponse', () => {
 			slug: 'league-of-legends',
 			name: 'League of Legends',
 			average_viewers: 12001,
-			hours_watched: 500000
+			hours_watched: 500000,
 		});
 		vi.restoreAllMocks();
 	});

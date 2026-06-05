@@ -17,9 +17,9 @@ describe('loadHomepageFromD1', () => {
 						hours_watched: 500,
 						average_viewers: 50,
 						airtime_minutes: 600,
-						peak_viewers: 100
-					}
-				]
+						peak_viewers: 100,
+					},
+				],
 			},
 			{
 				results: [
@@ -27,10 +27,10 @@ describe('loadHomepageFromD1', () => {
 						slug: 'valorant',
 						name: 'VALORANT',
 						hours_watched: 200,
-						average_viewers: 80
-					}
-				]
-			}
+						average_viewers: 80,
+					},
+				],
+			},
 		]);
 
 		const snapshot = await loadHomepageFromD1(db, '7d', 5, 5);

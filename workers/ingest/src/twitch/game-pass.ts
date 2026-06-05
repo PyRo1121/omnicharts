@@ -1,16 +1,8 @@
-import {
-	DISCOVERY_MAX_PAGES_PER_GAME,
-	TOP_GAMES_FIRST,
-	minViewersFromEnv
-} from './config';
+import { DISCOVERY_MAX_PAGES_PER_GAME, TOP_GAMES_FIRST, minViewersFromEnv } from './config';
 import { gamePassGamesPerCycleFromEnv } from './helix-budget';
 import { TwitchHelixClient } from './helix';
 import { upsertGameCategory } from '../db/twitch';
-import {
-	helixBudgetAllowsFetch,
-	helixBudgetGamesPerCycle,
-	helixBudgetPageCap
-} from './rate-limit';
+import { helixBudgetAllowsFetch, helixBudgetGamesPerCycle, helixBudgetPageCap } from './rate-limit';
 import { shouldContinueHelixPagination } from './helix-pagination';
 import { resolveTopGamesForCoverage } from './top-games-cache';
 import { ingestStreamPage, type StreamPageIngestStats } from './stream-page';
@@ -46,35 +38,24 @@ export async function runTwitchGamePass(env: Env, opts: GamePassOptions = {}): P
 		channelsIngested: 0,
 		duplicatesSkipped: 0,
 		startGameIndex: 0,
-		topGamesHelixPoints: 0
+		topGamesHelixPoints: 0,
 	};
 
-	const { games: topGames, helixPointsUsed } = await resolveTopGamesForCoverage(
-		client,
-		db,
-		TOP_GAMES_FIRST
-	);
+	const { games: topGames, helixPointsUsed } = await resolveTopGamesForCoverage(client, db, TOP_GAMES_FIRST);
 	stats.topGamesHelixPoints = helixPointsUsed;
 	if (topGames.length === 0) return stats;
 
-	const startGameIndex =
-		Math.floor(Date.now() / 60_000) % Math.max(1, topGames.length);
+	const startGameIndex = Math.floor(Date.now() / 60_000) % Math.max(1, topGames.length);
 	stats.startGameIndex = startGameIndex;
 
-	const gamesPerCycle = helixBudgetGamesPerCycle(
-		client.getBudget(),
-		gamePassGamesPerCycleFromEnv(env)
-	);
+	const gamesPerCycle = helixBudgetGamesPerCycle(client.getBudget(), gamePassGamesPerCycleFromEnv(env));
 
 	for (let g = 0; g < gamesPerCycle; g++) {
 		const game = topGames[(startGameIndex + g) % topGames.length];
 		stats.gamesScanned++;
 		await upsertGameCategory(db, game);
 
-		const pageLimit = helixBudgetPageCap(
-			client.getBudget(),
-			DISCOVERY_MAX_PAGES_PER_GAME
-		);
+		const pageLimit = helixBudgetPageCap(client.getBudget(), DISCOVERY_MAX_PAGES_PER_GAME);
 		let cursor: string | undefined;
 		let consecutiveEmptyPages = 0;
 		for (let page = 0; page < pageLimit; page++) {
@@ -82,15 +63,13 @@ export async function runTwitchGamePass(env: Env, opts: GamePassOptions = {}): P
 
 			const pageResult = await client.getStreamsByGameId(game.id, {
 				first: 100,
-				after: cursor
+				after: cursor,
 			});
 			stats.pagesFetched++;
 
 			const streams = pageResult.data ?? [];
 			if (streams.length === 0) {
-				if (
-					shouldContinueHelixPagination(streams, pageResult.pagination, consecutiveEmptyPages)
-				) {
+				if (shouldContinueHelixPagination(streams, pageResult.pagination, consecutiveEmptyPages)) {
 					consecutiveEmptyPages++;
 					cursor = pageResult.pagination!.cursor;
 					continue;
@@ -99,13 +78,7 @@ export async function runTwitchGamePass(env: Env, opts: GamePassOptions = {}): P
 			}
 			consecutiveEmptyPages = 0;
 
-			const { pageMaxViewers } = await ingestStreamPage(
-				env,
-				streams,
-				minViewers,
-				seenUserIds,
-				stats
-			);
+			const { pageMaxViewers } = await ingestStreamPage(env, streams, minViewers, seenUserIds, stats);
 
 			if (pageMaxViewers < minViewers) break;
 

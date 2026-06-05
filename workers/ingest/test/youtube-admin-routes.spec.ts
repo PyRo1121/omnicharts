@@ -9,10 +9,10 @@ describe('youtube admin routes (worker.fetch)', () => {
 	});
 
 	it('POST /admin/youtube/poll returns 401 when ADMIN_API_KEY set and header missing', async () => {
-		const res = await worker.fetch(
-			new Request('http://ingest/admin/youtube/poll', { method: 'POST' }),
-			{ ADMIN_API_KEY: 'secret', DB: {} as D1Database } as Env
-		);
+		const res = await worker.fetch(new Request('http://ingest/admin/youtube/poll', { method: 'POST' }), {
+			ADMIN_API_KEY: 'secret',
+			DB: {} as D1Database,
+		} as Env);
 		expect(res.status).toBe(401);
 	});
 
@@ -21,9 +21,9 @@ describe('youtube admin routes (worker.fetch)', () => {
 			new Request('http://ingest/admin/youtube/poll', {
 				method: 'POST',
 				headers: { 'X-Admin-Api-Key': 'secret', 'content-type': 'application/json' },
-				body: JSON.stringify({})
+				body: JSON.stringify({}),
 			}),
-			{ ADMIN_API_KEY: 'secret', ENVIRONMENT: 'development', DB: {} as D1Database } as Env
+			{ ADMIN_API_KEY: 'secret', ENVIRONMENT: 'development', DB: {} as D1Database } as Env,
 		);
 		expect(res.status).toBe(200);
 		const body = (await res.json()) as {
@@ -40,25 +40,25 @@ describe('youtube admin routes (worker.fetch)', () => {
 		vi.spyOn(poll, 'runYoutubeCatalogPoll').mockResolvedValue({
 			batches: 1,
 			liveVideos: 2,
-			samplesWritten: 2
+			samplesWritten: 2,
 		});
 		vi.spyOn(seed, 'seedYoutubeChannels').mockResolvedValue({
 			seeded: 1,
 			skipped: 0,
-			errors: 0
+			errors: 0,
 		});
 
 		const res = await worker.fetch(
 			new Request('http://ingest/admin/youtube/poll', {
 				method: 'POST',
 				headers: { 'X-Admin-Api-Key': 'secret', 'content-type': 'application/json' },
-				body: JSON.stringify({ seed: ['mrbeast'] })
+				body: JSON.stringify({ seed: ['mrbeast'] }),
 			}),
 			{
 				ADMIN_API_KEY: 'secret',
 				YOUTUBE_API_KEY: 'yt-key',
-				DB: {} as D1Database
-			} as Env
+				DB: {} as D1Database,
+			} as Env,
 		);
 
 		expect(res.status).toBe(200);

@@ -1,9 +1,9 @@
 {
-  "description": "0→100 viewers over 60 min (2 samples) → HW = 50",
-  "defaultIntervalMinutes": 1,
-  "samples": [
-    { "offsetMinutes": 0, "viewerCount": 0 },
-    { "offsetMinutes": 60, "viewerCount": 100 }
-  ],
-  "expectedHoursWatched": 50
+	"description": "0→100 viewers over 60 min (2 samples) → HW = 50",
+	"defaultIntervalMinutes": 1,
+	"samples": [
+		{ "offsetMinutes": 0, "viewerCount": 0 },
+		{ "offsetMinutes": 60, "viewerCount": 100 }
+	],
+	"expectedHoursWatched": 50
 }

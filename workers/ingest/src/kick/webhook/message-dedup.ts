@@ -21,15 +21,9 @@ function isFresh(entry: DedupEntry): boolean {
 	return Number.isFinite(age) && age >= 0 && age < KICK_WEBHOOK_DEDUP_TTL_MS;
 }
 
-export async function isDuplicateKickWebhookMessage(
-	db: D1Database,
-	messageId: string
-): Promise<boolean> {
+export async function isDuplicateKickWebhookMessage(db: D1Database, messageId: string): Promise<boolean> {
 	const key = keyFor(messageId);
-	const row = await db
-		.prepare(`SELECT value FROM ingest_metadata WHERE key = ?`)
-		.bind(key)
-		.first<{ value: string }>();
+	const row = await db.prepare(`SELECT value FROM ingest_metadata WHERE key = ?`).bind(key).first<{ value: string }>();
 	if (!row?.value) return false;
 	const entry = parseEntry(row.value);
 	if (entry !== null && isFresh(entry)) return true;
@@ -38,10 +32,7 @@ export async function isDuplicateKickWebhookMessage(
 }
 
 /** Drop claim so Kick can retry after handler failure (before TTL expires). */
-export async function releaseKickWebhookMessageId(
-	db: D1Database,
-	messageId: string
-): Promise<void> {
+export async function releaseKickWebhookMessageId(db: D1Database, messageId: string): Promise<void> {
 	await db.prepare(`DELETE FROM ingest_metadata WHERE key = ?`).bind(keyFor(messageId)).run();
 }
 
@@ -50,33 +41,27 @@ export async function recordKickWebhookMessageId(db: D1Database, messageId: stri
 	await db
 		.prepare(
 			`INSERT INTO ingest_metadata (key, value) VALUES (?, ?)
-       ON CONFLICT(key) DO UPDATE SET value = excluded.value`
+       ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
 		)
 		.bind(keyFor(messageId), JSON.stringify(payload))
 		.run();
 }
 
 /** Synchronous claim before processing — returns false when another delivery owns message_id. */
-export async function claimKickWebhookMessageId(
-	db: D1Database,
-	messageId: string
-): Promise<boolean> {
+export async function claimKickWebhookMessageId(db: D1Database, messageId: string): Promise<boolean> {
 	const key = keyFor(messageId);
 	const payload: DedupEntry = { seenAt: new Date().toISOString() };
 	const result = await db
 		.prepare(
 			`INSERT INTO ingest_metadata (key, value) VALUES (?, ?)
-       ON CONFLICT(key) DO NOTHING`
+       ON CONFLICT(key) DO NOTHING`,
 		)
 		.bind(key, JSON.stringify(payload))
 		.run();
 
 	if ((result.meta?.changes ?? 0) > 0) return true;
 
-	const row = await db
-		.prepare(`SELECT value FROM ingest_metadata WHERE key = ?`)
-		.bind(key)
-		.first<{ value: string }>();
+	const row = await db.prepare(`SELECT value FROM ingest_metadata WHERE key = ?`).bind(key).first<{ value: string }>();
 	if (!row?.value) return true;
 
 	const entry = parseEntry(row.value);
@@ -86,7 +71,7 @@ export async function claimKickWebhookMessageId(
 	const retry = await db
 		.prepare(
 			`INSERT INTO ingest_metadata (key, value) VALUES (?, ?)
-       ON CONFLICT(key) DO NOTHING`
+       ON CONFLICT(key) DO NOTHING`,
 		)
 		.bind(key, JSON.stringify(payload))
 		.run();

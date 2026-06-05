@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 
 vi.mock('../src/twitch/enrich-profiles', () => ({
 	enrichFollowersBeforeRollup: vi.fn().mockResolvedValue(undefined),
-	runTwitchProfileEnrichment: vi.fn()
+	runTwitchProfileEnrichment: vi.fn(),
 }));
 
 import { runDailyRollup, upsertChannelDailyRollup } from '../src/rollup/daily-job';
@@ -10,13 +10,16 @@ import { enrichFollowersBeforeRollup } from '../src/twitch/enrich-profiles';
 
 const DATE = '2026-05-30';
 
-function mockDbForRollup(sampleRows: {
-	sampled_at: string;
-	viewer_count: number;
-	session_id: string;
-	channel_id: string;
-	game_category_id: string | null;
-}[], opts?: { followerCount?: number; priorSnapshot?: number }) {
+function mockDbForRollup(
+	sampleRows: {
+		sampled_at: string;
+		viewer_count: number;
+		session_id: string;
+		channel_id: string;
+		game_category_id: string | null;
+	}[],
+	opts?: { followerCount?: number; priorSnapshot?: number },
+) {
 	const channelRollups: unknown[] = [];
 	const gameRollups: unknown[] = [];
 	let metadataWritten = false;
@@ -28,7 +31,7 @@ function mockDbForRollup(sampleRows: {
 				return {
 					bind() {
 						return { all: async () => ({ results: sampleRows }) };
-					}
+					},
 				};
 			}
 			if (sql.includes('DELETE FROM viewer_samples')) {
@@ -38,9 +41,9 @@ function mockDbForRollup(sampleRows: {
 							run: async () => {
 								pruneCalls += 1;
 								return { meta: { changes: 0 } };
-							}
+							},
 						};
-					}
+					},
 				};
 			}
 			if (sql.includes('SELECT id, follower_count FROM channels')) {
@@ -48,10 +51,10 @@ function mockDbForRollup(sampleRows: {
 					bind() {
 						return {
 							all: async () => ({
-								results: [{ id: 'ch-1', follower_count: opts?.followerCount ?? 5000 }]
-							})
+								results: [{ id: 'ch-1', follower_count: opts?.followerCount ?? 5000 }],
+							}),
 						};
-					}
+					},
 				};
 			}
 			if (sql.includes('SELECT key, value FROM ingest_metadata')) {
@@ -64,13 +67,13 @@ function mockDbForRollup(sampleRows: {
 											results: [
 												{
 													key: 'follower_eod:ch-1',
-													value: String(opts.priorSnapshot)
-												}
-											]
+													value: String(opts.priorSnapshot),
+												},
+											],
 										}
-									: { results: [] }
+									: { results: [] },
 						};
-					}
+					},
 				};
 			}
 			if (sql.includes('INSERT INTO channel_daily_rollups')) {
@@ -78,7 +81,7 @@ function mockDbForRollup(sampleRows: {
 					bind(...args: unknown[]) {
 						channelRollups.push(args);
 						return { run: async () => ({ meta: { rows_written: 1 } }) };
-					}
+					},
 				};
 			}
 			if (sql.includes('INSERT INTO game_daily_rollups')) {
@@ -86,7 +89,7 @@ function mockDbForRollup(sampleRows: {
 					bind(...args: unknown[]) {
 						gameRollups.push(args);
 						return { run: async () => ({ meta: { rows_written: 1 } }) };
-					}
+					},
 				};
 			}
 			if (sql.includes('ingest_metadata')) {
@@ -96,16 +99,16 @@ function mockDbForRollup(sampleRows: {
 							run: async () => {
 								metadataWritten = true;
 								return { meta: { changes: 0 } };
-							}
+							},
 						};
-					}
+					},
 				};
 			}
 			if (sql.includes("ingest_state = 'dormant'")) {
 				return {
 					bind() {
 						return { run: async () => ({ meta: { changes: 0 } }) };
-					}
+					},
 				};
 			}
 			return { bind: () => ({ run: async () => ({ meta: { changes: 0 } }) }) };
@@ -116,7 +119,7 @@ function mockDbForRollup(sampleRows: {
 				results.push(await stmt.run());
 			}
 			return results;
-		}
+		},
 	} as unknown as D1Database;
 
 	return {
@@ -124,7 +127,7 @@ function mockDbForRollup(sampleRows: {
 		channelRollups,
 		gameRollups,
 		wasMetadataWritten: () => metadataWritten,
-		pruneCalls: () => pruneCalls
+		pruneCalls: () => pruneCalls,
 	};
 }
 
@@ -142,15 +145,15 @@ describe('runDailyRollup', () => {
 				viewer_count: 100,
 				session_id: 'sess-1',
 				channel_id: 'ch-1',
-				game_category_id: 'game-1'
+				game_category_id: 'game-1',
 			},
 			{
 				sampled_at: `${DATE}T12:30:00.000Z`,
 				viewer_count: 100,
 				session_id: 'sess-1',
 				channel_id: 'ch-1',
-				game_category_id: 'game-1'
-			}
+				game_category_id: 'game-1',
+			},
 		]);
 
 		const stats = await runDailyRollup({ DB: db } as Env, DATE);
@@ -173,10 +176,10 @@ describe('runDailyRollup', () => {
 					viewer_count: 50,
 					session_id: 'sess-1',
 					channel_id: 'ch-1',
-					game_category_id: null
-				}
+					game_category_id: null,
+				},
 			],
-			{ followerCount: 1200, priorSnapshot: 1000 }
+			{ followerCount: 1200, priorSnapshot: 1000 },
 		);
 
 		await runDailyRollup({ DB: db } as Env, DATE);
@@ -194,9 +197,9 @@ describe('upsertChannelDailyRollup', () => {
 					bind(...args: unknown[]) {
 						bound = args;
 						return { run: async () => ({}) };
-					}
+					},
 				};
-			}
+			},
 		} as unknown as D1Database;
 
 		await upsertChannelDailyRollup(
@@ -208,9 +211,9 @@ describe('upsertChannelDailyRollup', () => {
 				averageViewers: 5,
 				peakViewers: 20,
 				airtimeMinutes: 120,
-				streamCount: 2
+				streamCount: 2,
 			},
-			42
+			42,
 		);
 
 		expect(bound[0]).toBe('ch-1');

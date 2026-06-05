@@ -12,10 +12,7 @@ export type ViewerSamplePoint = {
  * Time-weighted hours watched from ordered samples.
  * Uses elapsed time to next sample; last sample uses `defaultIntervalMinutes`.
  */
-export function computeHoursWatched(
-	samples: ViewerSamplePoint[],
-	defaultIntervalMinutes = 1
-): number {
+export function computeHoursWatched(samples: ViewerSamplePoint[], defaultIntervalMinutes = 1): number {
 	if (samples.length === 0) return 0;
 
 	const sorted = [...samples].sort((a, b) => a.sampledAtMs - b.sampledAtMs);
@@ -48,10 +45,7 @@ export function computeAverageViewers(hoursWatched: number, airtimeMinutes: numb
 }
 
 /** Minutes spanned by samples (first → last) plus one default interval. */
-export function computeAirtimeMinutesFromSamples(
-	samples: ViewerSamplePoint[],
-	defaultIntervalMinutes = 1
-): number {
+export function computeAirtimeMinutesFromSamples(samples: ViewerSamplePoint[], defaultIntervalMinutes = 1): number {
 	if (samples.length === 0) return 0;
 	if (samples.length === 1) return defaultIntervalMinutes;
 
@@ -69,10 +63,7 @@ export type SessionDayMetrics = {
 	airtimeMinutes: number;
 };
 
-export function aggregateSessionSamples(
-	samples: ViewerSamplePoint[],
-	defaultIntervalMinutes = 1
-): SessionDayMetrics {
+export function aggregateSessionSamples(samples: ViewerSamplePoint[], defaultIntervalMinutes = 1): SessionDayMetrics {
 	const hoursWatched = computeHoursWatched(samples, defaultIntervalMinutes);
 	const airtimeMinutes = computeAirtimeMinutesFromSamples(samples, defaultIntervalMinutes);
 	const peakViewers = computePeakViewers(samples);
@@ -81,7 +72,7 @@ export function aggregateSessionSamples(
 		hoursWatched,
 		airtimeMinutes,
 		peakViewers,
-		averageViewers: computeAverageViewers(hoursWatched, airtimeMinutes)
+		averageViewers: computeAverageViewers(hoursWatched, airtimeMinutes),
 	};
 }
 
@@ -100,7 +91,7 @@ export function combineSessionMetrics(sessions: SessionDayMetrics[]): ChannelDay
 			averageViewers: 0,
 			peakViewers: 0,
 			airtimeMinutes: 0,
-			streamCount: 0
+			streamCount: 0,
 		};
 	}
 
@@ -113,6 +104,6 @@ export function combineSessionMetrics(sessions: SessionDayMetrics[]): ChannelDay
 		airtimeMinutes,
 		peakViewers,
 		streamCount: sessions.length,
-		averageViewers: computeAverageViewers(hoursWatched, airtimeMinutes)
+		averageViewers: computeAverageViewers(hoursWatched, airtimeMinutes),
 	};
 }

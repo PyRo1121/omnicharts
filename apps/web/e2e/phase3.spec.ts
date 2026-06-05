@@ -8,7 +8,7 @@ import {
 	INGEST_URL,
 	platformNav,
 	slugRedirectFromEnv,
-	verifySlugHistoryRedirect
+	verifySlugHistoryRedirect,
 } from './helpers';
 
 test.describe('Phase 3 E2E (docs/13 backlog)', () => {
@@ -40,7 +40,7 @@ test.describe('Phase 3 E2E (docs/13 backlog)', () => {
 		const res = await page.goto(`/channels/${slug}?platform=kick`);
 		expect(res?.status()).toBe(200);
 		await expect(page.getByRole('heading', { level: 1, name: /.+/ })).toBeVisible({
-			timeout: 10_000
+			timeout: 10_000,
 		});
 	});
 
@@ -57,7 +57,7 @@ test.describe('Phase 3 E2E (docs/13 backlog)', () => {
 		const res = await page.goto(`/games/${slug}?platform=kick`);
 		expect(res?.status()).toBe(200);
 		await expect(page.getByRole('heading', { level: 1, name: /.+/ })).toBeVisible({
-			timeout: 10_000
+			timeout: 10_000,
 		});
 	});
 
@@ -68,20 +68,12 @@ test.describe('Phase 3 E2E (docs/13 backlog)', () => {
 
 		const pair = slugRedirectFromEnv();
 		if (!pair || !(await verifySlugHistoryRedirect(pair))) {
-			test.skip(
-				true,
-				'set E2E_SLUG_REDIRECT=oldslug:newslug:twitch when ingest has slug_history'
-			);
+			test.skip(true, 'set E2E_SLUG_REDIRECT=oldslug:newslug:twitch when ingest has slug_history');
 		}
 
-		const response = await page.goto(
-			`/channels/${encodeURIComponent(pair.oldSlug)}?platform=${pair.platform}`,
-			{ waitUntil: 'commit' }
-		);
+		const response = await page.goto(`/channels/${encodeURIComponent(pair.oldSlug)}?platform=${pair.platform}`, { waitUntil: 'commit' });
 		expect(response?.status()).toBe(200);
-		await expect(page).toHaveURL(
-			new RegExp(`/channels/${encodeURIComponent(pair.newSlug)}\\?.*platform=${pair.platform}`)
-		);
+		await expect(page).toHaveURL(new RegExp(`/channels/${encodeURIComponent(pair.newSlug)}\\?.*platform=${pair.platform}`));
 	});
 
 	test('cross-platform 404 shows suggestions for kick-only channel', async ({ page }) => {
@@ -97,9 +89,6 @@ test.describe('Phase 3 E2E (docs/13 backlog)', () => {
 		const res = await page.goto(`/channels/${slug}?platform=twitch`);
 		expect(res?.status()).toBe(404);
 		await expect(page.getByText('Did you mean')).toBeVisible();
-		await expect(page.getByRole('link', { name: /.+/ }).first()).toHaveAttribute(
-			'href',
-			`/channels/${slug}?platform=kick`
-		);
+		await expect(page.getByRole('link', { name: /.+/ }).first()).toHaveAttribute('href', `/channels/${slug}?platform=kick`);
 	});
 });

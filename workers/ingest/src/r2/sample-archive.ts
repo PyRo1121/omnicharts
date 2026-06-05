@@ -26,10 +26,7 @@ export type SampleArchiveResult = {
 	skipped?: SampleArchiveSkipReason;
 };
 
-export function sampleArchiveObjectKey(
-	row: SampleArchiveRow,
-	partId = crypto.randomUUID()
-): string {
+export function sampleArchiveObjectKey(row: SampleArchiveRow, partId = crypto.randomUUID()): string {
 	const day = row.sampled_at.slice(0, 10);
 	const platform = row.platform ?? PLATFORM_TWITCH;
 	return `samples/year=${day.slice(0, 4)}/month=${day.slice(5, 7)}/day=${day.slice(8, 10)}/platform=${platform}/part-${partId}.ndjson`;
@@ -50,10 +47,7 @@ export function shouldArchiveSampleBatch(env: Env, rowCount: number): SampleArch
 	return null;
 }
 
-export async function archiveSampleBatch(
-	env: Env,
-	rows: SampleArchiveRow[]
-): Promise<SampleArchiveResult> {
+export async function archiveSampleBatch(env: Env, rows: SampleArchiveRow[]): Promise<SampleArchiveResult> {
 	if (rows.length === 0) return { archived: 0 };
 
 	const skip = shouldArchiveSampleBatch(env, rows.length);
@@ -63,7 +57,7 @@ export async function archiveSampleBatch(
 	const key = sampleArchiveObjectKey(rows[0]!);
 	const body = rows.map((r) => JSON.stringify(r)).join('\n');
 	await bucket.put(key, body, {
-		httpMetadata: { contentType: 'application/x-ndjson' }
+		httpMetadata: { contentType: 'application/x-ndjson' },
 	});
 	return { archived: rows.length, key };
 }

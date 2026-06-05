@@ -7,8 +7,8 @@ function mockD1WithChannels(): D1Database {
 			if (sql.includes('lower(slug)')) {
 				return {
 					bind: (_platform: string, slug: string) => ({
-						first: async () => ({ slug })
-					})
+						first: async () => ({ slug }),
+					}),
 				};
 			}
 			if (sql.includes('FROM channels') && sql.includes('display_name')) {
@@ -23,9 +23,9 @@ function mockD1WithChannels(): D1Database {
 							first_observed_at: '2026-01-01T00:00:00Z',
 							ingest_state: 'tracked',
 							follower_count: null,
-							description: null
-						})
-					})
+							description: null,
+						}),
+					}),
 				};
 			}
 			if (sql.includes('channel_daily_rollups')) {
@@ -40,15 +40,15 @@ function mockD1WithChannels(): D1Database {
 									peak_viewers: 10,
 									airtime_minutes: 60,
 									stream_count: 1,
-									followers_delta: null
-								}
-							]
-						})
-					})
+									followers_delta: null,
+								},
+							],
+						}),
+					}),
 				};
 			}
 			return { bind: () => ({ first: async () => null, all: async () => ({ results: [] }) }) };
-		}
+		},
 	} as unknown as D1Database;
 }
 
@@ -57,22 +57,20 @@ describe('GET /api/v1/compare/channels', () => {
 		const res = await getCompareChannels({
 			url: new URL('http://localhost/api/v1/compare/channels?platform=twitch'),
 			fetch: vi.fn(),
-			platform: { env: { DB: mockD1WithChannels() } } as App.Platform
+			platform: { env: { DB: mockD1WithChannels() } } as App.Platform,
 		} as unknown as Parameters<typeof getCompareChannels>[0]);
 
 		expect(res.status).toBe(400);
 		expect(await res.json()).toEqual({
-			error: { code: 'missing_slugs', message: 'query params a and b (channel slugs) are required' }
+			error: { code: 'missing_slugs', message: 'query params a and b (channel slugs) are required' },
 		});
 	});
 
 	it('returns rollup-backed compare payload', async () => {
 		const res = await getCompareChannels({
-			url: new URL(
-				'http://localhost/api/v1/compare/channels?a=ninja&b=shroud&platform=twitch&period=7d'
-			),
+			url: new URL('http://localhost/api/v1/compare/channels?a=ninja&b=shroud&platform=twitch&period=7d'),
 			fetch: vi.fn(),
-			platform: { env: { DB: mockD1WithChannels() } } as App.Platform
+			platform: { env: { DB: mockD1WithChannels() } } as App.Platform,
 		} as unknown as Parameters<typeof getCompareChannels>[0]);
 
 		expect(res.status).toBe(200);

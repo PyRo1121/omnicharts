@@ -25,22 +25,14 @@ export function isPublicRateLimitedPath(pathname: string): boolean {
 }
 
 function clientKey(request: Request): string {
-	return (
-		request.headers.get('CF-Connecting-IP') ??
-		request.headers.get('X-Forwarded-For')?.split(',')[0]?.trim() ??
-		'local'
-	);
+	return request.headers.get('CF-Connecting-IP') ?? request.headers.get('X-Forwarded-For')?.split(',')[0]?.trim() ?? 'local';
 }
 
 /**
  * Returns 429 Response when over limit; null when allowed.
  * @see https://developers.cloudflare.com/workers/platform/limits/
  */
-export function checkPublicRateLimit(
-	request: Request,
-	env: Env,
-	pathname = new URL(request.url).pathname
-): Response | null {
+export function checkPublicRateLimit(request: Request, env: Env, pathname = new URL(request.url).pathname): Response | null {
 	if (!isPublicRateLimitedPath(pathname)) return null;
 	if (isPublicRateLimitBypassed(env)) return null;
 
@@ -66,9 +58,9 @@ export function checkPublicRateLimit(
 				status: 429,
 				headers: {
 					'content-type': 'application/json',
-					'retry-after': '60'
-				}
-			}
+					'retry-after': '60',
+				},
+			},
 		);
 	}
 

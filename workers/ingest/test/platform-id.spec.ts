@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-	filterHelixTwitchUserIds,
-	isDevSeedPlatformChannelId,
-	isHelixTwitchUserId
-} from '../src/twitch/platform-id';
+import { filterHelixTwitchUserIds, isDevSeedPlatformChannelId, isHelixTwitchUserId } from '../src/twitch/platform-id';
 
 describe('platform-id', () => {
 	it('accepts numeric Twitch ids', () => {
@@ -18,9 +14,6 @@ describe('platform-id', () => {
 	});
 
 	it('filterHelixTwitchUserIds drops dev seed and non-numeric', () => {
-		expect(filterHelixTwitchUserIds(['545050196', 'dev-1', 'abc', '999'])).toEqual([
-			'545050196',
-			'999'
-		]);
+		expect(filterHelixTwitchUserIds(['545050196', 'dev-1', 'abc', '999'])).toEqual(['545050196', '999']);
 	});
 });

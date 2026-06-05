@@ -17,7 +17,7 @@ export const load: PageServerLoad = async ({ fetch, url, setHeaders, platform: c
 		const overview = await loadKickOverview(ctx, mockEnabled);
 		return {
 			...overview,
-			platform: 'kick'
+			platform: 'kick',
 		} satisfies OverviewPageData;
 	}
 
@@ -25,13 +25,13 @@ export const load: PageServerLoad = async ({ fetch, url, setHeaders, platform: c
 		const overview = await loadYoutubeOverview(ctx, mockEnabled);
 		return {
 			...overview,
-			platform: 'youtube'
+			platform: 'youtube',
 		} satisfies OverviewPageData;
 	}
 
 	const overview = await loadOverview(ctx, mockEnabled);
 	return {
 		...overview,
-		platform: platform === 'all' ? 'all' : 'twitch'
+		platform: platform === 'all' ? 'all' : 'twitch',
 	} satisfies OverviewPageData;
 };

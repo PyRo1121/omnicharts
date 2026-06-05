@@ -14,7 +14,7 @@ export function dailyRollupRetentionCutoffDate(now = new Date()): string {
 async function pruneTableOlderThanCutoff(
 	db: D1Database,
 	table: 'channel_daily_rollups' | 'game_daily_rollups',
-	cutoff: string
+	cutoff: string,
 ): Promise<number> {
 	let totalDeleted = 0;
 
@@ -26,7 +26,7 @@ async function pruneTableOlderThanCutoff(
            SELECT rowid FROM ${table}
            WHERE date < ?
            LIMIT ?
-         )`
+         )`,
 			)
 			.bind(cutoff, DAILY_ROLLUP_DELETE_BATCH_SIZE)
 			.run();
@@ -44,7 +44,7 @@ async function pruneTableOlderThanCutoff(
  */
 export async function pruneDailyRollupsOlderThanRetention(
 	db: D1Database,
-	now = new Date()
+	now = new Date(),
 ): Promise<{ channelRows: number; gameRows: number }> {
 	const cutoff = dailyRollupRetentionCutoffDate(now);
 	const channelRows = await pruneTableOlderThanCutoff(db, 'channel_daily_rollups', cutoff);

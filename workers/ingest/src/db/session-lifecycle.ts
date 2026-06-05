@@ -11,7 +11,7 @@ export async function batchCloseStaleOpenSessionsForChannels(
 	db: D1Database,
 	closes: StaleSessionClose[],
 	endedAt: string,
-	batchOpts?: { env?: Env; scope?: string }
+	batchOpts?: { env?: Env; scope?: string },
 ): Promise<void> {
 	if (closes.length === 0) return;
 
@@ -19,9 +19,9 @@ export async function batchCloseStaleOpenSessionsForChannels(
 		db
 			.prepare(
 				`UPDATE stream_sessions SET ended_at = ?
-     WHERE channel_id = ? AND ended_at IS NULL AND platform_stream_id != ?`
+     WHERE channel_id = ? AND ended_at IS NULL AND platform_stream_id != ?`,
 			)
-			.bind(endedAt, channelId, platformStreamId)
+			.bind(endedAt, channelId, platformStreamId),
 	);
 
 	await runD1Batches(db, statements, batchOpts);
@@ -33,7 +33,7 @@ export async function closeOpenSessionsForPlatformChannelIds(
 	platformId: PlatformId,
 	platformChannelIds: string[],
 	endedAt: string,
-	batchOpts?: { env?: Env; scope?: string }
+	batchOpts?: { env?: Env; scope?: string },
 ): Promise<void> {
 	if (platformChannelIds.length === 0) return;
 
@@ -46,9 +46,9 @@ export async function closeOpenSessionsForPlatformChannelIds(
 					`UPDATE stream_sessions SET ended_at = ?
          WHERE ended_at IS NULL AND channel_id IN (
            SELECT id FROM channels WHERE platform_id = ? AND platform_channel_id IN (${placeholders})
-         )`
+         )`,
 				)
-				.bind(endedAt, platformId, ...chunk)
+				.bind(endedAt, platformId, ...chunk),
 		);
 	}
 
@@ -60,15 +60,9 @@ export async function closeOpenSessionsForTwitchPlatformChannelIds(
 	db: D1Database,
 	platformChannelIds: string[],
 	endedAt: string,
-	batchOpts?: { env?: Env; scope?: string }
+	batchOpts?: { env?: Env; scope?: string },
 ): Promise<void> {
-	return closeOpenSessionsForPlatformChannelIds(
-		db,
-		PLATFORM_TWITCH,
-		platformChannelIds,
-		endedAt,
-		batchOpts
-	);
+	return closeOpenSessionsForPlatformChannelIds(db, PLATFORM_TWITCH, platformChannelIds, endedAt, batchOpts);
 }
 
 /** Close other open sessions when Helix stream id changes (mirrors EventSub stream.online). */
@@ -77,12 +71,7 @@ export async function closeStaleOpenSessionsForChannel(
 	channelId: string,
 	platformStreamId: string,
 	endedAt: string,
-	batchOpts?: { env?: Env; scope?: string }
+	batchOpts?: { env?: Env; scope?: string },
 ): Promise<void> {
-	await batchCloseStaleOpenSessionsForChannels(
-		db,
-		[{ channelId, platformStreamId }],
-		endedAt,
-		batchOpts
-	);
+	await batchCloseStaleOpenSessionsForChannels(db, [{ channelId, platformStreamId }], endedAt, batchOpts);
 }

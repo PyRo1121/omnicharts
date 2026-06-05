@@ -25,14 +25,14 @@ describe('searchChannels (D1 mock)', () => {
 										slug: 'shroud',
 										display_name: 'shroud',
 										avatar_url: null,
-										platform_id: 'twitch'
-									}
-								]
-							})
+										platform_id: 'twitch',
+									},
+								],
+							}),
 						};
-					}
+					},
 				};
-			}
+			},
 		} as unknown as D1Database;
 
 		const rows = await searchChannels(db, { platformId: 'twitch', query: 'shro' });
@@ -49,9 +49,9 @@ describe('searchChannels (D1 mock)', () => {
 					bind(...args: unknown[]) {
 						bound = args;
 						return { all: async () => ({ results: [] }) };
-					}
+					},
 				};
-			}
+			},
 		} as unknown as D1Database;
 
 		await searchChannels(db, { platformId: 'twitch', query: '100%_' });
@@ -69,9 +69,9 @@ describe('searchChannels (D1 mock)', () => {
 					bind(...args: unknown[]) {
 						bound = args;
 						return { all: async () => ({ results: [] }) };
-					}
+					},
 				};
-			}
+			},
 		} as unknown as D1Database;
 
 		await searchChannels(db, { platformId: 'kick', query: 'xqc', language: 'en' });

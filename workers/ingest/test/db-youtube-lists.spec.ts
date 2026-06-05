@@ -11,12 +11,12 @@ describe('listYoutubePollTargets', () => {
 							{
 								id: 'yt-ch-1',
 								platform_channel_id: 'UCabc123',
-								youtube_live_video_id: 'dQw4w9WgXcQ'
-							}
-						]
-					})
-				})
-			})
+								youtube_live_video_id: 'dQw4w9WgXcQ',
+							},
+						],
+					}),
+				}),
+			}),
 		} as unknown as D1Database;
 
 		const rows = await listYoutubePollTargets(db, 10);
@@ -24,8 +24,8 @@ describe('listYoutubePollTargets', () => {
 			{
 				channelRowId: 'yt-ch-1',
 				platformChannelId: 'UCabc123',
-				liveVideoId: 'dQw4w9WgXcQ'
-			}
+				liveVideoId: 'dQw4w9WgXcQ',
+			},
 		]);
 	});
 });

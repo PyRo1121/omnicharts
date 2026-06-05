@@ -11,7 +11,7 @@ function mockEnv(): Env {
 				},
 				bind() {
 					return stmt;
-				}
+				},
 			};
 			return stmt;
 		},
@@ -25,15 +25,15 @@ function mockEnv(): Env {
 				{ results: [{ n: 2 }] },
 				{ results: [{ n: 1 }] },
 				{ results: [{ n: 0 }] },
-				{ results: [{ max_sampled_at: new Date().toISOString() }] }
+				{ results: [{ max_sampled_at: new Date().toISOString() }] },
 			];
-		}
+		},
 	} as unknown as D1Database;
 
 	return {
 		DB: db,
 		TWITCH_CLIENT_ID: 'id',
-		TWITCH_CLIENT_SECRET: 'secret'
+		TWITCH_CLIENT_SECRET: 'secret',
 	} as Env;
 }
 
@@ -60,18 +60,12 @@ describe('public health', () => {
 	});
 
 	it('GET /health?detailed=1 requires admin key', async () => {
-		const res = await worker.fetch(
-			new Request('http://ingest/health?detailed=1'),
-			{ ...mockEnv(), ADMIN_API_KEY: 'secret' } as Env
-		);
+		const res = await worker.fetch(new Request('http://ingest/health?detailed=1'), { ...mockEnv(), ADMIN_API_KEY: 'secret' } as Env);
 		expect(res.status).toBe(401);
 	});
 
 	it('redirects GET /admin/twitch/rankings to /v1', async () => {
-		const res = await worker.fetch(
-			new Request('http://ingest/admin/twitch/rankings?period=7d'),
-			mockEnv()
-		);
+		const res = await worker.fetch(new Request('http://ingest/admin/twitch/rankings?period=7d'), mockEnv());
 		expect(res.status).toBe(308);
 		expect(res.headers.get('location')).toContain('/v1/rankings/channels');
 	});

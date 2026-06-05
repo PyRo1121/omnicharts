@@ -3,14 +3,14 @@ import { enrichSearchResultsWithRollups, searchChannels } from './search';
 import { testLoadContext } from './test-helpers';
 
 vi.mock('$env/dynamic/private', () => ({
-	env: { INGEST_URL: 'http://ingest.test' }
+	env: { INGEST_URL: 'http://ingest.test' },
 }));
 
 describe('searchChannels', () => {
 	it('passes platform=kick to ingest search (docs/16)', async () => {
 		const fetchFn = vi.fn().mockResolvedValue({
 			ok: true,
-			json: async () => ({ results: [] })
+			json: async () => ({ results: [] }),
 		});
 
 		await searchChannels(fetchFn as typeof fetch, { q: 'xqc', platform: 'kick', limit: 25 });
@@ -32,15 +32,15 @@ describe('searchChannels', () => {
 						slug: 'xqc',
 						display_name: 'xQc',
 						avatar_url: null,
-						platform_id: 'kick'
-					}
-				]
-			})
+						platform_id: 'kick',
+					},
+				],
+			}),
 		});
 
 		const { results, error } = await searchChannels(fetchFn as typeof fetch, {
 			q: 'xqc',
-			platform: 'kick'
+			platform: 'kick',
 		});
 
 		expect(error).toBe(false);
@@ -48,7 +48,7 @@ describe('searchChannels', () => {
 			slug: 'xqc',
 			displayName: 'xQc',
 			platform: 'kick',
-			hoursWatched7d: null
+			hoursWatched7d: null,
 		});
 	});
 });
@@ -60,7 +60,7 @@ describe('enrichSearchResultsWithRollups', () => {
 		displayName: 'xQc',
 		avatarUrl: null,
 		platform: 'kick',
-		hoursWatched7d: null
+		hoursWatched7d: null,
 	};
 
 	function channelDetailBody(platform: string, hoursWatched: number) {
@@ -80,8 +80,8 @@ describe('enrichSearchResultsWithRollups', () => {
 				peak_viewers: 20,
 				airtime_hours: 2,
 				stream_count: 3,
-				followers_gain: null
-			}
+				followers_gain: null,
+			},
 		};
 	}
 
@@ -89,7 +89,7 @@ describe('enrichSearchResultsWithRollups', () => {
 		const fetchFn = vi.fn().mockResolvedValue({
 			ok: true,
 			status: 200,
-			json: async () => channelDetailBody('kick', 12_500)
+			json: async () => channelDetailBody('kick', 12_500),
 		});
 		const ctx = testLoadContext(fetchFn as typeof fetch);
 
@@ -103,13 +103,11 @@ describe('enrichSearchResultsWithRollups', () => {
 		const fetchFn = vi.fn().mockResolvedValue({
 			ok: true,
 			status: 200,
-			json: async () => channelDetailBody('twitch', 842)
+			json: async () => channelDetailBody('twitch', 842),
 		});
 		const ctx = testLoadContext(fetchFn as typeof fetch);
 
-		const enriched = await enrichSearchResultsWithRollups(ctx, [
-			{ ...kickRow, platform: 'twitch', slug: 'ninja', displayName: 'Ninja' }
-		]);
+		const enriched = await enrichSearchResultsWithRollups(ctx, [{ ...kickRow, platform: 'twitch', slug: 'ninja', displayName: 'Ninja' }]);
 
 		expect(enriched[0]?.hoursWatched7d).toBe('842');
 	});
@@ -118,12 +116,12 @@ describe('enrichSearchResultsWithRollups', () => {
 		const fetchFn = vi.fn().mockResolvedValue({
 			ok: true,
 			status: 200,
-			json: async () => channelDetailBody('youtube', 512)
+			json: async () => channelDetailBody('youtube', 512),
 		});
 		const ctx = testLoadContext(fetchFn as typeof fetch);
 
 		const enriched = await enrichSearchResultsWithRollups(ctx, [
-			{ ...kickRow, platform: 'youtube', slug: 'mrbeast', displayName: 'MrBeast' }
+			{ ...kickRow, platform: 'youtube', slug: 'mrbeast', displayName: 'MrBeast' },
 		]);
 
 		expect(enriched[0]?.hoursWatched7d).toBe('512');

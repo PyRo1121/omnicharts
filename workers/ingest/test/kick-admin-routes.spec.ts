@@ -8,10 +8,10 @@ describe('kick admin routes (worker.fetch)', () => {
 	});
 
 	it('POST /admin/kick/discover returns 401 when ADMIN_API_KEY set and header missing', async () => {
-		const res = await worker.fetch(
-			new Request('http://ingest/admin/kick/discover', { method: 'POST' }),
-			{ ADMIN_API_KEY: 'secret', DB: {} as D1Database } as Env
-		);
+		const res = await worker.fetch(new Request('http://ingest/admin/kick/discover', { method: 'POST' }), {
+			ADMIN_API_KEY: 'secret',
+			DB: {} as D1Database,
+		} as Env);
 		expect(res.status).toBe(401);
 	});
 
@@ -20,9 +20,9 @@ describe('kick admin routes (worker.fetch)', () => {
 			new Request('http://ingest/admin/kick/discover', {
 				method: 'POST',
 				headers: { 'X-Admin-Api-Key': 'secret', 'content-type': 'application/json' },
-				body: JSON.stringify({ quick: true })
+				body: JSON.stringify({ quick: true }),
 			}),
-			{ ADMIN_API_KEY: 'secret', ENVIRONMENT: 'development', DB: {} as D1Database } as Env
+			{ ADMIN_API_KEY: 'secret', ENVIRONMENT: 'development', DB: {} as D1Database } as Env,
 		);
 		expect(res.status).toBe(200);
 		const body = (await res.json()) as { ok: boolean; skipped: boolean; stats: { categoriesScanned: number } };
@@ -36,27 +36,27 @@ describe('kick admin routes (worker.fetch)', () => {
 			categoriesScanned: 2,
 			categoryListPagesFetched: 1,
 			streamsSeen: 10,
-			channelsUpserted: 8
+			channelsUpserted: 8,
 		});
 
 		const db = {
 			prepare: () => ({
-				bind: () => ({ run: async () => ({}) })
-			})
+				bind: () => ({ run: async () => ({}) }),
+			}),
 		} as unknown as D1Database;
 
 		const res = await worker.fetch(
 			new Request('http://ingest/admin/kick/discover', {
 				method: 'POST',
 				headers: { 'X-Admin-Api-Key': 'secret', 'content-type': 'application/json' },
-				body: JSON.stringify({ quick: true })
+				body: JSON.stringify({ quick: true }),
 			}),
 			{
 				ADMIN_API_KEY: 'secret',
 				KICK_CLIENT_ID: 'id',
 				KICK_CLIENT_SECRET: 'secret',
-				DB: db
-			} as Env
+				DB: db,
+			} as Env,
 		);
 
 		expect(res.status).toBe(200);

@@ -12,22 +12,19 @@ export const load: PageServerLoad = async ({ fetch, url, setHeaders, platform: c
 	const ctx = serverLoadContext(fetch, cfPlatform);
 	const platformId = searchPlatformId(parseUiPlatform(url.searchParams.get('platform')));
 	const period = parseComparePeriod(url.searchParams.get('period'));
-	const { a, b } = parseCompareSlugs(
-		url.searchParams.get('a'),
-		url.searchParams.get('b')
-	);
+	const { a, b } = parseCompareSlugs(url.searchParams.get('a'), url.searchParams.get('b'));
 
 	const { periodNote } = await resolvePeriodContext(period, ctx.db);
 	const compare = await loadChannelCompare(ctx, {
 		a,
 		b,
 		platform: platformId,
-		period
+		period,
 	});
 
 	return {
 		...compare,
 		platform: platformId,
-		periodNote
+		periodNote,
 	};
 };

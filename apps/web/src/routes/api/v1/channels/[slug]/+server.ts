@@ -5,7 +5,7 @@ import {
 	csvAttachmentHeaders,
 	csvDownloadFilename,
 	parseChannelDetailQuery,
-	parseResponseFormat
+	parseResponseFormat,
 } from '@omnicharts/rollup';
 import { ROLLUP_CACHE_CONTROL } from '$lib/server/cache';
 import { getIngestBaseUrl } from '$lib/server/ingest';
@@ -28,47 +28,40 @@ export const GET: RequestHandler = async ({ params, url, fetch, platform }) => {
 		return channelDetailQueryErrorResponse(query.error);
 	}
 
-	if (
-		db &&
-		(query.platform === 'twitch' || query.platform === 'kick' || query.platform === 'youtube')
-	) {
+	if (db && (query.platform === 'twitch' || query.platform === 'kick' || query.platform === 'youtube')) {
 		const body = await buildChannelDetailResponse(db, {
 			platform: query.platform,
 			slug: query.slug,
-			period: query.period
+			period: query.period,
 		});
 		if (!body) {
 			return Response.json(
 				{ error: { code: 'not_found', message: 'Channel not found' } },
 				{
 					status: 404,
-					headers: { 'cache-control': ROLLUP_CACHE_CONTROL }
-				}
+					headers: { 'cache-control': ROLLUP_CACHE_CONTROL },
+				},
 			);
 		}
 		if (formatParsed.format === 'csv') {
 			const csv = channelDetailToCsv(body);
 			return new Response(csv, {
 				headers: {
-					...csvAttachmentHeaders(
-						csvDownloadFilename([body.platform, body.slug, body.period])
-					),
-					'cache-control': ROLLUP_CACHE_CONTROL
-				}
+					...csvAttachmentHeaders(csvDownloadFilename([body.platform, body.slug, body.period])),
+					'cache-control': ROLLUP_CACHE_CONTROL,
+				},
 			});
 		}
 		return Response.json(body, {
-			headers: { 'cache-control': ROLLUP_CACHE_CONTROL }
+			headers: { 'cache-control': ROLLUP_CACHE_CONTROL },
 		});
 	}
 
-	const target = new URL(
-		`${getIngestBaseUrl()}/v1/channels/${encodeURIComponent(params.slug)}`
-	);
+	const target = new URL(`${getIngestBaseUrl()}/v1/channels/${encodeURIComponent(params.slug)}`);
 	target.search = url.searchParams.toString();
 
 	const res = await fetch(target.toString(), {
-		headers: { accept: 'application/json' }
+		headers: { accept: 'application/json' },
 	});
 
 	return proxyIngestResponse(res);

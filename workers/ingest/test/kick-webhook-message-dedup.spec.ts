@@ -3,7 +3,7 @@ import {
 	claimKickWebhookMessageId,
 	isDuplicateKickWebhookMessage,
 	recordKickWebhookMessageId,
-	releaseKickWebhookMessageId
+	releaseKickWebhookMessageId,
 } from '../src/kick/webhook/message-dedup';
 
 function mockDb(store = new Map<string, string>()) {
@@ -37,10 +37,10 @@ function mockDb(store = new Map<string, string>()) {
 							return { meta: { changes: 1 } };
 						}
 						return { meta: { changes: 0 } };
-					}
-				})
+					},
+				}),
 			};
-		}
+		},
 	} as unknown as D1Database;
 }
 

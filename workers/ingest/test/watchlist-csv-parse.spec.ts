@@ -12,7 +12,7 @@ youtube,@mrbeast`);
 		expect(result.rows).toEqual([
 			{ line: 2, platform: 'twitch', slug: 'ninja' },
 			{ line: 3, platform: 'kick', slug: 'xqc' },
-			{ line: 4, platform: 'youtube', slug: 'mrbeast' }
+			{ line: 4, platform: 'youtube', slug: 'mrbeast' },
 		]);
 	});
 
@@ -28,27 +28,21 @@ twitch,shroud`);
 		const result = parseWatchlistCsv('platform,slug\nfacebook,foo');
 
 		expect(result.rows).toEqual([]);
-		expect(result.errors).toEqual([
-			expect.objectContaining({ line: 2, code: 'invalid_platform' })
-		]);
+		expect(result.errors).toEqual([expect.objectContaining({ line: 2, code: 'invalid_platform' })]);
 	});
 
 	it('reports missing slug', () => {
 		const result = parseWatchlistCsv('platform,slug\ntwitch,');
 
 		expect(result.rows).toEqual([]);
-		expect(result.errors).toEqual([
-			expect.objectContaining({ line: 2, code: 'missing_slug' })
-		]);
+		expect(result.errors).toEqual([expect.objectContaining({ line: 2, code: 'missing_slug' })]);
 	});
 
 	it('reports malformed row', () => {
 		const result = parseWatchlistCsv('only-one-column');
 
 		expect(result.rows).toEqual([]);
-		expect(result.errors).toEqual([
-			expect.objectContaining({ line: 1, code: 'malformed_row' })
-		]);
+		expect(result.errors).toEqual([expect.objectContaining({ line: 1, code: 'malformed_row' })]);
 	});
 
 	it('dedupes duplicate platform+slug (second row error)', () => {
@@ -57,9 +51,7 @@ twitch,ninja
 twitch,ninja`);
 
 		expect(result.rows).toEqual([{ line: 2, platform: 'twitch', slug: 'ninja' }]);
-		expect(result.errors).toEqual([
-			expect.objectContaining({ line: 3, code: 'duplicate_slug', slug: 'ninja' })
-		]);
+		expect(result.errors).toEqual([expect.objectContaining({ line: 3, code: 'duplicate_slug', slug: 'ninja' })]);
 	});
 
 	it('skips blank lines and comments', () => {
@@ -84,8 +76,6 @@ kick,xqc`);
 		const result = parseWatchlistCsv('platform,slug\n,ninja');
 
 		expect(result.rows).toEqual([]);
-		expect(result.errors).toEqual([
-			expect.objectContaining({ line: 2, code: 'missing_platform' })
-		]);
+		expect(result.errors).toEqual([expect.objectContaining({ line: 2, code: 'missing_platform' })]);
 	});
 });

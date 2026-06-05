@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-	escapeLikePattern,
-	normalizeSearchQuery,
-	parseSearchChannelsQuery
-} from '../src/search/channels';
+import { escapeLikePattern, normalizeSearchQuery, parseSearchChannelsQuery } from '../src/search/channels';
 
 describe('searchChannels validation', () => {
 	it('normalizeSearchQuery trims, strips @, collapses whitespace, and lowercases', () => {
@@ -45,7 +41,7 @@ describe('searchChannels validation', () => {
 			platformId: 'twitch',
 			query: 'shroud',
 			limit: 5,
-			language: null
+			language: null,
 		});
 	});
 
@@ -56,7 +52,7 @@ describe('searchChannels validation', () => {
 			platformId: 'kick',
 			query: 'sh',
 			limit: 10,
-			language: 'fr'
+			language: 'fr',
 		});
 	});
 

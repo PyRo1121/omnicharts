@@ -5,12 +5,7 @@
  */
 export type IngestState = 'discovered' | 'tracked' | 'dormant' | 'retired';
 
-export const ingestStates = [
-	'discovered',
-	'tracked',
-	'dormant',
-	'retired'
-] as const satisfies readonly IngestState[];
+export const ingestStates = ['discovered', 'tracked', 'dormant', 'retired'] as const satisfies readonly IngestState[];
 
 /** Channels eligible for rankings and live sampling. */
 export const INGEST_STATE_TRACKED: IngestState = 'tracked';

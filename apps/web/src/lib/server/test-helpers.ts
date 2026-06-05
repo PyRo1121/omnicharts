@@ -23,15 +23,15 @@ export function mockD1Batch(batchResults: MockD1BatchEntry[]): D1Database {
 					duration: 0,
 					size_after: 0,
 					rows_read: 0,
-					rows_written: 0
-				}
-			}) as D1Result
+					rows_written: 0,
+				},
+			}) as D1Result,
 	);
 	return {
 		batch: vi.fn().mockResolvedValue(normalized),
 		prepare: vi.fn().mockReturnValue({
 			bind: vi.fn().mockReturnThis(),
-			all: vi.fn()
-		})
+			all: vi.fn(),
+		}),
 	} as unknown as D1Database;
 }

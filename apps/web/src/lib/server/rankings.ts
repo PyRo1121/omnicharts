@@ -1,9 +1,5 @@
 import { parseRankingPeriod, type PlatformId } from '@omnicharts/domain';
-import {
-	buildRankingsChannelsResponse,
-	formatHoursWatched,
-	type RankingsChannelsResponse
-} from '@omnicharts/rollup';
+import { buildRankingsChannelsResponse, formatHoursWatched, type RankingsChannelsResponse } from '@omnicharts/rollup';
 import { getIngestBaseUrl } from '$lib/server/ingest';
 import type { ServerLoadContext } from '$lib/server/load-context';
 import { webRankingEligibility } from '$lib/server/ranking-env';
@@ -23,7 +19,7 @@ function mapChannelRankingsBody(
 	body: RankingsChannelsResponse,
 	period: RankingPeriod,
 	limit: number,
-	platform: PlatformId
+	platform: PlatformId,
 ): ChannelRankingsLoad {
 	if (!body.items?.length) {
 		return { source: 'live', period, updatedAt: body.updated_at, rows: [] };
@@ -39,8 +35,8 @@ function mapChannelRankingsBody(
 			platform,
 			avatarUrl: item.avatar_url ?? '',
 			metric: formatHoursWatched(item.hours_watched),
-			metricLabel: 'Hours watched'
-		}))
+			metricLabel: 'Hours watched',
+		})),
 	};
 }
 
@@ -56,7 +52,7 @@ async function loadFromD1(
 	period: RankingPeriod,
 	limit: number,
 	cfEnv: ServerLoadContext['cfEnv'],
-	language: string | null
+	language: string | null,
 ): Promise<ChannelRankingsLoad> {
 	const apiPeriod = parseRankingPeriod(periodForApi(period));
 	const eligibility = webRankingEligibility(cfEnv, platform);
@@ -66,7 +62,7 @@ async function loadFromD1(
 		limit,
 		language,
 		minAirtimeMinutes: eligibility.minAirtimeMinutes,
-		minAverageViewers: eligibility.minAverageViewers
+		minAverageViewers: eligibility.minAverageViewers,
 	});
 	return mapChannelRankingsBody(body, period, limit, platform);
 }
@@ -76,13 +72,13 @@ async function loadFromIngest(
 	platform: PlatformId,
 	period: RankingPeriod,
 	limit: number,
-	language: string | null
+	language: string | null,
 ): Promise<ChannelRankingsLoad | null> {
 	const apiPeriod = periodForApi(period);
 	const params = new URLSearchParams({
 		platform,
 		period: apiPeriod,
-		limit: String(limit)
+		limit: String(limit),
 	});
 	if (language) params.set('language', language);
 	const url = `${getIngestBaseUrl()}/v1/rankings/channels?${params}`;
@@ -98,7 +94,7 @@ export async function loadChannelRankings(
 	period: RankingPeriod,
 	limit = 20,
 	mockEnabled = false,
-	language: string | null = null
+	language: string | null = null,
 ): Promise<ChannelRankingsLoad> {
 	if (!supportsRollupChannelRankings(platform)) {
 		return { source: 'live', period, updatedAt: null, rows: [] };

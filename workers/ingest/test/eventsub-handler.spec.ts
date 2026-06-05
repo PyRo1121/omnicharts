@@ -5,27 +5,18 @@ import * as ingestLog from '../src/log';
 
 const secret = 's3cre77890ab';
 
-async function signedRequest(
-	opts: {
-		messageType: string;
-		body: string;
-		messageId?: string;
-		timestamp?: string;
-		tamperSignature?: boolean;
-	}
-): Promise<Request> {
+async function signedRequest(opts: {
+	messageType: string;
+	body: string;
+	messageId?: string;
+	timestamp?: string;
+	tamperSignature?: boolean;
+}): Promise<Request> {
 	const messageId = opts.messageId ?? 'msg-id-1';
-	const timestamp =
-		opts.timestamp ?? new Date().toISOString().replace(/\.\d{3}Z$/, '.000000000Z');
+	const timestamp = opts.timestamp ?? new Date().toISOString().replace(/\.\d{3}Z$/, '.000000000Z');
 	const rawBody = opts.body;
 
-	const key = await crypto.subtle.importKey(
-		'raw',
-		new TextEncoder().encode(secret),
-		{ name: 'HMAC', hash: 'SHA-256' },
-		false,
-		['sign']
-	);
+	const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
 	const message = buildEventSubHmacMessage(messageId, timestamp, rawBody);
 	const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(message));
 	const hex = Array.from(new Uint8Array(sig))
@@ -38,9 +29,9 @@ async function signedRequest(
 			'twitch-eventsub-message-type': opts.messageType,
 			'twitch-eventsub-message-id': messageId,
 			'twitch-eventsub-message-timestamp': timestamp,
-			'twitch-eventsub-message-signature': opts.tamperSignature ? 'sha256=00' : `sha256=${hex}`
+			'twitch-eventsub-message-signature': opts.tamperSignature ? 'sha256=00' : `sha256=${hex}`,
 		},
-		body: rawBody
+		body: rawBody,
 	});
 }
 
@@ -71,11 +62,11 @@ describe('handleTwitchEventSubWebhook', () => {
 								return { id: 'twitch-ch-123' };
 							}
 							return null;
-						}
-					})
+						},
+					}),
 				};
-			}
-		}
+			},
+		},
 	} as unknown as Env;
 
 	beforeEach(() => {
@@ -84,18 +75,12 @@ describe('handleTwitchEventSubWebhook', () => {
 	});
 
 	it('503 when secret missing', async () => {
-		const res = await handleTwitchEventSubWebhook(
-			new Request('http://x', { method: 'POST' }),
-			{} as Env
-		);
+		const res = await handleTwitchEventSubWebhook(new Request('http://x', { method: 'POST' }), {} as Env);
 		expect(res.status).toBe(503);
 	});
 
 	it('400 when headers missing', async () => {
-		const res = await handleTwitchEventSubWebhook(
-			new Request('http://x', { method: 'POST', body: '{}' }),
-			env
-		);
+		const res = await handleTwitchEventSubWebhook(new Request('http://x', { method: 'POST', body: '{}' }), env);
 		expect(res.status).toBe(400);
 	});
 
@@ -111,7 +96,7 @@ describe('handleTwitchEventSubWebhook', () => {
 		const req = await signedRequest({
 			messageType: 'notification',
 			body: '{}',
-			tamperSignature: true
+			tamperSignature: true,
 		});
 		const res = await handleTwitchEventSubWebhook(req, env);
 		expect(res.status).toBe(403);
@@ -125,8 +110,8 @@ describe('handleTwitchEventSubWebhook', () => {
 				broadcaster_user_id: '123',
 				broadcaster_user_login: 'user',
 				broadcaster_user_name: 'User',
-				started_at: '2026-06-01T00:00:00Z'
-			}
+				started_at: '2026-06-01T00:00:00Z',
+			},
 		});
 		const req = await signedRequest({ messageType: 'notification', body });
 		const res = await handleTwitchEventSubWebhook(req, env);
@@ -139,8 +124,8 @@ describe('handleTwitchEventSubWebhook', () => {
 			event: {
 				broadcaster_user_id: '123',
 				broadcaster_user_login: 'user',
-				broadcaster_user_name: 'User'
-			}
+				broadcaster_user_name: 'User',
+			},
 		});
 		const req = await signedRequest({ messageType: 'notification', body });
 		const res = await handleTwitchEventSubWebhook(req, env);
@@ -150,7 +135,7 @@ describe('handleTwitchEventSubWebhook', () => {
 	it('204 for stream.online with invalid event fields', async () => {
 		const body = JSON.stringify({
 			subscription: { type: 'stream.online' },
-			event: { broadcaster_user_id: '123' }
+			event: { broadcaster_user_id: '123' },
 		});
 		const req = await signedRequest({ messageType: 'notification', body });
 		const res = await handleTwitchEventSubWebhook(req, env);
@@ -160,7 +145,7 @@ describe('handleTwitchEventSubWebhook', () => {
 	it('204 for stream.offline with invalid event fields', async () => {
 		const body = JSON.stringify({
 			subscription: { type: 'stream.offline' },
-			event: { broadcaster_user_login: 'user' }
+			event: { broadcaster_user_login: 'user' },
 		});
 		const req = await signedRequest({ messageType: 'notification', body });
 		const res = await handleTwitchEventSubWebhook(req, env);
@@ -170,7 +155,7 @@ describe('handleTwitchEventSubWebhook', () => {
 	it('204 for unknown subscription type', async () => {
 		const body = JSON.stringify({
 			subscription: { type: 'channel.follow' },
-			event: { user_id: '1', broadcaster_user_id: '2' }
+			event: { user_id: '1', broadcaster_user_id: '2' },
 		});
 		const req = await signedRequest({ messageType: 'notification', body });
 		const res = await handleTwitchEventSubWebhook(req, env);
@@ -200,15 +185,15 @@ describe('handleTwitchEventSubWebhook', () => {
 									return value ? { value } : null;
 								}
 								return null;
-							}
-						})
+							},
+						}),
 					};
-				}
-			}
+				},
+			},
 		} as unknown as Env;
 
 		const body = JSON.stringify({
-			subscription: { id: 'sub-revoked-1', status: 'user_removed' }
+			subscription: { id: 'sub-revoked-1', status: 'user_removed' },
 		});
 		const req = await signedRequest({ messageType: 'revocation', body });
 		const res = await handleTwitchEventSubWebhook(req, revokeEnv);
@@ -222,7 +207,7 @@ describe('handleTwitchEventSubWebhook', () => {
 		const req = await signedRequest({
 			messageType: 'notification',
 			body: '{}',
-			timestamp: staleTs
+			timestamp: staleTs,
 		});
 		const res = await handleTwitchEventSubWebhook(req, env);
 		expect(res.status).toBe(403);
@@ -245,31 +230,28 @@ describe('handleTwitchEventSubWebhook', () => {
 		const req = await signedRequest({ messageType: 'notification', body: '{}' });
 		const res = await handleTwitchEventSubWebhook(req, env);
 		expect(res.status).toBe(204);
-		expect(warn).toHaveBeenCalledWith(
-			'EventSub notification dropped: missing subscription type or event',
-			undefined
-		);
+		expect(warn).toHaveBeenCalledWith('EventSub notification dropped: missing subscription type or event', undefined);
 	});
 
 	it('204 and warns for malformed stream.offline notification', async () => {
 		const warn = vi.spyOn(ingestLog, 'ingestWarn').mockImplementation(() => {});
 		const body = JSON.stringify({
 			subscription: { type: 'stream.offline' },
-			event: { broadcaster_user_id: '123' }
+			event: { broadcaster_user_id: '123' },
 		});
 		const req = await signedRequest({ messageType: 'notification', body });
 		const res = await handleTwitchEventSubWebhook(req, env);
 		expect(res.status).toBe(204);
 		expect(warn).toHaveBeenCalledWith(
 			'EventSub notification dropped: malformed stream.offline',
-			expect.objectContaining({ broadcaster_user_id: '123' })
+			expect.objectContaining({ broadcaster_user_id: '123' }),
 		);
 	});
 
 	it('204 for revocation without subscription id', async () => {
 		const req = await signedRequest({
 			messageType: 'revocation',
-			body: JSON.stringify({ subscription: { status: 'authorization_revoked' } })
+			body: JSON.stringify({ subscription: { status: 'authorization_revoked' } }),
 		});
 		const res = await handleTwitchEventSubWebhook(req, env);
 		expect(res.status).toBe(204);
@@ -283,8 +265,8 @@ describe('handleTwitchEventSubWebhook', () => {
 				broadcaster_user_id: '123',
 				broadcaster_user_login: 'user',
 				broadcaster_user_name: 'User',
-				started_at: '2026-06-01T00:00:00Z'
-			}
+				started_at: '2026-06-01T00:00:00Z',
+			},
 		});
 		const first = await signedRequest({ messageType: 'notification', body, messageId: 'dup-1' });
 		expect((await handleTwitchEventSubWebhook(first, env)).status).toBe(204);

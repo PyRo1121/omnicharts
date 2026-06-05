@@ -5,11 +5,7 @@
 
 import { parseQueueBody, type IngestQueueMessage } from './messages';
 import { runTwitchDiscovery } from './twitch/discover';
-import {
-	enqueueTwitchPollShards,
-	runTwitchCatalogPoll,
-	runTwitchPollBatch
-} from './twitch/poll';
+import { enqueueTwitchPollShards, runTwitchCatalogPoll, runTwitchPollBatch } from './twitch/poll';
 import { runTwitchLiveSweep } from './twitch/sweep';
 import { runTwitchCoverageCycle } from './twitch/coverage';
 import { runTwitchGamePass } from './twitch/game-pass';
@@ -30,7 +26,7 @@ import {
 	rankingsGamesCacheKey,
 	rankingsResponseHeaders,
 	setCachedRankingsChannels,
-	setCachedRankingsGames
+	setCachedRankingsGames,
 } from './http/rankings-cache';
 import { ENRICH_MAX_CHANNELS_PER_RUN } from './twitch/config';
 import { runTwitchProfileEnrichment } from './twitch/enrich-profiles';
@@ -38,11 +34,7 @@ import { handleTwitchEventSubWebhook } from './twitch/eventsub/handler';
 import { handleKickWebhook } from './kick/webhook/handler';
 import { syncTwitchEventSubSubscriptions } from './twitch/eventsub/sync';
 import { runDailyRollup } from './rollup/daily-job';
-import {
-	buildIngestHealth,
-	buildPublicHealth,
-	ingestHealthHttpStatus
-} from './health/status';
+import { buildIngestHealth, buildPublicHealth, ingestHealthHttpStatus } from './health/status';
 import {
 	buildRankingsChannelsResponse,
 	channelDetailToCsv,
@@ -51,28 +43,18 @@ import {
 	csvDownloadFilename,
 	gameRankingsToCsv,
 	parseRankingsChannelsQuery,
-	parseResponseFormat
+	parseResponseFormat,
 } from './ranking/channels-api';
-import {
-	buildRankingsGamesResponse,
-	parseRankingsGamesQuery
-} from './ranking/games-api';
-import {
-	buildChannelDetailResponse,
-	parseChannelDetailQuery,
-	resolveChannelSlug
-} from './ranking/channel-api';
-import {
-	buildGameDetailResponse,
-	parseGameDetailQuery
-} from './ranking/game-api';
+import { buildRankingsGamesResponse, parseRankingsGamesQuery } from './ranking/games-api';
+import { buildChannelDetailResponse, parseChannelDetailQuery, resolveChannelSlug } from './ranking/channel-api';
+import { buildGameDetailResponse, parseGameDetailQuery } from './ranking/game-api';
 import { parseSearchChannelsQuery, searchChannelsWithYoutubeSeed } from './search/channels';
 import { PLATFORM_TWITCH } from '@omnicharts/domain';
 import {
 	channelDetailQueryErrorResponse,
 	rankingsChannelsQueryErrorResponse,
 	rankingsGamesQueryErrorResponse,
-	searchQueryErrorResponse
+	searchQueryErrorResponse,
 } from '@omnicharts/rollup';
 import { hasTwitchAppCredentials, twitchAppCredentialsErrorResponse } from './twitch/credentials';
 import { isDevAdminRouteAllowed } from './dev/admin-guard';
@@ -189,7 +171,7 @@ export default {
 		}
 
 		return new Response('OmniCharts ingest', {
-			headers: { 'content-type': 'text/plain; charset=utf-8' }
+			headers: { 'content-type': 'text/plain; charset=utf-8' },
 		});
 	},
 
@@ -199,7 +181,7 @@ export default {
 		ctx.waitUntil(
 			requireIngestQueue(env)
 				.sendBatch(messages.map((body) => ({ body })))
-				.catch((err) => ingestNonFatalError('scheduled sendBatch failed', err))
+				.catch((err) => ingestNonFatalError('scheduled sendBatch failed', err)),
 		);
 	},
 
@@ -219,7 +201,7 @@ export default {
 				message.retry();
 			}
 		}
-	}
+	},
 } satisfies ExportedHandler<Env>;
 
 async function handleQueueMessage(payload: IngestQueueMessage, env: Env): Promise<void> {
@@ -248,7 +230,7 @@ async function handleQueueMessage(payload: IngestQueueMessage, env: Env): Promis
 			if (enrichIds.length > 0) {
 				await runTwitchProfileEnrichment(env, {
 					platformChannelIds: enrichIds,
-					includeFollowers: false
+					includeFollowers: false,
 				});
 			}
 			break;
@@ -259,7 +241,7 @@ async function handleQueueMessage(payload: IngestQueueMessage, env: Env): Promis
 		case 'poll_twitch_enrich':
 			await runTwitchProfileEnrichment(env, {
 				platformChannelIds: payload.platform_channel_ids,
-				includeFollowers: false
+				includeFollowers: false,
 			});
 			break;
 		case 'poll_channel_batch':
@@ -286,7 +268,7 @@ async function handleQueueMessage(payload: IngestQueueMessage, env: Env): Promis
 		case 'vod_backfill_twitch':
 			await runTwitchVodBackfill(env, {
 				platformChannelIds: payload.platform_channel_ids,
-				limit: payload.limit
+				limit: payload.limit,
 			});
 			break;
 	}
@@ -346,8 +328,7 @@ async function adminYoutubePoll(request: Request, env: Env): Promise<Response> {
 	}
 
 	const poll = await runYoutubeCatalogPoll(env);
-	const seed =
-		seedHandles.length > 0 ? await seedYoutubeChannels(env, seedHandles) : { seeded: 0, skipped: 0, errors: 0 };
+	const seed = seedHandles.length > 0 ? await seedYoutubeChannels(env, seedHandles) : { seeded: 0, skipped: 0, errors: 0 };
 	const skipped = poll.skipped === 'NEEDS_API' && seed.seeded === 0;
 
 	return Response.json({ ok: true, poll, seed, skipped });
@@ -434,10 +415,7 @@ async function adminWatchlistImport(request: Request, env: Env): Promise<Respons
 		try {
 			body = (await request.json()) as { csv?: string };
 		} catch {
-			return Response.json(
-				{ error: { code: 'invalid_csv', message: 'Request body must be JSON with csv field' } },
-				{ status: 400 }
-			);
+			return Response.json({ error: { code: 'invalid_csv', message: 'Request body must be JSON with csv field' } }, { status: 400 });
 		}
 		csvText = body.csv?.trim() ?? '';
 	} else {
@@ -445,10 +423,7 @@ async function adminWatchlistImport(request: Request, env: Env): Promise<Respons
 	}
 
 	if (!csvText) {
-		return Response.json(
-			{ error: { code: 'invalid_csv', message: 'CSV body is required' } },
-			{ status: 400 }
-		);
+		return Response.json({ error: { code: 'invalid_csv', message: 'CSV body is required' } }, { status: 400 });
 	}
 
 	const stats = await importWatchlistCsv(env, csvText);
@@ -458,10 +433,10 @@ async function adminWatchlistImport(request: Request, env: Env): Promise<Respons
 				error: {
 					code: 'invalid_csv',
 					message: 'No valid watchlist rows',
-					parse_errors: stats.parse.errors
-				}
+					parse_errors: stats.parse.errors,
+				},
 			},
-			{ status: 400 }
+			{ status: 400 },
 		);
 	}
 
@@ -481,9 +456,7 @@ async function adminTwitchVodBackfill(request: Request, env: Env): Promise<Respo
 			limit?: number;
 		};
 		if (Array.isArray(body.platform_channel_ids)) {
-			platformChannelIds = body.platform_channel_ids.filter(
-				(id): id is string => typeof id === 'string'
-			);
+			platformChannelIds = body.platform_channel_ids.filter((id): id is string => typeof id === 'string');
 		}
 		if (typeof body.limit === 'number' && Number.isFinite(body.limit) && body.limit > 0) {
 			limit = Math.floor(body.limit);
@@ -516,7 +489,7 @@ async function publicRankingsChannels(request: Request, env: Env): Promise<Respo
 		limit: parsed.limit,
 		minAverageViewers: eligibility.minAverageViewers,
 		minAirtimeMinutes: eligibility.minAirtimeMinutes,
-		language: parsed.language
+		language: parsed.language,
 	});
 	if (formatParsed.format === 'json') {
 		const cached = getCachedRankingsChannels(cacheKey);
@@ -531,18 +504,16 @@ async function publicRankingsChannels(request: Request, env: Env): Promise<Respo
 		limit: parsed.limit,
 		language: parsed.language,
 		minAverageViewers: eligibility.minAverageViewers,
-		minAirtimeMinutes: eligibility.minAirtimeMinutes
+		minAirtimeMinutes: eligibility.minAirtimeMinutes,
 	});
 	if (formatParsed.format === 'csv') {
 		const csv = channelRankingsToCsv(body);
 		return new Response(csv, {
 			headers: {
-				...csvAttachmentHeaders(
-					csvDownloadFilename([parsed.platform, 'channels', parsed.period])
-				),
+				...csvAttachmentHeaders(csvDownloadFilename([parsed.platform, 'channels', parsed.period])),
 				...rankingsResponseHeaders(request),
-				'content-type': 'text/csv; charset=utf-8'
-			}
+				'content-type': 'text/csv; charset=utf-8',
+			},
 		});
 	}
 	const json = JSON.stringify(body);
@@ -566,7 +537,7 @@ async function publicRankingsGames(request: Request, env: Env): Promise<Response
 		period: parsed.period,
 		limit: parsed.limit,
 		minAverageViewers: eligibility.minAverageViewers,
-		minAirtimeMinutes: eligibility.minAirtimeMinutes
+		minAirtimeMinutes: eligibility.minAirtimeMinutes,
 	});
 	if (formatParsed.format === 'json') {
 		const cached = getCachedRankingsGames(cacheKey);
@@ -582,8 +553,8 @@ async function publicRankingsGames(request: Request, env: Env): Promise<Response
 			headers: {
 				...csvAttachmentHeaders(csvDownloadFilename([parsed.platform, 'games', parsed.period])),
 				...rankingsResponseHeaders(request),
-				'content-type': 'text/csv; charset=utf-8'
-			}
+				'content-type': 'text/csv; charset=utf-8',
+			},
 		});
 	}
 	const json = JSON.stringify(body);
@@ -613,10 +584,7 @@ async function publicChannelResolve(request: Request, env: Env): Promise<Respons
 	const slug = url.searchParams.get('slug')?.trim() ?? '';
 	const platform = url.searchParams.get('platform') ?? PLATFORM_TWITCH;
 	if (!slug) {
-		return Response.json(
-			{ error: { code: 'bad_request', message: 'slug is required' } },
-			{ status: 400 }
-		);
+		return Response.json({ error: { code: 'bad_request', message: 'slug is required' } }, { status: 400 });
 	}
 	const db = requireDb(env);
 	let resolved = await resolveChannelSlug(db, { platform, slug });
@@ -627,27 +595,20 @@ async function publicChannelResolve(request: Request, env: Env): Promise<Respons
 		}
 	}
 	if (!resolved) {
-		return Response.json(
-			{ error: { code: 'not_found', message: 'Channel not found' } },
-			{ status: 404 }
-		);
+		return Response.json({ error: { code: 'not_found', message: 'Channel not found' } }, { status: 404 });
 	}
 	return Response.json(
 		{ platform, slug: resolved.slug, from_history: resolved.from_history },
 		{
 			headers: {
 				'cache-control': 'public, max-age=300',
-				...corsAllowOrigin(request)
-			}
-		}
+				...corsAllowOrigin(request),
+			},
+		},
 	);
 }
 
-async function publicChannelDetail(
-	request: Request,
-	env: Env,
-	slug: string
-): Promise<Response> {
+async function publicChannelDetail(request: Request, env: Env, slug: string): Promise<Response> {
 	const url = new URL(request.url);
 	url.pathname = `/v1/channels/${slug}`;
 	const query = parseChannelDetailQuery(url);
@@ -661,40 +622,31 @@ async function publicChannelDetail(
 	const body = await buildChannelDetailResponse(requireDb(env), {
 		platform: query.platform,
 		slug: query.slug,
-		period: query.period
+		period: query.period,
 	});
 	if (!body) {
-		return Response.json(
-			{ error: { code: 'not_found', message: 'Channel not found' } },
-			{ status: 404 }
-		);
+		return Response.json({ error: { code: 'not_found', message: 'Channel not found' } }, { status: 404 });
 	}
 	if (formatParsed.format === 'csv') {
 		const csv = channelDetailToCsv(body);
 		return new Response(csv, {
 			headers: {
-				...csvAttachmentHeaders(
-					csvDownloadFilename([body.platform, body.slug, body.period])
-				),
+				...csvAttachmentHeaders(csvDownloadFilename([body.platform, body.slug, body.period])),
 				'cache-control': 'public, max-age=120',
 				'content-type': 'text/csv; charset=utf-8',
-				...corsAllowOrigin(request)
-			}
+				...corsAllowOrigin(request),
+			},
 		});
 	}
 	return Response.json(body, {
 		headers: {
 			'cache-control': 'public, max-age=120',
-			...corsAllowOrigin(request)
-		}
+			...corsAllowOrigin(request),
+		},
 	});
 }
 
-async function publicGameDetail(
-	request: Request,
-	env: Env,
-	slug: string
-): Promise<Response> {
+async function publicGameDetail(request: Request, env: Env, slug: string): Promise<Response> {
 	const url = new URL(request.url);
 	url.pathname = `/v1/games/${slug}`;
 	const query = parseGameDetailQuery(url);
@@ -707,24 +659,21 @@ async function publicGameDetail(
 		{
 			platform: query.platform,
 			slug: query.slug,
-			period: query.period
+			period: query.period,
 		},
 		{
 			minAirtimeMinutes: rankingOpts.minAirtimeMinutes,
-			minAverageViewers: rankingOpts.minAverageViewers
-		}
+			minAverageViewers: rankingOpts.minAverageViewers,
+		},
 	);
 	if (!body) {
-		return Response.json(
-			{ error: { code: 'not_found', message: 'Game not found' } },
-			{ status: 404 }
-		);
+		return Response.json({ error: { code: 'not_found', message: 'Game not found' } }, { status: 404 });
 	}
 	return Response.json(body, {
 		headers: {
 			'cache-control': 'public, max-age=120',
-			...corsAllowOrigin(request)
-		}
+			...corsAllowOrigin(request),
+		},
 	});
 }
 
@@ -738,10 +687,7 @@ async function publicSearchChannels(request: Request, env: Env): Promise<Respons
 		platformId: parsed.platformId,
 		query: parsed.query,
 		limit: parsed.limit,
-		language: parsed.language
+		language: parsed.language,
 	});
-	return Response.json(
-		{ results },
-		{ headers: { 'cache-control': 'private, max-age=30' } }
-	);
+	return Response.json({ results }, { headers: { 'cache-control': 'private, max-age=30' } });
 }

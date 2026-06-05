@@ -23,15 +23,9 @@ function isFresh(entry: DedupEntry): boolean {
 }
 
 /** True when message_id was seen within TTL (safe to ack without re-processing). */
-export async function isDuplicateEventSubMessage(
-	db: D1Database,
-	messageId: string
-): Promise<boolean> {
+export async function isDuplicateEventSubMessage(db: D1Database, messageId: string): Promise<boolean> {
 	const key = keyFor(messageId);
-	const row = await db
-		.prepare(`SELECT value FROM ingest_metadata WHERE key = ?`)
-		.bind(key)
-		.first<{ value: string }>();
+	const row = await db.prepare(`SELECT value FROM ingest_metadata WHERE key = ?`).bind(key).first<{ value: string }>();
 	if (!row?.value) return false;
 	const entry = parseEntry(row.value);
 	if (entry !== null && isFresh(entry)) return true;
@@ -46,7 +40,7 @@ export async function recordEventSubMessageId(db: D1Database, messageId: string)
 	await db
 		.prepare(
 			`INSERT INTO ingest_metadata (key, value) VALUES (?, ?)
-       ON CONFLICT(key) DO UPDATE SET value = excluded.value`
+       ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
 		)
 		.bind(keyFor(messageId), JSON.stringify(payload))
 		.run();

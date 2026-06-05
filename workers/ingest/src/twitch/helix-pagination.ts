@@ -12,7 +12,7 @@ export type HelixPageSlice<T> = {
 export function shouldContinueHelixPagination(
 	streams: unknown[],
 	pagination: HelixPageSlice<unknown>['pagination'],
-	consecutiveEmptyPages: number
+	consecutiveEmptyPages: number,
 ): boolean {
 	const cursor = pagination?.cursor;
 	if (!cursor) return false;

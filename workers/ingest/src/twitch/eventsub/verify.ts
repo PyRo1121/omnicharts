@@ -13,13 +13,10 @@ let cachedKeySecret: string | null = null;
 
 async function importHmacKey(secret: string): Promise<CryptoKey> {
 	if (cachedKey && cachedKeySecret === secret) return cachedKey;
-	const key = await crypto.subtle.importKey(
-		'raw',
-		new TextEncoder().encode(secret),
-		{ name: 'HMAC', hash: 'SHA-256' },
-		false,
-		['sign', 'verify']
-	);
+	const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, [
+		'sign',
+		'verify',
+	]);
 	cachedKey = key;
 	cachedKeySecret = secret;
 	return key;
@@ -35,18 +32,11 @@ function hexToBytes(hex: string): Uint8Array {
 }
 
 /** message_id + timestamp + raw body (string concat order matters). */
-export function buildEventSubHmacMessage(
-	messageId: string,
-	timestamp: string,
-	rawBody: string
-): string {
+export function buildEventSubHmacMessage(messageId: string, timestamp: string, rawBody: string): string {
 	return messageId + timestamp + rawBody;
 }
 
-export function isEventSubTimestampFresh(
-	timestamp: string,
-	maxSkewSeconds = DEFAULT_MAX_SKEW_SECONDS
-): boolean {
+export function isEventSubTimestampFresh(timestamp: string, maxSkewSeconds = DEFAULT_MAX_SKEW_SECONDS): boolean {
 	// Twitch-Eventsub-Message-Timestamp is RFC3339 (contains date-time separator).
 	if (!timestamp.includes('T')) return false;
 	const parsedMs = Date.parse(timestamp);
@@ -69,21 +59,14 @@ export async function verifyTwitchEventSubSignature(opts: {
 	const { secret, messageId, timestamp, signatureHeader, rawBody } = opts;
 	if (!isValidTwitchEventSubSecret(secret)) return false;
 
-	const hex = signatureHeader.startsWith(HMAC_PREFIX)
-		? signatureHeader.slice(HMAC_PREFIX.length)
-		: signatureHeader;
+	const hex = signatureHeader.startsWith(HMAC_PREFIX) ? signatureHeader.slice(HMAC_PREFIX.length) : signatureHeader;
 	const signatureBytes = hexToBytes(hex);
 	if (signatureBytes.length === 0) return false;
 
 	const message = buildEventSubHmacMessage(messageId, timestamp, rawBody);
 	const key = await importHmacKey(secret);
 
-	return crypto.subtle.verify(
-		'HMAC',
-		key,
-		signatureBytes,
-		new TextEncoder().encode(message)
-	);
+	return crypto.subtle.verify('HMAC', key, signatureBytes, new TextEncoder().encode(message));
 }
 
 export function clearEventSubKeyCacheForTests(): void {

@@ -62,7 +62,7 @@ Read this file first. **Documentation is the source of truth** — update docs b
 bun run verify:twitch
 ```
 
-Runs ingest unit tests + Twitch/DB coverage, web server-load Vitest, ingest health check, `twitch:checkpoint --no-start-ingest`, then `check:web` and `build:web`. Start local ingest first: `bun run dev:ingest`.
+Runs ingest unit tests + Twitch/DB coverage, web server-load Vitest, `lint` + `format:check`, ingest health check, `twitch:checkpoint --no-start-ingest`, then `check:web` and `build:web`. Start local ingest first: `bun run dev:ingest`.
 
 See [docs/13-testing-and-verification.md](./docs/13-testing-and-verification.md).
 

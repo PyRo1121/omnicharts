@@ -8,16 +8,10 @@ import {
 	shouldColdArchive,
 	type ChannelRollupArchiveRow,
 	type GameRollupArchiveRow,
-	type ViewerSampleArchiveRow
+	type ViewerSampleArchiveRow,
 } from '../r2/cold-archive';
-import {
-	DAILY_ROLLUP_DELETE_BATCH_SIZE,
-	dailyRollupRetentionCutoffDate
-} from './prune-rollups';
-import {
-	VIEWER_SAMPLE_DELETE_BATCH_SIZE,
-	viewerSampleRetentionCutoffIso
-} from './prune-samples';
+import { DAILY_ROLLUP_DELETE_BATCH_SIZE, dailyRollupRetentionCutoffDate } from './prune-rollups';
+import { VIEWER_SAMPLE_DELETE_BATCH_SIZE, viewerSampleRetentionCutoffIso } from './prune-samples';
 import { pruneDailyRollupsOlderThanRetention } from './prune-rollups';
 import { pruneViewerSamplesOlderThanRetention } from './prune-samples';
 
@@ -29,11 +23,7 @@ export type RetentionWithColdArchiveStats = {
 
 type SampleRowWithId = ViewerSampleArchiveRow & { id: number };
 
-async function fetchPrunableViewerSamples(
-	db: D1Database,
-	cutoff: string,
-	limit: number
-): Promise<SampleRowWithId[]> {
+async function fetchPrunableViewerSamples(db: D1Database, cutoff: string, limit: number): Promise<SampleRowWithId[]> {
 	const { results } = await db
 		.prepare(
 			`SELECT vs.id, vs.stream_session_id, vs.sampled_at, vs.viewer_count,
@@ -43,7 +33,7 @@ async function fetchPrunableViewerSamples(
        INNER JOIN channels c ON c.id = ss.channel_id
        WHERE vs.sampled_at < ?
        ORDER BY vs.id ASC
-       LIMIT ?`
+       LIMIT ?`,
 		)
 		.bind(cutoff, limit)
 		.all<SampleRowWithId>();
@@ -60,11 +50,7 @@ async function deleteViewerSamplesById(db: D1Database, ids: number[]): Promise<n
 	return result.meta?.changes ?? 0;
 }
 
-async function archiveAndPruneViewerSamples(
-	db: D1Database,
-	env: Env,
-	now: Date
-): Promise<number> {
+async function archiveAndPruneViewerSamples(db: D1Database, env: Env, now: Date): Promise<number> {
 	const cutoff = viewerSampleRetentionCutoffIso(now);
 	let totalDeleted = 0;
 
@@ -76,7 +62,7 @@ async function archiveAndPruneViewerSamples(
 
 		const deleted = await deleteViewerSamplesById(
 			db,
-			rows.map((r) => r.id)
+			rows.map((r) => r.id),
 		);
 		totalDeleted += deleted;
 		if (rows.length < VIEWER_SAMPLE_DELETE_BATCH_SIZE) break;
@@ -85,11 +71,7 @@ async function archiveAndPruneViewerSamples(
 	return totalDeleted;
 }
 
-async function fetchPrunableChannelRollups(
-	db: D1Database,
-	cutoff: string,
-	limit: number
-): Promise<ChannelRollupRowWithId[]> {
+async function fetchPrunableChannelRollups(db: D1Database, cutoff: string, limit: number): Promise<ChannelRollupRowWithId[]> {
 	const { results } = await db
 		.prepare(
 			`SELECT rowid, channel_id, date, hours_watched, average_viewers, peak_viewers,
@@ -97,7 +79,7 @@ async function fetchPrunableChannelRollups(
        FROM channel_daily_rollups
        WHERE date < ?
        ORDER BY date ASC, channel_id ASC
-       LIMIT ?`
+       LIMIT ?`,
 		)
 		.bind(cutoff, limit)
 		.all<ChannelRollupRowWithId>();
@@ -110,7 +92,7 @@ type ChannelRollupRowWithId = ChannelRollupArchiveRow & { rowid: number };
 async function deleteRollupsByRowid(
 	db: D1Database,
 	table: 'channel_daily_rollups' | 'game_daily_rollups',
-	rowids: number[]
+	rowids: number[],
 ): Promise<number> {
 	if (rowids.length === 0) return 0;
 	const result = await db
@@ -120,11 +102,7 @@ async function deleteRollupsByRowid(
 	return result.meta?.changes ?? 0;
 }
 
-async function archiveAndPruneChannelRollups(
-	db: D1Database,
-	env: Env,
-	now: Date
-): Promise<number> {
+async function archiveAndPruneChannelRollups(db: D1Database, env: Env, now: Date): Promise<number> {
 	const cutoff = dailyRollupRetentionCutoffDate(now);
 	let totalDeleted = 0;
 
@@ -135,13 +113,13 @@ async function archiveAndPruneChannelRollups(
 		await archiveRowsToColdStorage(
 			env,
 			'channel_daily_rollups',
-			rows.map(({ rowid: _rowid, ...row }) => row)
+			rows.map(({ rowid: _rowid, ...row }) => row),
 		);
 
 		totalDeleted += await deleteRollupsByRowid(
 			db,
 			'channel_daily_rollups',
-			rows.map((r) => r.rowid)
+			rows.map((r) => r.rowid),
 		);
 		if (rows.length < DAILY_ROLLUP_DELETE_BATCH_SIZE) break;
 	}
@@ -149,11 +127,7 @@ async function archiveAndPruneChannelRollups(
 	return totalDeleted;
 }
 
-async function fetchPrunableGameRollups(
-	db: D1Database,
-	cutoff: string,
-	limit: number
-): Promise<GameRollupRowWithId[]> {
+async function fetchPrunableGameRollups(db: D1Database, cutoff: string, limit: number): Promise<GameRollupRowWithId[]> {
 	const { results } = await db
 		.prepare(
 			`SELECT rowid, game_category_id, date, hours_watched, average_viewers, peak_viewers,
@@ -161,7 +135,7 @@ async function fetchPrunableGameRollups(
        FROM game_daily_rollups
        WHERE date < ?
        ORDER BY date ASC, game_category_id ASC
-       LIMIT ?`
+       LIMIT ?`,
 		)
 		.bind(cutoff, limit)
 		.all<GameRollupRowWithId>();
@@ -171,11 +145,7 @@ async function fetchPrunableGameRollups(
 
 type GameRollupRowWithId = GameRollupArchiveRow & { rowid: number };
 
-async function archiveAndPruneGameRollups(
-	db: D1Database,
-	env: Env,
-	now: Date
-): Promise<number> {
+async function archiveAndPruneGameRollups(db: D1Database, env: Env, now: Date): Promise<number> {
 	const cutoff = dailyRollupRetentionCutoffDate(now);
 	let totalDeleted = 0;
 
@@ -186,13 +156,13 @@ async function archiveAndPruneGameRollups(
 		await archiveRowsToColdStorage(
 			env,
 			'game_daily_rollups',
-			rows.map(({ rowid: _rowid, ...row }) => row)
+			rows.map(({ rowid: _rowid, ...row }) => row),
 		);
 
 		totalDeleted += await deleteRollupsByRowid(
 			db,
 			'game_daily_rollups',
-			rows.map((r) => r.rowid)
+			rows.map((r) => r.rowid),
 		);
 		if (rows.length < DAILY_ROLLUP_DELETE_BATCH_SIZE) break;
 	}
@@ -203,10 +173,7 @@ async function archiveAndPruneGameRollups(
 /**
  * Prune hot-window tables; archive to R2 Parquet first when COLD_ARCHIVE_ENABLED=1.
  */
-export async function runRetentionWithColdArchive(
-	env: Env,
-	now = new Date()
-): Promise<RetentionWithColdArchiveStats> {
+export async function runRetentionWithColdArchive(env: Env, now = new Date()): Promise<RetentionWithColdArchiveStats> {
 	const db = env.DB;
 	if (!db) {
 		return { viewerSamplesPruned: 0, channelRollupsPruned: 0, gameRollupsPruned: 0 };
@@ -224,6 +191,6 @@ export async function runRetentionWithColdArchive(
 	return {
 		viewerSamplesPruned,
 		channelRollupsPruned: rollupResult.channelRows,
-		gameRollupsPruned: rollupResult.gameRows
+		gameRollupsPruned: rollupResult.gameRows,
 	};
 }

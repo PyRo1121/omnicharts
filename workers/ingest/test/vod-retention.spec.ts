@@ -3,7 +3,7 @@ import {
 	isVideoWithinRetention,
 	parseIso8601DurationMs,
 	vodRetentionDaysForBroadcasterType,
-	vodSessionTimes
+	vodSessionTimes,
 } from '../src/twitch/vod-retention';
 
 describe('vodRetentionDaysForBroadcasterType', () => {
@@ -26,15 +26,11 @@ describe('isVideoWithinRetention', () => {
 	const now = Date.parse('2026-06-05T12:00:00.000Z');
 
 	it('accepts video inside partner window', () => {
-		expect(
-			isVideoWithinRetention('2026-05-10T00:00:00.000Z', 60, now)
-		).toBe(true);
+		expect(isVideoWithinRetention('2026-05-10T00:00:00.000Z', 60, now)).toBe(true);
 	});
 
 	it('rejects video outside default window', () => {
-		expect(
-			isVideoWithinRetention('2026-05-20T00:00:00.000Z', 7, now)
-		).toBe(false);
+		expect(isVideoWithinRetention('2026-05-20T00:00:00.000Z', 7, now)).toBe(false);
 	});
 
 	it('rejects invalid published_at', () => {
@@ -54,10 +50,7 @@ describe('parseIso8601DurationMs', () => {
 
 describe('vodSessionTimes', () => {
 	it('derives ended_at from duration', () => {
-		const times = vodSessionTimes(
-			{ created_at: '2026-06-01T10:00:00.000Z', duration: 'PT2H30M' },
-			Date.parse('2026-06-05T12:00:00.000Z')
-		);
+		const times = vodSessionTimes({ created_at: '2026-06-01T10:00:00.000Z', duration: 'PT2H30M' }, Date.parse('2026-06-05T12:00:00.000Z'));
 		expect(times.started_at).toBe('2026-06-01T10:00:00.000Z');
 		expect(times.ended_at).toBe('2026-06-01T12:30:00.000Z');
 	});

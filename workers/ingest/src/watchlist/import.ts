@@ -1,9 +1,4 @@
-import {
-	PLATFORM_KICK,
-	PLATFORM_TWITCH,
-	PLATFORM_YOUTUBE,
-	type PlatformId
-} from '@omnicharts/domain';
+import { PLATFORM_KICK, PLATFORM_TWITCH, PLATFORM_YOUTUBE, type PlatformId } from '@omnicharts/domain';
 import { hasTwitchAppCredentials } from '../twitch/credentials';
 import { TwitchHelixClient } from '../twitch/helix';
 import { KickPublicApiClient } from '../kick/api';
@@ -14,13 +9,7 @@ import { seedYoutubeChannelByQuery, youtubeSeedNeedsApiReason } from '../youtube
 import { parseWatchlistCsv, type ParseWatchlistCsvResult, type WatchlistCsvRow } from './csv';
 import { upsertKickChannelFromLookup, upsertTwitchChannelFromUser } from './upsert';
 
-export type WatchlistImportRowStatus =
-	| 'imported'
-	| 'promoted'
-	| 'skipped'
-	| 'not_found'
-	| 'needs_api'
-	| 'error';
+export type WatchlistImportRowStatus = 'imported' | 'promoted' | 'skipped' | 'not_found' | 'needs_api' | 'error';
 
 export type WatchlistImportRowResult = {
 	line: number;
@@ -71,7 +60,7 @@ function emptyStats(parse: ParseWatchlistCsvResult): WatchlistImportStats {
 		errors: 0,
 		parse_errors: parse.errors.length,
 		parse,
-		results: []
+		results: [],
 	};
 }
 
@@ -91,23 +80,19 @@ async function importTwitchRow(env: Env, row: WatchlistCsvRow): Promise<Watchlis
 				platform: row.platform,
 				slug: row.slug,
 				status: 'not_found',
-				message: 'Helix user not found'
+				message: 'Helix user not found',
 			};
 		}
 
 		const upsert = await upsertTwitchChannelFromUser(requireDb(env), user);
-		const status: WatchlistImportRowStatus = upsert.skipped
-			? 'skipped'
-			: upsert.promoted
-				? 'promoted'
-				: 'imported';
+		const status: WatchlistImportRowStatus = upsert.skipped ? 'skipped' : upsert.promoted ? 'promoted' : 'imported';
 
 		return {
 			line: row.line,
 			platform: row.platform,
 			slug: row.slug,
 			status,
-			channel_id: upsert.channelId
+			channel_id: upsert.channelId,
 		};
 	} catch (err) {
 		ingestWarn('[watchlist] twitch import failed', row.slug, err);
@@ -116,7 +101,7 @@ async function importTwitchRow(env: Env, row: WatchlistCsvRow): Promise<Watchlis
 			platform: row.platform,
 			slug: row.slug,
 			status: 'error',
-			message: err instanceof Error ? err.message : 'import failed'
+			message: err instanceof Error ? err.message : 'import failed',
 		};
 	}
 }
@@ -137,23 +122,19 @@ async function importKickRow(env: Env, row: WatchlistCsvRow): Promise<WatchlistI
 				platform: row.platform,
 				slug: row.slug,
 				status: 'not_found',
-				message: 'Kick channel not found'
+				message: 'Kick channel not found',
 			};
 		}
 
 		const upsert = await upsertKickChannelFromLookup(requireDb(env), channel);
-		const status: WatchlistImportRowStatus = upsert.skipped
-			? 'skipped'
-			: upsert.promoted
-				? 'promoted'
-				: 'imported';
+		const status: WatchlistImportRowStatus = upsert.skipped ? 'skipped' : upsert.promoted ? 'promoted' : 'imported';
 
 		return {
 			line: row.line,
 			platform: row.platform,
 			slug: row.slug,
 			status,
-			channel_id: upsert.channelId
+			channel_id: upsert.channelId,
 		};
 	} catch (err) {
 		ingestWarn('[watchlist] kick import failed', row.slug, err);
@@ -162,7 +143,7 @@ async function importKickRow(env: Env, row: WatchlistCsvRow): Promise<WatchlistI
 			platform: row.platform,
 			slug: row.slug,
 			status: 'error',
-			message: err instanceof Error ? err.message : 'import failed'
+			message: err instanceof Error ? err.message : 'import failed',
 		};
 	}
 }
@@ -178,7 +159,7 @@ async function importYoutubeRow(env: Env, row: WatchlistCsvRow): Promise<Watchli
 		const existing = await db
 			.prepare(
 				`SELECT id, ingest_state FROM channels
-         WHERE platform_id = ? AND lower(slug) = lower(?)`
+         WHERE platform_id = ? AND lower(slug) = lower(?)`,
 			)
 			.bind(PLATFORM_YOUTUBE, row.slug)
 			.first<{ id: string; ingest_state: string }>();
@@ -189,7 +170,7 @@ async function importYoutubeRow(env: Env, row: WatchlistCsvRow): Promise<Watchli
 				platform: row.platform,
 				slug: row.slug,
 				status: 'skipped',
-				channel_id: existing.id
+				channel_id: existing.id,
 			};
 		}
 
@@ -201,7 +182,7 @@ async function importYoutubeRow(env: Env, row: WatchlistCsvRow): Promise<Watchli
 				platform: row.platform,
 				slug: row.slug,
 				status: 'not_found',
-				message: 'YouTube channel not found'
+				message: 'YouTube channel not found',
 			};
 		}
 
@@ -210,7 +191,7 @@ async function importYoutubeRow(env: Env, row: WatchlistCsvRow): Promise<Watchli
 			platform: row.platform,
 			slug: row.slug,
 			status: wasDiscovered ? 'promoted' : 'imported',
-			channel_id: seeded.id
+			channel_id: seeded.id,
 		};
 	} catch (err) {
 		ingestWarn('[watchlist] youtube import failed', row.slug, err);
@@ -219,15 +200,12 @@ async function importYoutubeRow(env: Env, row: WatchlistCsvRow): Promise<Watchli
 			platform: row.platform,
 			slug: row.slug,
 			status: 'error',
-			message: err instanceof Error ? err.message : 'import failed'
+			message: err instanceof Error ? err.message : 'import failed',
 		};
 	}
 }
 
-export async function importWatchlistRows(
-	env: Env,
-	rows: WatchlistCsvRow[]
-): Promise<WatchlistImportStats> {
+export async function importWatchlistRows(env: Env, rows: WatchlistCsvRow[]): Promise<WatchlistImportStats> {
 	const parse: ParseWatchlistCsvResult = { rows, errors: [] };
 	const results: WatchlistImportRowResult[] = [];
 	const stats = emptyStats(parse);
@@ -250,7 +228,7 @@ export async function importWatchlistRows(
 					platform: row.platform,
 					slug: row.slug,
 					status: 'error',
-					message: 'unsupported platform'
+					message: 'unsupported platform',
 				};
 		}
 		results.push(result);

@@ -12,29 +12,23 @@ const stream: HelixStream = {
 	title: 'T',
 	viewer_count: 100,
 	started_at: '2026-06-01T00:00:00Z',
-	type: 'live'
+	type: 'live',
 };
 
 vi.mock('../src/db/twitch', () => ({
 	batchUpsertGameCategories: vi.fn().mockResolvedValue(new Map([['509658', 'twitch-game-509658']])),
-	batchUpsertChannelsFromStreams: vi
-		.fn()
-		.mockResolvedValue(new Map([['2', 'twitch-ch-2']])),
+	batchUpsertChannelsFromStreams: vi.fn().mockResolvedValue(new Map([['2', 'twitch-ch-2']])),
 	batchRecordLiveSamples: vi.fn().mockResolvedValue([
 		{
 			stream_session_id: 'sess',
 			sampled_at: '2026-06-01T00:00:00Z',
 			viewer_count: 100,
-			platform: 'twitch'
-		}
-	])
+			platform: 'twitch',
+		},
+	]),
 }));
 
-import {
-	batchRecordLiveSamples,
-	batchUpsertChannelsFromStreams,
-	batchUpsertGameCategories
-} from '../src/db/twitch';
+import { batchRecordLiveSamples, batchUpsertChannelsFromStreams, batchUpsertGameCategories } from '../src/db/twitch';
 
 describe('ingestHelixStream ordering', () => {
 	beforeEach(() => {
@@ -45,22 +39,18 @@ describe('ingestHelixStream ordering', () => {
 		const env = { DB: {} } as Env;
 		await ingestHelixStream(env, stream, 20);
 
-		expect(batchUpsertGameCategories).toHaveBeenCalledBefore(
-			batchUpsertChannelsFromStreams as never
-		);
-		expect(batchUpsertChannelsFromStreams).toHaveBeenCalledBefore(
-			batchRecordLiveSamples as never
-		);
+		expect(batchUpsertGameCategories).toHaveBeenCalledBefore(batchUpsertChannelsFromStreams as never);
+		expect(batchUpsertChannelsFromStreams).toHaveBeenCalledBefore(batchRecordLiveSamples as never);
 		expect(batchRecordLiveSamples).toHaveBeenCalledWith(
 			env.DB,
 			[
 				{
 					channelId: 'twitch-ch-2',
 					stream,
-					gameCategoryId: 'twitch-game-509658'
-				}
+					gameCategoryId: 'twitch-game-509658',
+				},
 			],
-			expect.objectContaining({ scope: 'ingest:samples' })
+			expect.objectContaining({ scope: 'ingest:samples' }),
 		);
 	});
 });

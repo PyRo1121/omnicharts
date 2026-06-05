@@ -3,7 +3,7 @@ import {
 	compareQueryErrorResponse,
 	rankingsChannelsQueryErrorResponse,
 	rankingsGamesQueryErrorResponse,
-	searchQueryErrorResponse
+	searchQueryErrorResponse,
 } from '../src/api-errors';
 
 describe('api-errors', () => {
@@ -14,8 +14,8 @@ describe('api-errors', () => {
 		expect(body).toEqual({
 			error: {
 				code: 'invalid_period',
-				message: 'period must be one of 24h, 7d, 30d, 90d'
-			}
+				message: 'period must be one of 24h, 7d, 30d, 90d',
+			},
 		});
 	});
 

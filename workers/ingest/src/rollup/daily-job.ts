@@ -1,14 +1,9 @@
-import {
-	queryTopChannelsByHoursWatched,
-	queryTopGamesByAverageViewers,
-	rankingQueryOptionsFromEnv
-} from '../ranking/rollup-queries';
 import { markChannelsDormantWithoutRecentActivity } from '../db/channel-state';
 import {
 	computeFollowersDelta,
 	fetchFollowerCountsByChannelId,
 	fetchPriorFollowerSnapshots,
-	storeFollowerSnapshots
+	storeFollowerSnapshots,
 } from '../db/follower-snapshots';
 import { runRetentionWithColdArchive } from '../db/cold-archive';
 import { D1_BATCH_MAX_STATEMENTS } from '../db/d1-batch';
@@ -44,7 +39,7 @@ export function resolveRollupDate(explicit?: string): string {
 function rowsToPoints(rows: SampleRow[]): ViewerSamplePoint[] {
 	return rows.map((r) => ({
 		sampledAtMs: Date.parse(r.sampled_at),
-		viewerCount: r.viewer_count
+		viewerCount: r.viewer_count,
 	}));
 }
 
@@ -58,7 +53,7 @@ async function fetchSamplesForDate(db: D1Database, date: string): Promise<Sample
        FROM viewer_samples vs
        INNER JOIN stream_sessions ss ON ss.id = vs.stream_session_id
        WHERE vs.sampled_at >= ? AND vs.sampled_at < ?
-       ORDER BY vs.sampled_at ASC`
+       ORDER BY vs.sampled_at ASC`,
 		)
 		.bind(dayStart, dayEndExclusive)
 		.all<SampleRow>();
@@ -71,7 +66,7 @@ export function prepareChannelDailyRollup(
 	channelId: string,
 	date: string,
 	metrics: ReturnType<typeof combineSessionMetrics>,
-	followersDelta: number | null = null
+	followersDelta: number | null = null,
 ): D1PreparedStatement {
 	return db
 		.prepare(
@@ -85,7 +80,7 @@ export function prepareChannelDailyRollup(
          peak_viewers = excluded.peak_viewers,
          airtime_minutes = excluded.airtime_minutes,
          stream_count = excluded.stream_count,
-         followers_delta = excluded.followers_delta`
+         followers_delta = excluded.followers_delta`,
 		)
 		.bind(
 			channelId,
@@ -95,7 +90,7 @@ export function prepareChannelDailyRollup(
 			metrics.peakViewers,
 			metrics.airtimeMinutes,
 			metrics.streamCount,
-			followersDelta
+			followersDelta,
 		);
 }
 
@@ -104,7 +99,7 @@ export async function upsertChannelDailyRollup(
 	channelId: string,
 	date: string,
 	metrics: ReturnType<typeof combineSessionMetrics>,
-	followersDelta: number | null = null
+	followersDelta: number | null = null,
 ): Promise<void> {
 	await prepareChannelDailyRollup(db, channelId, date, metrics, followersDelta).run();
 }
@@ -119,7 +114,7 @@ export function prepareGameDailyRollup(
 		peakViewers: number;
 		airtimeMinutes: number;
 		liveChannels: number;
-	}
+	},
 ): D1PreparedStatement {
 	return db
 		.prepare(
@@ -132,7 +127,7 @@ export function prepareGameDailyRollup(
          average_viewers = excluded.average_viewers,
          peak_viewers = excluded.peak_viewers,
          airtime_minutes = excluded.airtime_minutes,
-         live_channels = excluded.live_channels`
+         live_channels = excluded.live_channels`,
 		)
 		.bind(
 			gameCategoryId,
@@ -141,7 +136,7 @@ export function prepareGameDailyRollup(
 			metrics.averageViewers,
 			metrics.peakViewers,
 			metrics.airtimeMinutes,
-			metrics.liveChannels
+			metrics.liveChannels,
 		);
 }
 
@@ -155,7 +150,7 @@ export async function upsertGameDailyRollup(
 		peakViewers: number;
 		airtimeMinutes: number;
 		liveChannels: number;
-	}
+	},
 ): Promise<void> {
 	await prepareGameDailyRollup(db, gameCategoryId, date, metrics).run();
 }
@@ -234,7 +229,7 @@ export async function runDailyRollup(env: Env, dateOverride?: string): Promise<R
 			const combined = combineSessionMetrics(sessions);
 			return prepareGameDailyRollup(db, gameId, date, {
 				...combined,
-				liveChannels: gameChannels.get(gameId)?.size ?? 0
+				liveChannels: gameChannels.get(gameId)?.size ?? 0,
 			});
 		});
 		const batchResult = await db.batch(statements);
@@ -244,10 +239,11 @@ export async function runDailyRollup(env: Env, dateOverride?: string): Promise<R
 		}
 	}
 
-	const metadataResult = await db.prepare(
-		`INSERT INTO ingest_metadata (key, value) VALUES ('last_rollup_at', ?)
-     ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-	)
+	const metadataResult = await db
+		.prepare(
+			`INSERT INTO ingest_metadata (key, value) VALUES ('last_rollup_at', ?)
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
+		)
 		.bind(new Date().toISOString())
 		.run();
 
@@ -261,12 +257,8 @@ export async function runDailyRollup(env: Env, dateOverride?: string): Promise<R
 		date,
 		channelsProcessed: channelSessions.size,
 		gameCategoriesProcessed: gameSessions.size,
-		viewerSamplesPruned: retention.viewerSamplesPruned
+		viewerSamplesPruned: retention.viewerSamplesPruned,
 	};
 }
 
-export {
-	queryTopChannelsByHoursWatched,
-	queryTopGamesByAverageViewers,
-	rankingQueryOptionsFromEnv
-} from '../ranking/rollup-queries';
+export { queryTopChannelsByHoursWatched, queryTopGamesByAverageViewers, rankingQueryOptionsFromEnv } from '../ranking/rollup-queries';

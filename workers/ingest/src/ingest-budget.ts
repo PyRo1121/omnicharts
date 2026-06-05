@@ -6,12 +6,7 @@
  */
 
 import type { IngestQueueMessage } from './messages';
-import {
-	ingestCoverageModeFromEnv,
-	maxTrackedFromEnv,
-	STREAMS_BATCH_SIZE,
-	type IngestCoverageMode
-} from './twitch/config';
+import { ingestCoverageModeFromEnv, maxTrackedFromEnv, STREAMS_BATCH_SIZE, type IngestCoverageMode } from './twitch/config';
 import { coverageMessagesForPlatform } from './platform-coverage';
 
 export const INGEST_PLATFORMS = ['twitch', 'kick', 'youtube'] as const;
@@ -27,14 +22,14 @@ export const PAID_D1_WRITES_PER_DAY_TARGET = 1_200_000;
 export const PLATFORM_BUDGET_SHARE: Record<IngestPlatform, number> = {
 	twitch: 0.55,
 	kick: 0.25,
-	youtube: 0.2
+	youtube: 0.2,
 };
 
 /** Queue messages per cron tick (coverage enqueued directly — no poll_platform hop). */
 export const PLATFORM_QUEUE_FANOUT: Record<IngestPlatform, number> = {
 	twitch: 2,
 	kick: 1,
-	youtube: 1
+	youtube: 1,
 };
 
 export const QUEUE_OPS_INCLUDED_PAID_MONTH = 1_000_000;
@@ -86,7 +81,7 @@ export function twitchCronEnqueueMessages(env: Env): IngestQueueMessage[] {
 export const PLATFORM_LIVE_STREAM_CAP: Record<IngestPlatform, number> = {
 	twitch: 500,
 	kick: 120,
-	youtube: 80
+	youtube: 80,
 };
 
 /** D1 rows written per live sample (order of magnitude). */
@@ -114,10 +109,7 @@ export function platformBudgetShare(platform: IngestPlatform): number {
 	return PLATFORM_BUDGET_SHARE[platform];
 }
 
-export function d1WritesBudgetPerDay(
-	platform: IngestPlatform,
-	totalDaily = PAID_D1_WRITES_PER_DAY_TARGET
-): number {
+export function d1WritesBudgetPerDay(platform: IngestPlatform, totalDaily = PAID_D1_WRITES_PER_DAY_TARGET): number {
 	return Math.floor(totalDaily * platformBudgetShare(platform));
 }
 
@@ -133,10 +125,7 @@ export function plannedLiveStreamCap(platform: IngestPlatform): number {
 }
 
 export function kickYoutubePollMessages(): IngestQueueMessage[] {
-	return [
-		{ type: 'poll_kick_tracked' },
-		{ type: 'poll_youtube_tracked' }
-	];
+	return [{ type: 'poll_kick_tracked' }, { type: 'poll_youtube_tracked' }];
 }
 
 /** Every-2-min kick+youtube cron — one tracked-poll message each. */
@@ -179,12 +168,9 @@ export function estimateIngestQueueBudget(input: IngestQueueBudgetInput): Ingest
 
 	const twitchPerTick = queueFanoutMessagesPerPoll('twitch') + enrich;
 	const twitchMessagesPerDay = input.twitchCronTicksPerDay * twitchPerTick;
-	const kickMessagesPerDay =
-		input.multiPlatformCronTicksPerDay * queueFanoutMessagesPerPoll('kick');
-	const youtubeMessagesPerDay =
-		input.multiPlatformCronTicksPerDay * queueFanoutMessagesPerPoll('youtube');
-	const totalMessagesPerDay =
-		twitchMessagesPerDay + kickMessagesPerDay + youtubeMessagesPerDay + discover + rollup;
+	const kickMessagesPerDay = input.multiPlatformCronTicksPerDay * queueFanoutMessagesPerPoll('kick');
+	const youtubeMessagesPerDay = input.multiPlatformCronTicksPerDay * queueFanoutMessagesPerPoll('youtube');
+	const totalMessagesPerDay = twitchMessagesPerDay + kickMessagesPerDay + youtubeMessagesPerDay + discover + rollup;
 	const queueOpsPerDay = totalMessagesPerDay * opsPerMsg;
 	const queueOpsPerMonth = queueOpsPerDay * 30;
 
@@ -200,6 +186,6 @@ export function estimateIngestQueueBudget(input: IngestQueueBudgetInput): Ingest
 		totalMessagesPerDay,
 		queueOpsPerDay,
 		queueOpsPerMonth,
-		d1WritesPerDay
+		d1WritesPerDay,
 	};
 }

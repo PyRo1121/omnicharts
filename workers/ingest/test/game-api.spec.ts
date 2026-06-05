@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-	buildGameDetailResponse,
-	buildGameTopChannels,
-	parseGameDetailQuery
-} from '../src/ranking/game-api';
+import { buildGameDetailResponse, buildGameTopChannels, parseGameDetailQuery } from '../src/ranking/game-api';
 
 describe('parseGameDetailQuery', () => {
 	it('parses slug from path and defaults', () => {
@@ -22,15 +18,15 @@ describe('buildGameDetailResponse', () => {
 		const db = {
 			prepare() {
 				return {
-					bind: () => ({ first: async () => null })
+					bind: () => ({ first: async () => null }),
 				};
-			}
+			},
 		} as unknown as D1Database;
 
 		const res = await buildGameDetailResponse(db, {
 			platform: 'twitch',
 			slug: 'missing',
-			period: '7d'
+			period: '7d',
 		});
 		expect(res).toBeNull();
 	});
@@ -44,9 +40,9 @@ describe('buildGameDetailResponse', () => {
 							first: async () => ({
 								id: 'game-1',
 								slug: 'valorant',
-								name: 'VALORANT'
-							})
-						})
+								name: 'VALORANT',
+							}),
+						}),
 					};
 				}
 				if (sql.includes('game_daily_rollups')) {
@@ -60,7 +56,7 @@ describe('buildGameDetailResponse', () => {
 										average_viewers: 50,
 										peak_viewers: 200,
 										airtime_minutes: 600,
-										live_channels: 10
+										live_channels: 10,
 									},
 									{
 										date: '2026-05-30',
@@ -68,21 +64,21 @@ describe('buildGameDetailResponse', () => {
 										average_viewers: 80,
 										peak_viewers: 300,
 										airtime_minutes: 300,
-										live_channels: 15
-									}
-								]
-							})
-						})
+										live_channels: 15,
+									},
+								],
+							}),
+						}),
 					};
 				}
 				return { bind: () => ({ first: async () => null, all: async () => ({}) }) };
-			}
+			},
 		} as unknown as D1Database;
 
 		const res = await buildGameDetailResponse(db, {
 			platform: 'twitch',
 			slug: 'valorant',
-			period: '7d'
+			period: '7d',
 		});
 
 		expect(res).toMatchObject({
@@ -91,8 +87,8 @@ describe('buildGameDetailResponse', () => {
 			totals: {
 				hours_watched: 300,
 				peak_viewers: 300,
-				live_channels: 15
-			}
+				live_channels: 15,
+			},
 		});
 		expect(res!.daily).toHaveLength(2);
 		expect(res!.top_channels).toEqual([]);
@@ -107,16 +103,16 @@ describe('buildGameDetailResponse', () => {
 							first: async () => ({
 								id: 'game-1',
 								slug: 'valorant',
-								name: 'VALORANT'
-							})
-						})
+								name: 'VALORANT',
+							}),
+						}),
 					};
 				}
 				if (sql.includes('game_daily_rollups')) {
 					return {
 						bind: () => ({
-							all: async () => ({ results: [] })
-						})
+							all: async () => ({ results: [] }),
+						}),
 					};
 				}
 				if (sql.includes('channel_daily_rollups')) {
@@ -128,28 +124,24 @@ describe('buildGameDetailResponse', () => {
 										slug: 'shroud',
 										display_name: 'shroud',
 										avatar_url: 'https://example/a.png',
-										hours_watched: 5000
+										hours_watched: 5000,
 									},
 									{
 										slug: 'tarik',
 										display_name: 'tarik',
 										avatar_url: null,
-										hours_watched: 1200
-									}
-								]
-							})
-						})
+										hours_watched: 1200,
+									},
+								],
+							}),
+						}),
 					};
 				}
 				return { bind: () => ({ first: async () => null, all: async () => ({}) }) };
-			}
+			},
 		} as unknown as D1Database;
 
-		const res = await buildGameDetailResponse(
-			db,
-			{ platform: 'twitch', slug: 'valorant', period: '7d' },
-			{ minAirtimeMinutes: 60 }
-		);
+		const res = await buildGameDetailResponse(db, { platform: 'twitch', slug: 'valorant', period: '7d' }, { minAirtimeMinutes: 60 });
 
 		expect(res?.top_channels).toEqual([
 			{
@@ -157,28 +149,28 @@ describe('buildGameDetailResponse', () => {
 				slug: 'shroud',
 				display_name: 'shroud',
 				avatar_url: 'https://example/a.png',
-				hours_watched: 5000
+				hours_watched: 5000,
 			},
 			{
 				rank: 2,
 				slug: 'tarik',
 				display_name: 'tarik',
 				avatar_url: null,
-				hours_watched: 1200
-			}
+				hours_watched: 1200,
+			},
 		]);
 	});
 
 	it('buildGameTopChannels returns empty for youtube', async () => {
 		const db = {
 			prepare: () => ({
-				bind: () => ({ all: async () => ({ results: [] }) })
-			})
+				bind: () => ({ all: async () => ({ results: [] }) }),
+			}),
 		} as unknown as D1Database;
 		const rows = await buildGameTopChannels(db, {
 			platform: 'youtube',
 			gameSlug: 'valorant',
-			period: '7d'
+			period: '7d',
 		});
 		expect(rows).toEqual([]);
 	});
@@ -188,30 +180,30 @@ describe('buildGameDetailResponse', () => {
 			prepare(sql: string) {
 				if (sql.includes('FROM game_categories') && sql.includes('lower(slug)')) {
 					return {
-						bind: (_platform: string, slug: string) => ({
+						bind: (_platform: string, _slug: string) => ({
 							first: async () => ({
 								id: 'game-1',
 								slug: 'VALORANT',
-								name: 'VALORANT'
-							})
-						})
+								name: 'VALORANT',
+							}),
+						}),
 					};
 				}
 				if (sql.includes('game_daily_rollups')) {
 					return {
 						bind: () => ({
-							all: async () => ({ results: [] })
-						})
+							all: async () => ({ results: [] }),
+						}),
 					};
 				}
 				return { bind: () => ({ first: async () => null, all: async () => ({}) }) };
-			}
+			},
 		} as unknown as D1Database;
 
 		const res = await buildGameDetailResponse(db, {
 			platform: 'twitch',
 			slug: 'valorant',
-			period: '7d'
+			period: '7d',
 		});
 
 		expect(res?.slug).toBe('VALORANT');

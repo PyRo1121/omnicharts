@@ -1,9 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import {
-	buildKickWebhookSignedPayload,
-	clearKickWebhookKeyCacheForTests,
-	verifyKickWebhookSignature
-} from '../src/kick/webhook/verify';
+import { buildKickWebhookSignedPayload, clearKickWebhookKeyCacheForTests, verifyKickWebhookSignature } from '../src/kick/webhook/verify';
 
 async function generateTestRsaKeyPair(): Promise<{ publicPem: string; privateKey: CryptoKey }> {
 	const { publicKey, privateKey } = await crypto.subtle.generateKey(
@@ -11,10 +7,10 @@ async function generateTestRsaKeyPair(): Promise<{ publicPem: string; privateKey
 			name: 'RSASSA-PKCS1-v1_5',
 			modulusLength: 2048,
 			publicExponent: new Uint8Array([1, 0, 1]),
-			hash: 'SHA-256'
+			hash: 'SHA-256',
 		},
 		true,
-		['sign', 'verify']
+		['sign', 'verify'],
 	);
 	const spki = await crypto.subtle.exportKey('spki', publicKey);
 	const b64 = btoa(String.fromCharCode(...new Uint8Array(spki)));
@@ -24,11 +20,7 @@ async function generateTestRsaKeyPair(): Promise<{ publicPem: string; privateKey
 }
 
 async function signPayload(privateKey: CryptoKey, payload: string): Promise<string> {
-	const sig = await crypto.subtle.sign(
-		'RSASSA-PKCS1-v1_5',
-		privateKey,
-		new TextEncoder().encode(payload)
-	);
+	const sig = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', privateKey, new TextEncoder().encode(payload));
 	return btoa(String.fromCharCode(...new Uint8Array(sig)));
 }
 
@@ -43,9 +35,7 @@ describe('kick webhook verify', () => {
 	});
 
 	it('buildKickWebhookSignedPayload concatenates id timestamp body', () => {
-		expect(buildKickWebhookSignedPayload('mid', '2026-06-01T00:00:00Z', '{"a":1}')).toBe(
-			'mid.2026-06-01T00:00:00Z.{"a":1}'
-		);
+		expect(buildKickWebhookSignedPayload('mid', '2026-06-01T00:00:00Z', '{"a":1}')).toBe('mid.2026-06-01T00:00:00Z.{"a":1}');
 	});
 
 	it('verifyKickWebhookSignature accepts valid RSA signature', async () => {
@@ -61,7 +51,7 @@ describe('kick webhook verify', () => {
 			messageId,
 			timestamp,
 			signatureHeader: signature,
-			rawBody
+			rawBody,
 		});
 		expect(ok).toBe(true);
 	});
@@ -79,7 +69,7 @@ describe('kick webhook verify', () => {
 			messageId,
 			timestamp,
 			signatureHeader: signature,
-			rawBody: '{"is_live":false}'
+			rawBody: '{"is_live":false}',
 		});
 		expect(ok).toBe(false);
 	});

@@ -4,15 +4,22 @@ import {
 	DEFAULT_LIVE_SWEEP_MAX_PAGES,
 	DEFAULT_LIVE_SWEEP_MAX_PAGES_LIGHT,
 	HELIX_POINTS_PER_MINUTE,
-	HELIX_SAFE_POINTS_PER_MINUTE
+	HELIX_SAFE_POINTS_PER_MINUTE,
 } from '../src/twitch/config';
 import {
 	gamePassGamesPerCycleFromEnv,
 	helixPhaseBudgetFromEnv,
 	helixSafePointsPerMinuteFromEnv,
-	liveSweepMaxPagesFromEnv
+	liveSweepMaxPagesFromEnv,
 } from '../src/twitch/helix-budget';
-import { HelixRateBudget, helixBudgetAllowsFetch, helixBudgetGamesPerCycle, helixBudgetPageCap, helixBudgetReconcileBatches, helixRateLimitWaitMs } from '../src/twitch/rate-limit';
+import {
+	HelixRateBudget,
+	helixBudgetAllowsFetch,
+	helixBudgetGamesPerCycle,
+	helixBudgetPageCap,
+	helixBudgetReconcileBatches,
+	helixRateLimitWaitMs,
+} from '../src/twitch/rate-limit';
 
 describe('helix budget governor', () => {
 	it('caps pages when remaining points are low', () => {
@@ -44,9 +51,7 @@ describe('helix budget governor', () => {
 
 	it('derives 429 wait from Ratelimit-Reset header', () => {
 		const resetSec = Math.floor(Date.now() / 1000) + 10;
-		const waitMs = helixRateLimitWaitMs(
-			new Headers({ 'Ratelimit-Reset': String(resetSec) })
-		);
+		const waitMs = helixRateLimitWaitMs(new Headers({ 'Ratelimit-Reset': String(resetSec) }));
 		expect(waitMs).toBeGreaterThanOrEqual(100);
 		expect(waitMs).toBeLessThanOrEqual(10_100);
 	});
@@ -61,7 +66,7 @@ describe('helix budget from wrangler env', () => {
 	it('reserves catalog shard points in shards_only mode', () => {
 		const env = {
 			INGEST_COVERAGE_MODE: 'shards_only',
-			TWITCH_MAX_TRACKED: '200'
+			TWITCH_MAX_TRACKED: '200',
 		} as Env;
 		expect(helixSafePointsPerMinuteFromEnv(env)).toBe(708);
 	});
@@ -75,19 +80,15 @@ describe('helix budget from wrangler env', () => {
 	});
 
 	it('auto-defaults sweep pages from coverage mode when LIVE_SWEEP_MAX_PAGES unset', () => {
-		expect(liveSweepMaxPagesFromEnv({ INGEST_COVERAGE_MODE: 'full' } as Env)).toBe(
-			DEFAULT_LIVE_SWEEP_MAX_PAGES
-		);
-		expect(liveSweepMaxPagesFromEnv({ INGEST_COVERAGE_MODE: 'shards_only' } as Env)).toBe(
-			DEFAULT_LIVE_SWEEP_MAX_PAGES_LIGHT
-		);
+		expect(liveSweepMaxPagesFromEnv({ INGEST_COVERAGE_MODE: 'full' } as Env)).toBe(DEFAULT_LIVE_SWEEP_MAX_PAGES);
+		expect(liveSweepMaxPagesFromEnv({ INGEST_COVERAGE_MODE: 'shards_only' } as Env)).toBe(DEFAULT_LIVE_SWEEP_MAX_PAGES_LIGHT);
 	});
 
 	it('honors explicit wrangler sweep and game-pass caps', () => {
 		const env = {
 			INGEST_COVERAGE_MODE: 'full',
 			LIVE_SWEEP_MAX_PAGES: '40',
-			GAME_PASS_GAMES_PER_CYCLE: '5'
+			GAME_PASS_GAMES_PER_CYCLE: '5',
 		} as Env;
 		expect(liveSweepMaxPagesFromEnv(env)).toBe(40);
 		expect(gamePassGamesPerCycleFromEnv(env)).toBe(5);

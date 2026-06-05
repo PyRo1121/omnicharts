@@ -2,20 +2,12 @@ import { describe, it, expect } from 'vitest';
 import linear from './fixtures/samples_linear.json';
 import ramp from './fixtures/samples_ramp.json';
 import multi from './fixtures/multi_stream_day.json';
-import {
-	computeHoursWatched,
-	computePeakViewers,
-	computeAverageViewers,
-	type ViewerSamplePoint
-} from '../src/rollup/math';
+import { computeHoursWatched, computePeakViewers, computeAverageViewers, type ViewerSamplePoint } from '../src/rollup/math';
 
-function fixtureToPoints(
-	baseMs: number,
-	fixture: { samples: { offsetMinutes: number; viewerCount: number }[] }
-): ViewerSamplePoint[] {
+function fixtureToPoints(baseMs: number, fixture: { samples: { offsetMinutes: number; viewerCount: number }[] }): ViewerSamplePoint[] {
 	return fixture.samples.map((s) => ({
 		sampledAtMs: baseMs + s.offsetMinutes * 60_000,
-		viewerCount: s.viewerCount
+		viewerCount: s.viewerCount,
 	}));
 }
 

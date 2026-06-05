@@ -1,8 +1,4 @@
-import {
-	buildCompareChannelsResponse,
-	compareQueryErrorResponse,
-	parseCompareChannelsQuery
-} from '@omnicharts/rollup';
+import { buildCompareChannelsResponse, compareQueryErrorResponse, parseCompareChannelsQuery } from '@omnicharts/rollup';
 import { ROLLUP_CACHE_CONTROL } from '$lib/server/cache';
 import { getIngestBaseUrl } from '$lib/server/ingest';
 import { getD1 } from '$lib/server/d1';
@@ -17,36 +13,30 @@ export const GET: RequestHandler = async ({ url, fetch, platform }) => {
 		return compareQueryErrorResponse(query.error, { cacheControl: 'no-store' });
 	}
 
-	if (
-		db &&
-		(query.platform === 'twitch' || query.platform === 'kick' || query.platform === 'youtube')
-	) {
+	if (db && (query.platform === 'twitch' || query.platform === 'kick' || query.platform === 'youtube')) {
 		const body = await buildCompareChannelsResponse(db, {
 			platform: query.platform,
 			period: query.period,
 			a: query.a,
-			b: query.b
+			b: query.b,
 		});
 		return Response.json(body, {
-			headers: { 'cache-control': ROLLUP_CACHE_CONTROL }
+			headers: { 'cache-control': ROLLUP_CACHE_CONTROL },
 		});
 	}
 
 	const [aRes, bRes] = await Promise.all([
 		fetch(
 			`${getIngestBaseUrl()}/v1/channels/${encodeURIComponent(query.a)}?platform=${encodeURIComponent(query.platform)}&period=${encodeURIComponent(query.period)}`,
-			{ headers: { accept: 'application/json' } }
+			{ headers: { accept: 'application/json' } },
 		),
 		fetch(
 			`${getIngestBaseUrl()}/v1/channels/${encodeURIComponent(query.b)}?platform=${encodeURIComponent(query.platform)}&period=${encodeURIComponent(query.period)}`,
-			{ headers: { accept: 'application/json' } }
-		)
+			{ headers: { accept: 'application/json' } },
+		),
 	]);
 
-	const [aBody, bBody] = await Promise.all([
-		aRes.ok ? aRes.json() : Promise.resolve(null),
-		bRes.ok ? bRes.json() : Promise.resolve(null)
-	]);
+	const [aBody, bBody] = await Promise.all([aRes.ok ? aRes.json() : Promise.resolve(null), bRes.ok ? bRes.json() : Promise.resolve(null)]);
 
 	const body = {
 		platform: query.platform,
@@ -55,16 +45,16 @@ export const GET: RequestHandler = async ({ url, fetch, platform }) => {
 		a: {
 			slug: query.a,
 			found: aRes.ok,
-			channel: aBody
+			channel: aBody,
 		},
 		b: {
 			slug: query.b,
 			found: bRes.ok,
-			channel: bBody
-		}
+			channel: bBody,
+		},
 	};
 
 	return Response.json(body, {
-		headers: { 'cache-control': ROLLUP_CACHE_CONTROL }
+		headers: { 'cache-control': ROLLUP_CACHE_CONTROL },
 	});
 };

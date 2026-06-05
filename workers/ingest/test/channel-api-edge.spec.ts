@@ -21,7 +21,7 @@ describe('channel-api edge cases', () => {
 		const res = await buildChannelDetailResponse(db, {
 			platform: 'twitch',
 			slug: '',
-			period: '7d'
+			period: '7d',
 		});
 		expect(res).toBeNull();
 	});

@@ -3,7 +3,7 @@ import { loadGameDetail, parseGamePeriod } from './game';
 import { testLoadContext } from './test-helpers';
 
 vi.mock('$env/dynamic/private', () => ({
-	env: { INGEST_URL: 'http://ingest.test' }
+	env: { INGEST_URL: 'http://ingest.test' },
 }));
 
 describe('loadGameDetail', () => {
@@ -26,11 +26,11 @@ describe('loadGameDetail', () => {
 					average_viewers: 50,
 					peak_viewers: 200,
 					airtime_hours: 10,
-					live_channels: 5
+					live_channels: 5,
 				},
 				daily: [
 					{ date: '2026-05-27', hours_watched: 40, average_viewers: 20, peak_viewers: 80 },
-					{ date: '2026-05-28', hours_watched: 60, average_viewers: 30, peak_viewers: 120 }
+					{ date: '2026-05-28', hours_watched: 60, average_viewers: 30, peak_viewers: 120 },
 				],
 				top_channels: [
 					{
@@ -38,10 +38,10 @@ describe('loadGameDetail', () => {
 						slug: 'shroud',
 						display_name: 'shroud',
 						avatar_url: 'https://example/a.png',
-						hours_watched: 4200
-					}
-				]
-			})
+						hours_watched: 4200,
+					},
+				],
+			}),
 		});
 
 		const load = await loadGameDetail(testLoadContext(fetchFn as typeof fetch), 'valorant', 'twitch', '7d');
@@ -55,8 +55,8 @@ describe('loadGameDetail', () => {
 				slug: 'shroud',
 				displayName: 'shroud',
 				avatarUrl: 'https://example/a.png',
-				hoursWatched: '4.2K'
-			}
+				hoursWatched: '4.2K',
+			},
 		]);
 	});
 
@@ -80,26 +80,18 @@ describe('loadGameDetail', () => {
 					average_viewers: 250,
 					peak_viewers: 800,
 					airtime_hours: 4,
-					live_channels: 20
+					live_channels: 20,
 				},
 				daily: [],
-				top_channels: []
-			})
+				top_channels: [],
+			}),
 		});
 
-		const load = await loadGameDetail(
-			testLoadContext(fetchFn as typeof fetch),
-			'just-chatting',
-			'kick',
-			'7d'
-		);
+		const load = await loadGameDetail(testLoadContext(fetchFn as typeof fetch), 'just-chatting', 'kick', '7d');
 		expect(load.source).toBe('live');
 		expect(load.platform).toBe('kick');
 		expect(load.name).toBe('Just Chatting');
-		expect(fetchFn).toHaveBeenCalledWith(
-			expect.stringContaining('/v1/games/just-chatting'),
-			expect.any(Object)
-		);
+		expect(fetchFn).toHaveBeenCalledWith(expect.stringContaining('/v1/games/just-chatting'), expect.any(Object));
 		expect(String(fetchFn.mock.calls[0]?.[0])).toContain('platform=kick');
 	});
 });

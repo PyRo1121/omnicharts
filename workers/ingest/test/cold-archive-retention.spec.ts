@@ -7,7 +7,7 @@ vi.mock('../src/r2/cold-archive', async (importOriginal) => {
 	const actual = await importOriginal<typeof coldArchiveR2>();
 	return {
 		...actual,
-		archiveRowsToColdStorage: vi.fn(async () => ({ archived: 100, key: 'samples/test.parquet' }))
+		archiveRowsToColdStorage: vi.fn(async () => ({ archived: 100, key: 'samples/test.parquet' })),
 	};
 });
 
@@ -22,18 +22,20 @@ describe('runRetentionWithColdArchive', () => {
 		await expect(runRetentionWithColdArchive({} as Env, NOW)).resolves.toEqual({
 			viewerSamplesPruned: 0,
 			channelRollupsPruned: 0,
-			gameRollupsPruned: 0
+			gameRollupsPruned: 0,
 		});
 	});
 
 	it('deletes without R2 when cold archive disabled', async () => {
 		let sampleDeletes = 0;
 		const db = makeDb({
-			sampleRows: [{ id: 1, stream_session_id: 's', sampled_at: '2026-05-01T00:00:00.000Z', viewer_count: 1, channel_id: 'c', platform_id: 'twitch' }],
+			sampleRows: [
+				{ id: 1, stream_session_id: 's', sampled_at: '2026-05-01T00:00:00.000Z', viewer_count: 1, channel_id: 'c', platform_id: 'twitch' },
+			],
 			onSampleDelete: () => {
 				sampleDeletes += 1;
 				return 1;
-			}
+			},
 		});
 
 		const stats = await runRetentionWithColdArchive({ DB: db } as Env, NOW);
@@ -53,13 +55,13 @@ describe('runRetentionWithColdArchive', () => {
 					sampled_at: '2026-05-01T00:00:00.000Z',
 					viewer_count: 10,
 					channel_id: 'ch-1',
-					platform_id: 'twitch'
-				}
+					platform_id: 'twitch',
+				},
 			],
 			onSampleDelete: (ids: number[]) => {
 				deletedIds = ids;
 				return ids.length;
-			}
+			},
 		});
 
 		env.DB = db;
@@ -86,8 +88,8 @@ describe('runRetentionWithColdArchive', () => {
 					peak_viewers: 2,
 					airtime_minutes: 60,
 					stream_count: 1,
-					followers_delta: null
-				}
+					followers_delta: null,
+				},
 			],
 			gameRollupRows: [
 				{
@@ -98,8 +100,8 @@ describe('runRetentionWithColdArchive', () => {
 					average_viewers: 2,
 					peak_viewers: 5,
 					airtime_minutes: 120,
-					live_channels: 3
-				}
+					live_channels: 3,
+				},
 			],
 			onChannelRollupDelete: () => {
 				channelRollupDeletes += 1;
@@ -108,7 +110,7 @@ describe('runRetentionWithColdArchive', () => {
 			onGameRollupDelete: () => {
 				gameRollupDeletes += 1;
 				return 1;
-			}
+			},
 		});
 
 		env.DB = db;
@@ -128,7 +130,7 @@ describe('runRetentionWithColdArchive', () => {
 			sampled_at: '2026-05-01T00:00:00.000Z',
 			viewer_count: 1,
 			channel_id: 'ch-1',
-			platform_id: 'twitch'
+			platform_id: 'twitch',
 		}));
 		const tailBatch = [
 			{
@@ -137,13 +139,13 @@ describe('runRetentionWithColdArchive', () => {
 				sampled_at: '2026-05-01T00:00:00.000Z',
 				viewer_count: 1,
 				channel_id: 'ch-1',
-				platform_id: 'twitch'
-			}
+				platform_id: 'twitch',
+			},
 		];
 		let sampleFetch = 0;
 		const db = makeDb({
 			sampleRows: [],
-			onSampleDelete: (ids) => ids.length
+			onSampleDelete: (ids) => ids.length,
 		});
 		const originalPrepare = db.prepare.bind(db);
 		db.prepare = (sql: string) => {
@@ -156,9 +158,9 @@ describe('runRetentionWithColdArchive', () => {
 								if (sampleFetch === 1) return { results: fullBatch };
 								if (sampleFetch === 2) return { results: tailBatch };
 								return { results: [] };
-							}
+							},
 						};
-					}
+					},
 				};
 			}
 			return originalPrepare(sql);
@@ -189,12 +191,12 @@ describe('runRetentionWithColdArchive', () => {
 											sampled_at: '2026-05-01T00:00:00.000Z',
 											viewer_count: 1,
 											channel_id: 'c',
-											platform_id: 'twitch'
-										}
-									]
+											platform_id: 'twitch',
+										},
+									],
 								};
-							}
-						})
+							},
+						}),
 					};
 				}
 				if (sql.includes('DELETE FROM viewer_samples') && sql.includes('json_each')) {
@@ -204,7 +206,7 @@ describe('runRetentionWithColdArchive', () => {
 					return { bind: () => ({ all: async () => ({ results: [] }) }) };
 				}
 				return { bind: () => ({ run: async () => ({}), all: async () => ({ results: [] }) }) };
-			}
+			},
 		} as unknown as D1Database;
 		env.DB = db;
 		const stats = await runRetentionWithColdArchive(env, NOW);
@@ -218,32 +220,32 @@ describe('runRetentionWithColdArchive', () => {
 			prepare(sql: string) {
 				if (sql.includes('FROM channel_daily_rollups') && sql.includes('channel_id')) {
 					return {
-						bind: () => ({ all: async () => ({ results: null }) })
+						bind: () => ({ all: async () => ({ results: null }) }),
 					};
 				}
 				if (sql.includes('FROM game_daily_rollups') && sql.includes('game_category_id')) {
 					return {
-						bind: () => ({ all: async () => ({ results: null }) })
+						bind: () => ({ all: async () => ({ results: null }) }),
 					};
 				}
 				if (sql.includes('FROM viewer_samples vs') && sql.includes('SELECT vs.id')) {
 					return {
-						bind: () => ({ all: async () => ({ results: null }) })
+						bind: () => ({ all: async () => ({ results: null }) }),
 					};
 				}
 				return {
 					bind: () => ({
 						run: async () => ({}),
-						all: async () => ({ results: [] })
-					})
+						all: async () => ({ results: [] }),
+					}),
 				};
-			}
+			},
 		} as unknown as D1Database;
 		env.DB = db;
 		await expect(runRetentionWithColdArchive(env, NOW)).resolves.toEqual({
 			viewerSamplesPruned: 0,
 			channelRollupsPruned: 0,
-			gameRollupsPruned: 0
+			gameRollupsPruned: 0,
 		});
 	});
 });
@@ -277,8 +279,8 @@ function makeDb(opts: {
 						run: async () => {
 							const ids = JSON.parse(idsJson) as number[];
 							return { meta: { changes: opts.onSampleDelete?.(ids) ?? ids.length } };
-						}
-					})
+						},
+					}),
 				};
 			}
 			if (sql.startsWith('DELETE FROM viewer_samples')) {
@@ -287,39 +289,36 @@ function makeDb(opts: {
 						run: async () => {
 							const changes = opts.onSampleDelete?.([1]) ?? 1;
 							return { meta: { changes } };
-						}
-					})
+						},
+					}),
 				};
 			}
-			if (
-				sql.startsWith('DELETE FROM channel_daily_rollups') &&
-				sql.includes('json_each')
-			) {
+			if (sql.startsWith('DELETE FROM channel_daily_rollups') && sql.includes('json_each')) {
 				return {
 					bind: () => ({
-						run: async () => ({ meta: { changes: opts.onChannelRollupDelete?.() ?? 1 } })
-					})
+						run: async () => ({ meta: { changes: opts.onChannelRollupDelete?.() ?? 1 } }),
+					}),
 				};
 			}
 			if (sql.startsWith('DELETE FROM channel_daily_rollups')) {
 				return {
 					bind: () => ({
-						run: async () => ({ meta: { changes: opts.onChannelRollupDelete?.() ?? 0 } })
-					})
+						run: async () => ({ meta: { changes: opts.onChannelRollupDelete?.() ?? 0 } }),
+					}),
 				};
 			}
 			if (sql.startsWith('DELETE FROM game_daily_rollups') && sql.includes('json_each')) {
 				return {
 					bind: () => ({
-						run: async () => ({ meta: { changes: opts.onGameRollupDelete?.() ?? 1 } })
-					})
+						run: async () => ({ meta: { changes: opts.onGameRollupDelete?.() ?? 1 } }),
+					}),
 				};
 			}
 			if (sql.startsWith('DELETE FROM game_daily_rollups')) {
 				return {
 					bind: () => ({
-						run: async () => ({ meta: { changes: opts.onGameRollupDelete?.() ?? 0 } })
-					})
+						run: async () => ({ meta: { changes: opts.onGameRollupDelete?.() ?? 0 } }),
+					}),
 				};
 			}
 			if (sql.includes('FROM viewer_samples vs') && sql.includes('SELECT vs.id')) {
@@ -330,9 +329,9 @@ function makeDb(opts: {
 								sampleSelectCount += 1;
 								if (sampleSelectCount > 1) return { results: [] };
 								return { results: opts.sampleRows };
-							}
+							},
 						};
-					}
+					},
 				};
 			}
 			if (sql.includes('FROM channel_daily_rollups') && sql.includes('channel_id')) {
@@ -343,9 +342,9 @@ function makeDb(opts: {
 								channelSelectCount += 1;
 								if (channelSelectCount > 1) return { results: [] };
 								return { results: opts.channelRollupRows ?? [] };
-							}
+							},
 						};
-					}
+					},
 				};
 			}
 			if (sql.includes('FROM game_daily_rollups') && sql.includes('game_category_id')) {
@@ -356,17 +355,17 @@ function makeDb(opts: {
 								gameSelectCount += 1;
 								if (gameSelectCount > 1) return { results: [] };
 								return { results: opts.gameRollupRows ?? [] };
-							}
+							},
 						};
-					}
+					},
 				};
 			}
 			return {
 				bind: () => ({
 					run: async () => ({ meta: { changes: 0 } }),
-					all: async () => ({ results: [] })
-				})
+					all: async () => ({ results: [] }),
+				}),
 			};
-		}
+		},
 	} as unknown as D1Database;
 }

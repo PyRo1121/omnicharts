@@ -30,18 +30,14 @@ const TRACKED_TWITCH_CHANNEL_SQL = `
 
 const nowIso = () => new Date().toISOString();
 
-export async function listChannelsForVodBackfill(
-	db: D1Database,
-	limit: number,
-	staleBeforeIso: string
-): Promise<VodBackfillChannelRow[]> {
+export async function listChannelsForVodBackfill(db: D1Database, limit: number, staleBeforeIso: string): Promise<VodBackfillChannelRow[]> {
 	const { results } = await db
 		.prepare(
 			`SELECT id, platform_channel_id, broadcaster_type FROM channels
        WHERE ${TRACKED_TWITCH_CHANNEL_SQL}
          AND (vod_backfilled_at IS NULL OR vod_backfilled_at < ?)
        ORDER BY vod_backfilled_at ASC NULLS FIRST, last_seen_at DESC
-       LIMIT ?`
+       LIMIT ?`,
 		)
 		.bind(PLATFORM_TWITCH, staleBeforeIso, limit)
 		.all<VodBackfillChannelRow>();
@@ -51,7 +47,7 @@ export async function listChannelsForVodBackfill(
 
 export async function listChannelsForVodBackfillByPlatformIds(
 	db: D1Database,
-	platformChannelIds: string[]
+	platformChannelIds: string[],
 ): Promise<VodBackfillChannelRow[]> {
 	if (platformChannelIds.length === 0) return [];
 	const placeholders = platformChannelIds.map(() => '?').join(', ');
@@ -59,7 +55,7 @@ export async function listChannelsForVodBackfillByPlatformIds(
 		.prepare(
 			`SELECT id, platform_channel_id, broadcaster_type FROM channels
        WHERE ${TRACKED_TWITCH_CHANNEL_SQL}
-         AND platform_channel_id IN (${placeholders})`
+         AND platform_channel_id IN (${placeholders})`,
 		)
 		.bind(PLATFORM_TWITCH, ...platformChannelIds)
 		.all<VodBackfillChannelRow>();
@@ -70,7 +66,7 @@ export async function listChannelsForVodBackfillByPlatformIds(
 export function helixVideoToVodSessionRow(
 	channelId: string,
 	video: HelixVideo,
-	times: { started_at: string; ended_at: string | null }
+	times: { started_at: string; ended_at: string | null },
 ): VodSessionUpsertRow {
 	return {
 		channel_id: channelId,
@@ -82,7 +78,7 @@ export function helixVideoToVodSessionRow(
 		thumbnail_url: video.thumbnail_url || null,
 		stream_type: video.type || 'archive',
 		duration: video.duration || null,
-		view_count: Number.isFinite(video.view_count) ? video.view_count : null
+		view_count: Number.isFinite(video.view_count) ? video.view_count : null,
 	};
 }
 
@@ -104,7 +100,7 @@ function prepareVodSessionUpsert(db: D1Database, row: VodSessionUpsertRow) {
          duration = excluded.duration,
          view_count = excluded.view_count,
          backfill_source = 'vod'
-       WHERE stream_sessions.backfill_source IS NULL OR stream_sessions.backfill_source = 'vod'`
+       WHERE stream_sessions.backfill_source IS NULL OR stream_sessions.backfill_source = 'vod'`,
 		)
 		.bind(
 			sessionId,
@@ -117,30 +113,22 @@ function prepareVodSessionUpsert(db: D1Database, row: VodSessionUpsertRow) {
 			row.thumbnail_url,
 			row.stream_type,
 			row.duration,
-			row.view_count
+			row.view_count,
 		);
 }
 
-export async function batchUpsertVodSessions(
-	db: D1Database,
-	rows: VodSessionUpsertRow[]
-): Promise<number> {
+export async function batchUpsertVodSessions(db: D1Database, rows: VodSessionUpsertRow[]): Promise<number> {
 	if (rows.length === 0) return 0;
 	const statements = rows.map((row) => prepareVodSessionUpsert(db, row));
 	await runD1Batches(db, statements, { scope: 'vod:backfill' });
 	return rows.length;
 }
 
-export async function markChannelsVodBackfilled(
-	db: D1Database,
-	channelIds: string[]
-): Promise<void> {
+export async function markChannelsVodBackfilled(db: D1Database, channelIds: string[]): Promise<void> {
 	if (channelIds.length === 0) return;
 	const now = nowIso();
 	const statements = channelIds.map((channelId) =>
-		db
-			.prepare(`UPDATE channels SET vod_backfilled_at = ? WHERE id = ?`)
-			.bind(now, channelId)
+		db.prepare(`UPDATE channels SET vod_backfilled_at = ? WHERE id = ?`).bind(now, channelId),
 	);
 	await runD1Batches(db, statements, { scope: 'vod:backfill:mark' });
 }

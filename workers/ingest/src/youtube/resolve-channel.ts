@@ -15,15 +15,12 @@ export function youtubeChannelToLookup(channel: YoutubeChannelItem): YoutubeChan
 		platformChannelId: channel.id,
 		slug: youtubeSlugFromChannel(channel),
 		displayName: channel.snippet?.title?.trim() || channel.id,
-		avatarUrl: channel.snippet?.thumbnails?.default?.url?.trim() || null
+		avatarUrl: channel.snippet?.thumbnails?.default?.url?.trim() || null,
 	};
 }
 
 /** On-demand channels.list — forHandle or id= (docs/05). Never search.list. */
-export async function fetchYoutubeChannelByQuery(
-	client: YoutubeDataApiClient,
-	rawQuery: string
-): Promise<YoutubeChannelLookup | null> {
+export async function fetchYoutubeChannelByQuery(client: YoutubeDataApiClient, rawQuery: string): Promise<YoutubeChannelLookup | null> {
 	const query = rawQuery.trim();
 	if (!query) return null;
 

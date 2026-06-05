@@ -1,7 +1,4 @@
-import {
-	isValidTwitchEventSubSecret,
-	twitchEventSubSecretLengthMessage
-} from './secret';
+import { isValidTwitchEventSubSecret, twitchEventSubSecretLengthMessage } from './secret';
 
 export function isEventSubConfigured(env: Env): env is Env & {
 	TWITCH_EVENTSUB_SECRET: string;
@@ -9,12 +6,7 @@ export function isEventSubConfigured(env: Env): env is Env & {
 } {
 	const secret = env.TWITCH_EVENTSUB_SECRET?.trim();
 	const callback = env.TWITCH_EVENTSUB_CALLBACK_URL?.trim();
-	return Boolean(
-		env.TWITCH_CLIENT_ID &&
-			env.TWITCH_CLIENT_SECRET &&
-			isValidTwitchEventSubSecret(secret) &&
-			callback
-	);
+	return Boolean(env.TWITCH_CLIENT_ID && env.TWITCH_CLIENT_SECRET && isValidTwitchEventSubSecret(secret) && callback);
 }
 
 export function eventSubConfigError(env: Env): string {

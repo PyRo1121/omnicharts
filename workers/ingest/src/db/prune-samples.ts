@@ -14,10 +14,7 @@ export function viewerSampleRetentionCutoffIso(now = new Date()): string {
 /**
  * Delete viewer_samples older than the retention window in bounded batches.
  */
-export async function pruneViewerSamplesOlderThanRetention(
-	db: D1Database,
-	now = new Date()
-): Promise<number> {
+export async function pruneViewerSamplesOlderThanRetention(db: D1Database, now = new Date()): Promise<number> {
 	const cutoff = viewerSampleRetentionCutoffIso(now);
 	let totalDeleted = 0;
 
@@ -29,7 +26,7 @@ export async function pruneViewerSamplesOlderThanRetention(
            SELECT id FROM viewer_samples
            WHERE sampled_at < ?
            LIMIT ?
-         )`
+         )`,
 			)
 			.bind(cutoff, VIEWER_SAMPLE_DELETE_BATCH_SIZE)
 			.run();

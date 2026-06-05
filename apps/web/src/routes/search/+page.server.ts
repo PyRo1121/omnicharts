@@ -13,22 +13,20 @@ export const load: PageServerLoad = async ({ url, fetch, setHeaders, platform: c
 	const platform = parseUiPlatform(url.searchParams.get('platform'));
 	const mockEnabled = isDevMockEnabled(url.searchParams.get('demo'));
 	const searchPlatform = searchPlatformId(platform);
-	const trendingPlatform =
-		platform === 'kick' || platform === 'youtube' ? platform : searchPlatform;
+	const trendingPlatform = platform === 'kick' || platform === 'youtube' ? platform : searchPlatform;
 	const ctx = serverLoadContext(fetch, cfPlatform);
 	const [{ results: rawResults, error }, rankings] = await Promise.all([
 		searchChannels(fetch, { q, platform: searchPlatform, limit: 25 }),
-		loadChannelRankings(ctx, trendingPlatform, '7d', 5)
+		loadChannelRankings(ctx, trendingPlatform, '7d', 5),
 	]);
 
-	const results =
-		rawResults.length > 0 ? await enrichSearchResultsWithRollups(ctx, rawResults) : rawResults;
+	const results = rawResults.length > 0 ? await enrichSearchResultsWithRollups(ctx, rawResults) : rawResults;
 
 	return {
 		q,
 		platform,
 		results,
 		error,
-		trending: trendingFromRankings(rankings.rows, { platform: trendingPlatform, mockEnabled })
+		trending: trendingFromRankings(rankings.rows, { platform: trendingPlatform, mockEnabled }),
 	};
 };

@@ -3,11 +3,7 @@ import { ingestWarn } from '../../log';
 import { requireDb } from '../../worker-bindings';
 import { eventSubConfigError, isEventSubConfigured } from './env';
 import { getEventSubSyncCursor, setEventSubSyncCursor } from './sync-cursor';
-import {
-	listEventSubSubscriptionsForBroadcaster,
-	listTrackedBroadcasterIds,
-	upsertEventSubSubscription
-} from './subscriptions-db';
+import { listEventSubSubscriptionsForBroadcaster, listTrackedBroadcasterIds, upsertEventSubSubscription } from './subscriptions-db';
 import { TwitchEventSubApi } from './subscriptions-api';
 import type { EventSubSubscriptionType, HelixEventSubSubscription } from './types';
 
@@ -26,13 +22,13 @@ async function upsertRemoteSubscription(
 	db: D1Database,
 	sub: HelixEventSubSubscription,
 	eventType: EventSubSubscriptionType,
-	broadcasterUserId: string
+	broadcasterUserId: string,
 ): Promise<void> {
 	await upsertEventSubSubscription(db, {
 		id: sub.id,
 		eventType,
 		broadcasterUserId,
-		status: sub.status
+		status: sub.status,
 	});
 }
 
@@ -47,7 +43,7 @@ export async function syncTwitchEventSubSubscriptions(env: Env): Promise<EventSu
 		created: 0,
 		skippedExisting: 0,
 		errors: 0,
-		errorSamples: []
+		errorSamples: [],
 	};
 
 	if (!isEventSubConfigured(env)) {
@@ -79,9 +75,7 @@ export async function syncTwitchEventSubSubscriptions(env: Env): Promise<EventSu
 		return stats;
 	}
 
-	const remoteKeys = new Set(
-		remote.map((s) => `${s.type}:${s.condition.broadcaster_user_id}`)
-	);
+	const remoteKeys = new Set(remote.map((s) => `${s.type}:${s.condition.broadcaster_user_id}`));
 
 	const cursor = await getEventSubSyncCursor(db);
 	let createsBudgetUsed = 0;
@@ -90,18 +84,14 @@ export async function syncTwitchEventSubSubscriptions(env: Env): Promise<EventSu
 
 	while (examined < broadcasterIds.length && createsBudgetUsed < maxCreatesPerRun) {
 		const broadcasterUserId = broadcasterIds[pos]!;
-		const needsAny = LIFECYCLE_TYPES.some(
-			(type) => !remoteKeys.has(`${type}:${broadcasterUserId}`)
-		);
+		const needsAny = LIFECYCLE_TYPES.some((type) => !remoteKeys.has(`${type}:${broadcasterUserId}`));
 
 		if (!needsAny) {
 			const local = await listEventSubSubscriptionsForBroadcaster(db, broadcasterUserId);
 			const localTypes = new Set(local.map((row) => row.eventType));
 			if (localTypes.size === 0) {
 				for (const type of LIFECYCLE_TYPES) {
-					const sub = remote.find(
-						(s) => s.type === type && s.condition.broadcaster_user_id === broadcasterUserId
-					);
+					const sub = remote.find((s) => s.type === type && s.condition.broadcaster_user_id === broadcasterUserId);
 					if (sub) {
 						await upsertRemoteSubscription(db, sub, type, broadcasterUserId);
 						stats.skippedExisting++;
@@ -114,9 +104,7 @@ export async function syncTwitchEventSubSubscriptions(env: Env): Promise<EventSu
 			for (const type of LIFECYCLE_TYPES) {
 				const key = `${type}:${broadcasterUserId}`;
 				if (remoteKeys.has(key)) {
-					const sub = remote.find(
-						(s) => s.type === type && s.condition.broadcaster_user_id === broadcasterUserId
-					);
+					const sub = remote.find((s) => s.type === type && s.condition.broadcaster_user_id === broadcasterUserId);
 					if (sub) {
 						await upsertRemoteSubscription(db, sub, type, broadcasterUserId);
 					}
@@ -128,7 +116,7 @@ export async function syncTwitchEventSubSubscriptions(env: Env): Promise<EventSu
 					type,
 					broadcasterUserId,
 					callbackUrl: env.TWITCH_EVENTSUB_CALLBACK_URL,
-					secret: env.TWITCH_EVENTSUB_SECRET
+					secret: env.TWITCH_EVENTSUB_SECRET,
 				});
 
 				if (result.subscriptionId) {
@@ -136,7 +124,7 @@ export async function syncTwitchEventSubSubscriptions(env: Env): Promise<EventSu
 						id: result.subscriptionId,
 						eventType: type,
 						broadcasterUserId,
-						status: result.status
+						status: result.status,
 					});
 					stats.created++;
 					remoteKeys.add(key);
@@ -149,9 +137,7 @@ export async function syncTwitchEventSubSubscriptions(env: Env): Promise<EventSu
 					} else {
 						stats.errors++;
 						if (stats.errorSamples.length < 5) {
-							stats.errorSamples.push(
-								`${type}@${broadcasterUserId}: already_exists but not found via list`
-							);
+							stats.errorSamples.push(`${type}@${broadcasterUserId}: already_exists but not found via list`);
 						}
 					}
 				} else {

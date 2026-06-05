@@ -3,7 +3,7 @@ import { loadKickOverview, loadOverview, loadYoutubeOverview } from './overview'
 import { mockD1Batch, testLoadContext, testLoadContextWithDb } from './test-helpers';
 
 vi.mock('$env/dynamic/private', () => ({
-	env: { INGEST_URL: 'http://ingest.test' }
+	env: { INGEST_URL: 'http://ingest.test' },
 }));
 
 describe('loadOverview', () => {
@@ -22,9 +22,9 @@ describe('loadOverview', () => {
 						hours_watched: 100,
 						average_viewers: 10,
 						airtime_minutes: 600,
-						peak_viewers: 20
-					}
-				]
+						peak_viewers: 20,
+					},
+				],
 			},
 			{
 				results: [
@@ -32,10 +32,10 @@ describe('loadOverview', () => {
 						slug: 'valorant',
 						name: 'VALORANT',
 						hours_watched: 200,
-						average_viewers: 50
-					}
-				]
-			}
+						average_viewers: 50,
+					},
+				],
+			},
 		]);
 
 		const load = await loadOverview(testLoadContextWithDb(fetchFn as typeof fetch, db));
@@ -59,8 +59,8 @@ describe('loadOverview', () => {
 						youtube: 'missing_credentials',
 						channels_live: 300,
 						channels_live_by_platform: { twitch: 42, kick: 200, youtube: 58 },
-						discovery_new_24h: 5
-					})
+						discovery_new_24h: 5,
+					}),
 				});
 			}
 			if (u.includes('/v1/rankings/channels')) {
@@ -75,10 +75,10 @@ describe('loadOverview', () => {
 								display_name: 'Alpha',
 								avatar_url: null,
 								hours_watched: 100,
-								average_viewers: 10
-							}
-						]
-					})
+								average_viewers: 10,
+							},
+						],
+					}),
 				});
 			}
 			if (u.includes('/v1/rankings/games')) {
@@ -93,10 +93,10 @@ describe('loadOverview', () => {
 								name: 'VALORANT',
 								average_viewers: 50,
 								hours_watched: 200,
-								box_art_url: null
-							}
-						]
-					})
+								box_art_url: null,
+							},
+						],
+					}),
 				});
 			}
 			return Promise.resolve({ ok: false, status: 404 });
@@ -137,8 +137,8 @@ describe('loadKickOverview', () => {
 					json: async () => ({
 						status: 'ok',
 						tracked_channels: { twitch: 0, kick: 12, youtube: 0 },
-						channels_live_by_platform: { twitch: 0, kick: 3, youtube: 0 }
-					})
+						channels_live_by_platform: { twitch: 0, kick: 3, youtube: 0 },
+					}),
 				});
 			}
 			if (u.includes('/v1/rankings/channels')) {
@@ -153,10 +153,10 @@ describe('loadKickOverview', () => {
 								display_name: 'xQc',
 								avatar_url: null,
 								hours_watched: 100,
-								average_viewers: 10
-							}
-						]
-					})
+								average_viewers: 10,
+							},
+						],
+					}),
 				});
 			}
 			if (u.includes('/v1/rankings/games')) {
@@ -171,10 +171,10 @@ describe('loadKickOverview', () => {
 								name: 'Just Chatting',
 								average_viewers: 50,
 								hours_watched: 200,
-								box_art_url: null
-							}
-						]
-					})
+								box_art_url: null,
+							},
+						],
+					}),
 				});
 			}
 			return Promise.resolve({ ok: false, status: 404 });
@@ -204,8 +204,8 @@ describe('loadYoutubeOverview', () => {
 					json: async () => ({
 						status: 'ok',
 						tracked_channels: { twitch: 0, kick: 0, youtube: 8 },
-						channels_live_by_platform: { twitch: 0, kick: 0, youtube: 2 }
-					})
+						channels_live_by_platform: { twitch: 0, kick: 0, youtube: 2 },
+					}),
 				});
 			}
 			if (u.includes('/v1/rankings/channels')) {
@@ -220,10 +220,10 @@ describe('loadYoutubeOverview', () => {
 								display_name: 'MrBeast',
 								avatar_url: null,
 								hours_watched: 100,
-								average_viewers: 10
-							}
-						]
-					})
+								average_viewers: 10,
+							},
+						],
+					}),
 				});
 			}
 			if (u.includes('/v1/rankings/games')) {
@@ -231,8 +231,8 @@ describe('loadYoutubeOverview', () => {
 					ok: true,
 					json: async () => ({
 						updated_at: '2026-06-01T00:00:00Z',
-						items: []
-					})
+						items: [],
+					}),
 				});
 			}
 			return Promise.resolve({ ok: false, status: 404 });

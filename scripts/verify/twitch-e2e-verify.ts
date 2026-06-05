@@ -19,7 +19,7 @@ import { join } from 'node:path';
 import {
 	EVENTSUB_SECRET_MIN_LENGTH,
 	EVENTSUB_SECRET_MAX_LENGTH,
-	isValidTwitchEventSubSecret
+	isValidTwitchEventSubSecret,
 } from '../../workers/ingest/src/twitch/eventsub/secret';
 
 const REPO_ROOT = join(import.meta.dir, '../..');
@@ -27,9 +27,7 @@ const DEV_VARS = join(REPO_ROOT, 'workers/ingest/.dev.vars');
 const INGEST_BASE = process.env.INGEST_URL ?? 'http://127.0.0.1:8787';
 const PROOF_MATRIX = process.argv.includes('--proof-matrix');
 /** CI default: unit tests + web only. Set VERIFY_FULL=1 + ingest + secrets for checkpoint. */
-const SKIP_CHECKPOINT =
-	process.env.VERIFY_SKIP_CHECKPOINT === '1' ||
-	(process.env.CI === 'true' && process.env.VERIFY_FULL !== '1');
+const SKIP_CHECKPOINT = process.env.VERIFY_SKIP_CHECKPOINT === '1' || (process.env.CI === 'true' && process.env.VERIFY_FULL !== '1');
 
 type Step = { name: string; pass: boolean; detail: string };
 
@@ -88,21 +86,19 @@ function eventSubProofDetail(): { run: boolean; detail: string } {
 	if (!secret && !callback) {
 		return {
 			run: false,
-			detail:
-				'skipped — set TWITCH_EVENTSUB_SECRET (min 10 chars) + TWITCH_EVENTSUB_CALLBACK_URL in workers/ingest/.dev.vars'
+			detail: 'skipped — set TWITCH_EVENTSUB_SECRET (min 10 chars) + TWITCH_EVENTSUB_CALLBACK_URL in workers/ingest/.dev.vars',
 		};
 	}
 	if (!secret || !callback) {
 		return {
 			run: false,
-			detail:
-				'skipped — TWITCH_EVENTSUB_SECRET and TWITCH_EVENTSUB_CALLBACK_URL must both be set in workers/ingest/.dev.vars'
+			detail: 'skipped — TWITCH_EVENTSUB_SECRET and TWITCH_EVENTSUB_CALLBACK_URL must both be set in workers/ingest/.dev.vars',
 		};
 	}
 	if (!isValidTwitchEventSubSecret(secret)) {
 		return {
 			run: false,
-			detail: `skipped — TWITCH_EVENTSUB_SECRET invalid (${secret.length} chars; Twitch requires ${EVENTSUB_SECRET_MIN_LENGTH}–${EVENTSUB_SECRET_MAX_LENGTH})`
+			detail: `skipped — TWITCH_EVENTSUB_SECRET invalid (${secret.length} chars; Twitch requires ${EVENTSUB_SECRET_MIN_LENGTH}–${EVENTSUB_SECRET_MAX_LENGTH})`,
 		};
 	}
 	return { run: true, detail: '' };
@@ -122,7 +118,7 @@ async function ingestHealthStep(): Promise<boolean> {
 		log({
 			name: 'ingest health',
 			pass: false,
-			detail: `not reachable at ${INGEST_BASE} — start: bun run dev:ingest`
+			detail: `not reachable at ${INGEST_BASE} — start: bun run dev:ingest`,
 		});
 		return false;
 	}
@@ -147,7 +143,7 @@ async function ingestHealthStep(): Promise<boolean> {
 			log({
 				name: 'ingest health',
 				pass: false,
-				detail: `db=${parsed.db ?? 'unknown'}`
+				detail: `db=${parsed.db ?? 'unknown'}`,
 			});
 			return false;
 		}
@@ -157,7 +153,7 @@ async function ingestHealthStep(): Promise<boolean> {
 			log({
 				name: 'ingest health',
 				pass: false,
-				detail: `status=${parsed.status ?? 'unknown'} db=${parsed.db ?? 'unknown'}`
+				detail: `status=${parsed.status ?? 'unknown'} db=${parsed.db ?? 'unknown'}`,
 			});
 			return false;
 		}
@@ -165,7 +161,7 @@ async function ingestHealthStep(): Promise<boolean> {
 		log({
 			name: 'ingest health',
 			pass: false,
-			detail: err instanceof Error ? err.message : String(err)
+			detail: err instanceof Error ? err.message : String(err),
 		});
 		return false;
 	}
@@ -186,7 +182,7 @@ async function runProofMatrix(): Promise<void> {
 	log({
 		name: 'd1:verify-schema (local)',
 		pass: schema.ok,
-		detail: schema.ok ? 'migrations 0001–0009 tables/columns/indexes ok' : schema.output.slice(-500)
+		detail: schema.ok ? 'migrations 0001–0009 tables/columns/indexes ok' : schema.output.slice(-500),
 	});
 	if (!schema.ok) {
 		printSummary();
@@ -197,7 +193,7 @@ async function runProofMatrix(): Promise<void> {
 	log({
 		name: 'ingest:cron (*/1)',
 		pass: cron.ok,
-		detail: cron.ok ? 'scheduled handler ok' : cron.output.slice(-400)
+		detail: cron.ok ? 'scheduled handler ok' : cron.output.slice(-400),
 	});
 	if (!cron.ok) {
 		printSummary();
@@ -208,9 +204,7 @@ async function runProofMatrix(): Promise<void> {
 	log({
 		name: 'twitch:checkpoint (--no-start-ingest)',
 		pass: checkpoint.ok,
-		detail: checkpoint.ok
-			? 'pipeline ok (X-Admin-Api-Key from env / .dev.vars)'
-			: checkpoint.output.slice(-500)
+		detail: checkpoint.ok ? 'pipeline ok (X-Admin-Api-Key from env / .dev.vars)' : checkpoint.output.slice(-500),
 	});
 	if (!checkpoint.ok) {
 		printSummary();
@@ -225,17 +219,19 @@ async function runProofMatrix(): Promise<void> {
 			name: 'twitch:eventsub-sync (local proof)',
 			pass: eventsub.ok || skipped,
 			detail: skipped
-				? eventsub.output.split('\n').find((l) => l.includes('SKIP:'))?.trim() ??
-					'skipped — EventSub secret invalid in running ingest'
+				? (eventsub.output
+						.split('\n')
+						.find((l) => l.includes('SKIP:'))
+						?.trim() ?? 'skipped — EventSub secret invalid in running ingest')
 				: eventsub.ok
 					? 'POST /admin/twitch/eventsub/sync ok'
-					: eventsub.output.slice(-500)
+					: eventsub.output.slice(-500),
 		});
 	} else {
 		log({
 			name: 'twitch:eventsub-sync (local proof)',
 			pass: true,
-			detail: eventSubProof.detail
+			detail: eventSubProof.detail,
 		});
 	}
 
@@ -255,7 +251,7 @@ async function main() {
 	log({
 		name: 'ingest unit tests',
 		pass: ingestTests.ok,
-		detail: ingestTests.ok ? 'vitest green' : ingestTests.output.slice(-400)
+		detail: ingestTests.ok ? 'vitest green' : ingestTests.output.slice(-400),
 	});
 	if (!ingestTests.ok) {
 		printSummary();
@@ -266,7 +262,7 @@ async function main() {
 	log({
 		name: 'ingest coverage (twitch/ + db/)',
 		pass: coverage.ok,
-		detail: coverage.ok ? '≥80% thresholds' : coverage.output.slice(-500)
+		detail: coverage.ok ? '≥80% thresholds' : coverage.output.slice(-500),
 	});
 	if (!coverage.ok) {
 		printSummary();
@@ -277,9 +273,31 @@ async function main() {
 	log({
 		name: 'web server load tests',
 		pass: webTests.ok,
-		detail: webTests.ok ? 'vitest green' : webTests.output.slice(-400)
+		detail: webTests.ok ? 'vitest green' : webTests.output.slice(-400),
 	});
 	if (!webTests.ok) {
+		printSummary();
+		process.exit(1);
+	}
+
+	const lint = await run(['bun', 'run', 'lint']);
+	log({
+		name: 'oxlint',
+		pass: lint.ok,
+		detail: lint.ok ? 'no issues' : lint.output.slice(-400),
+	});
+	if (!lint.ok) {
+		printSummary();
+		process.exit(1);
+	}
+
+	const formatCheck = await run(['bun', 'run', 'format:check']);
+	log({
+		name: 'oxfmt --check',
+		pass: formatCheck.ok,
+		detail: formatCheck.ok ? 'formatting ok' : formatCheck.output.slice(-400),
+	});
+	if (!formatCheck.ok) {
 		printSummary();
 		process.exit(1);
 	}
@@ -291,27 +309,22 @@ async function main() {
 			pass: true,
 			detail: reachable
 				? 'skipped (VERIFY_SKIP_CHECKPOINT or CI without VERIFY_FULL) — ingest was up'
-				: 'skipped — no Helix/local ingest in CI; run locally: bun run dev:ingest && bun run verify:twitch'
+				: 'skipped — no Helix/local ingest in CI; run locally: bun run dev:ingest && bun run verify:twitch',
 		});
 	} else if (!(await ingestReachable())) {
 		log({
 			name: 'ingest health (checkpoint)',
 			pass: false,
-			detail: `ingest not reachable at ${INGEST_BASE} — start: bun run dev:ingest`
+			detail: `ingest not reachable at ${INGEST_BASE} — start: bun run dev:ingest`,
 		});
 		printSummary();
 		process.exit(1);
 	} else {
-		const checkpoint = await run([
-			'bun',
-			'run',
-			'twitch:checkpoint',
-			'--no-start-ingest'
-		]);
+		const checkpoint = await run(['bun', 'run', 'twitch:checkpoint', '--no-start-ingest']);
 		log({
 			name: 'twitch checkpoint (--no-start-ingest)',
 			pass: checkpoint.ok,
-			detail: checkpoint.ok ? 'pipeline ok' : checkpoint.output.slice(-500)
+			detail: checkpoint.ok ? 'pipeline ok' : checkpoint.output.slice(-500),
 		});
 		if (!checkpoint.ok) {
 			printSummary();
@@ -323,14 +336,14 @@ async function main() {
 	log({
 		name: 'web check',
 		pass: checkWeb.ok,
-		detail: checkWeb.ok ? 'svelte-check ok' : checkWeb.output.slice(-400)
+		detail: checkWeb.ok ? 'svelte-check ok' : checkWeb.output.slice(-400),
 	});
 
 	const buildWeb = await run(['bun', 'run', 'build:web']);
 	log({
 		name: 'web build',
 		pass: buildWeb.ok,
-		detail: buildWeb.ok ? 'vite build ok' : buildWeb.output.slice(-400)
+		detail: buildWeb.ok ? 'vite build ok' : buildWeb.output.slice(-400),
 	});
 
 	printSummary();

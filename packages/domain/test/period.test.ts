@@ -7,7 +7,7 @@ import {
 	periodCoverageNote,
 	periodToDays,
 	rankingPeriods,
-	uiRankingPeriods
+	uiRankingPeriods,
 } from '../src/period';
 
 describe('ranking periods', () => {

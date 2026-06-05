@@ -67,9 +67,7 @@ export const VOD_BACKFILL_VIDEOS_FIRST = 100;
 
 export function vodBackfillMaxChannelsFromEnv(env: Env): number {
 	const n = Number(env.VOD_BACKFILL_MAX_CHANNELS_PER_RUN ?? VOD_BACKFILL_MAX_CHANNELS_PER_RUN);
-	return Number.isFinite(n) && n > 0
-		? Math.floor(n)
-		: VOD_BACKFILL_MAX_CHANNELS_PER_RUN;
+	return Number.isFinite(n) && n > 0 ? Math.floor(n) : VOD_BACKFILL_MAX_CHANNELS_PER_RUN;
 }
 
 /**
@@ -84,12 +82,8 @@ export const DEFAULT_EVENTSUB_SYNC_MAX_CHANNELS_PER_RUN = 125;
 export const EVENTSUB_SYNC_MAX_CHANNELS_PER_RUN = DEFAULT_EVENTSUB_SYNC_MAX_CHANNELS_PER_RUN;
 
 export function eventsubSyncMaxChannelsFromEnv(env: Env): number {
-	const n = Number(
-		env.EVENTSUB_SYNC_MAX_CHANNELS_PER_RUN ?? DEFAULT_EVENTSUB_SYNC_MAX_CHANNELS_PER_RUN
-	);
-	return Number.isFinite(n) && n > 0
-		? Math.floor(n)
-		: DEFAULT_EVENTSUB_SYNC_MAX_CHANNELS_PER_RUN;
+	const n = Number(env.EVENTSUB_SYNC_MAX_CHANNELS_PER_RUN ?? DEFAULT_EVENTSUB_SYNC_MAX_CHANNELS_PER_RUN);
+	return Number.isFinite(n) && n > 0 ? Math.floor(n) : DEFAULT_EVENTSUB_SYNC_MAX_CHANNELS_PER_RUN;
 }
 
 export function minViewersFromEnv(env: Env): number {

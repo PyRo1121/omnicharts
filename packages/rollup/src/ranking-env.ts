@@ -28,10 +28,7 @@ export function rankingQueryOptionsFromEnv(env: RankingEligibilityEnv): {
 	return rankingQueryOptionsForPlatform(env, PLATFORM_TWITCH);
 }
 
-export function minViewersForPlatformFromRankingEnv(
-	env: RankingEligibilityEnv,
-	platformId: string
-): number {
+export function minViewersForPlatformFromRankingEnv(env: RankingEligibilityEnv, platformId: string): number {
 	if (platformId === PLATFORM_KICK) {
 		const n = Number(env.KICK_MIN_VIEWERS ?? env.TWITCH_MIN_VIEWERS ?? DEFAULT_MIN_VIEWERS);
 		return Number.isFinite(n) && n >= 0 ? n : DEFAULT_MIN_VIEWERS;
@@ -45,13 +42,13 @@ export function minViewersForPlatformFromRankingEnv(
 
 export function rankingQueryOptionsForPlatform(
 	env: RankingEligibilityEnv,
-	platformId: string
+	platformId: string,
 ): {
 	minAirtimeMinutes: number;
 	minAverageViewers: number;
 } {
 	return {
 		minAirtimeMinutes: rankingMinAirtimeMinutesFromRankingEnv(env),
-		minAverageViewers: minViewersForPlatformFromRankingEnv(env, platformId)
+		minAverageViewers: minViewersForPlatformFromRankingEnv(env, platformId),
 	};
 }

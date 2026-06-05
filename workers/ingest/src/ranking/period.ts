@@ -5,5 +5,5 @@ export {
 	parseRankingPeriod,
 	periodToDays,
 	rankingPeriods,
-	uiRankingPeriods
+	uiRankingPeriods,
 } from '@omnicharts/domain';

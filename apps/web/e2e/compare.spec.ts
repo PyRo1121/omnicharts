@@ -1,9 +1,5 @@
 import { test, expect } from '@playwright/test';
-import {
-	firstRankedSlug,
-	ingestRankingsReady,
-	INGEST_URL
-} from './helpers';
+import { firstRankedSlug, ingestRankingsReady, INGEST_URL } from './helpers';
 
 test.describe('Compare page (Phase 4 slice 4.4)', () => {
 	test('compare picker renders without slugs', async ({ page }) => {
@@ -24,9 +20,7 @@ test.describe('Compare page (Phase 4 slice 4.4)', () => {
 			test.skip(true, 'no twitch channel rankings');
 		}
 
-		const res = await page.goto(
-			`/compare?a=${encodeURIComponent(slug)}&b=definitely-not-a-channel-xyz&platform=twitch&period=7d`
-		);
+		const res = await page.goto(`/compare?a=${encodeURIComponent(slug)}&b=definitely-not-a-channel-xyz&platform=twitch&period=7d`);
 		expect(res?.status()).toBe(200);
 		await expect(page.getByText(/Channel not found/i)).toBeVisible();
 		await expect(page.getByRole('table', { name: /Side-by-side channel metrics/i })).toBeVisible();
@@ -46,9 +40,7 @@ test.describe('Compare page (Phase 4 slice 4.4)', () => {
 		}
 
 		const [a, b] = slugs;
-		const pageRes = await page.goto(
-			`/compare?a=${encodeURIComponent(a)}&b=${encodeURIComponent(b)}&platform=twitch&period=7d`
-		);
+		const pageRes = await page.goto(`/compare?a=${encodeURIComponent(a)}&b=${encodeURIComponent(b)}&platform=twitch&period=7d`);
 		expect(pageRes?.status()).toBe(200);
 		await expect(page.getByRole('table', { name: /Side-by-side channel metrics/i })).toBeVisible();
 		await expect(page.getByText('Hours watched').first()).toBeVisible();
@@ -62,9 +54,7 @@ test.describe('Compare page (Phase 4 slice 4.4)', () => {
 		const slug = await firstRankedSlug('twitch', 'channels');
 		if (!slug) test.skip(true, 'no twitch rankings');
 
-		await page.goto(
-			`/compare?a=${encodeURIComponent(slug)}&b=${encodeURIComponent(slug)}&platform=twitch&period=7d`
-		);
+		await page.goto(`/compare?a=${encodeURIComponent(slug)}&b=${encodeURIComponent(slug)}&platform=twitch&period=7d`);
 		await page.getByRole('group', { name: 'Time period' }).getByRole('link', { name: '30 days' }).click();
 		await expect(page).toHaveURL(/period=30d/);
 	});

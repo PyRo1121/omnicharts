@@ -11,13 +11,13 @@ describe('fetchIngestStateCounts', () => {
 							all: async () => ({
 								results: [
 									{ ingest_state: 'tracked', n: 10 },
-									{ ingest_state: 'discovered', n: 3 }
-								]
-							})
+									{ ingest_state: 'discovered', n: 3 },
+								],
+							}),
 						};
-					}
+					},
 				};
-			}
+			},
 		} as unknown as D1Database;
 
 		const counts = await fetchIngestStateCounts(db);

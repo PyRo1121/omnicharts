@@ -24,7 +24,7 @@ export function youtubeSeedNeedsApiReason(env: Env): string | null {
 export async function seedYoutubeChannelByQuery(
 	env: Env,
 	query: string,
-	opts: { promoteToTracked?: boolean } = {}
+	opts: { promoteToTracked?: boolean } = {},
 ): Promise<ChannelSearchRow | null> {
 	const needsApi = youtubeSeedNeedsApiReason(env);
 	if (needsApi) {
@@ -40,14 +40,14 @@ export async function seedYoutubeChannelByQuery(
 
 	const row = await upsertYoutubeChannel(db, lookup, {
 		ingestState: opts.promoteToTracked ? 'tracked' : 'discovered',
-		promoteToTracked: opts.promoteToTracked
+		promoteToTracked: opts.promoteToTracked,
 	});
 	return {
 		id: row.id,
 		slug: row.slug,
 		display_name: lookup.displayName,
 		avatar_url: lookup.avatarUrl,
-		platform_id: PLATFORM_YOUTUBE
+		platform_id: PLATFORM_YOUTUBE,
 	};
 }
 

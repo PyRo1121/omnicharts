@@ -9,8 +9,8 @@ describe('rankingMinAirtimeMinutesFromEnv', () => {
 	it('reads TWITCH_RANKING_MIN_AIRTIME_MINUTES', () => {
 		expect(
 			rankingMinAirtimeMinutesFromEnv({
-				TWITCH_RANKING_MIN_AIRTIME_MINUTES: '1'
-			} as Env)
+				TWITCH_RANKING_MIN_AIRTIME_MINUTES: '1',
+			} as Env),
 		).toBe(1);
 	});
 });

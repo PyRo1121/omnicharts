@@ -1,10 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
-import { trendingSearches } from '$lib/mock/home';
 import { load } from '../../routes/+page.server';
 import type { PageData } from '../../routes/$types';
 
 vi.mock('$env/dynamic/private', () => ({
-	env: { INGEST_URL: 'http://ingest.test' }
+	env: { INGEST_URL: 'http://ingest.test' },
 }));
 
 type HomepageLoad = (event: Parameters<typeof load>[0]) => Promise<PageData>;
@@ -21,7 +20,7 @@ function homepageLoadArgs(platform: string | null) {
 		fetch: fetchFn,
 		url,
 		setHeaders,
-		platform: undefined
+		platform: undefined,
 	} as unknown as Parameters<typeof load>[0];
 }
 
@@ -35,8 +34,8 @@ describe('homepage load — non-Twitch platforms (docs/09 Phase 3)', () => {
 					json: async () => ({
 						status: 'ok',
 						tracked_channels: { twitch: 0, kick: 15, youtube: 0 },
-						channels_live_by_platform: { twitch: 0, kick: 4, youtube: 0 }
-					})
+						channels_live_by_platform: { twitch: 0, kick: 4, youtube: 0 },
+					}),
 				});
 			}
 			if (url.includes('/rankings/games')) {
@@ -46,8 +45,8 @@ describe('homepage load — non-Twitch platforms (docs/09 Phase 3)', () => {
 						platform: 'kick',
 						period: '7d',
 						updated_at: '2026-06-01T00:00:00Z',
-						items: []
-					})
+						items: [],
+					}),
 				});
 			}
 			return Promise.resolve({
@@ -63,10 +62,10 @@ describe('homepage load — non-Twitch platforms (docs/09 Phase 3)', () => {
 							display_name: 'xQc',
 							avatar_url: null,
 							hours_watched: 5000,
-							average_viewers: 200
-						}
-					]
-				})
+							average_viewers: 200,
+						},
+					],
+				}),
 			});
 		});
 		const args = homepageLoadArgs('kick');
@@ -81,16 +80,10 @@ describe('homepage load — non-Twitch platforms (docs/09 Phase 3)', () => {
 		expect(result.overview.stats.some((s) => s.label.includes('Top 20 ranked'))).toBe(true);
 		expect(result.channelRankings.rows[0]?.slug).toBe('xqc');
 		expect(result.gameRankings).toMatchObject({ source: 'live', rows: [] });
-		expect(
-			fetchFn.mock.calls.some(
-				(c) => String(c[0]).includes('/rankings/channels') && String(c[0]).includes('platform=kick')
-			)
-		).toBe(true);
-		expect(
-			fetchFn.mock.calls.some(
-				(c) => String(c[0]).includes('/rankings/games') && String(c[0]).includes('platform=kick')
-			)
-		).toBe(true);
+		expect(fetchFn.mock.calls.some((c) => String(c[0]).includes('/rankings/channels') && String(c[0]).includes('platform=kick'))).toBe(
+			true,
+		);
+		expect(fetchFn.mock.calls.some((c) => String(c[0]).includes('/rankings/games') && String(c[0]).includes('platform=kick'))).toBe(true);
 	});
 
 	it('loads youtube rankings when ingest has no items', async () => {
@@ -102,8 +95,8 @@ describe('homepage load — non-Twitch platforms (docs/09 Phase 3)', () => {
 					platform: url.includes('games') ? 'youtube' : 'youtube',
 					period: '7d',
 					updated_at: '2026-06-01T00:00:00Z',
-					items: []
-				})
+					items: [],
+				}),
 			});
 		});
 		const args = homepageLoadArgs('youtube');
@@ -114,11 +107,9 @@ describe('homepage load — non-Twitch platforms (docs/09 Phase 3)', () => {
 		expect(result.platform).toBe('youtube');
 		expect(result.channelRankings.rows).toHaveLength(0);
 		expect(result.gameRankings.rows).toHaveLength(0);
-		expect(
-			fetchFn.mock.calls.some(
-				(c) => String(c[0]).includes('/rankings/channels') && String(c[0]).includes('platform=youtube')
-			)
-		).toBe(true);
+		expect(fetchFn.mock.calls.some((c) => String(c[0]).includes('/rankings/channels') && String(c[0]).includes('platform=youtube'))).toBe(
+			true,
+		);
 	});
 
 	it('loads youtube channel rankings when ingest returns items', async () => {
@@ -131,8 +122,8 @@ describe('homepage load — non-Twitch platforms (docs/09 Phase 3)', () => {
 						platform: 'youtube',
 						period: '7d',
 						updated_at: '2026-06-01T00:00:00Z',
-						items: []
-					})
+						items: [],
+					}),
 				});
 			}
 			return Promise.resolve({
@@ -148,10 +139,10 @@ describe('homepage load — non-Twitch platforms (docs/09 Phase 3)', () => {
 							display_name: 'MrBeast',
 							avatar_url: null,
 							hours_watched: 9000,
-							average_viewers: 120
-						}
-					]
-				})
+							average_viewers: 120,
+						},
+					],
+				}),
 			});
 		});
 		const args = homepageLoadArgs('youtube');

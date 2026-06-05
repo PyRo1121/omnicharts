@@ -8,10 +8,10 @@ describe('VOD backfill admin routes (worker.fetch)', () => {
 	});
 
 	it('POST /admin/twitch/vod-backfill returns 401 without admin key', async () => {
-		const res = await worker.fetch(
-			new Request('http://ingest/admin/twitch/vod-backfill', { method: 'POST' }),
-			{ ADMIN_API_KEY: 'secret', DB: {} as D1Database } as Env
-		);
+		const res = await worker.fetch(new Request('http://ingest/admin/twitch/vod-backfill', { method: 'POST' }), {
+			ADMIN_API_KEY: 'secret',
+			DB: {} as D1Database,
+		} as Env);
 		expect(res.status).toBe(401);
 	});
 
@@ -19,9 +19,9 @@ describe('VOD backfill admin routes (worker.fetch)', () => {
 		const res = await worker.fetch(
 			new Request('http://ingest/admin/twitch/vod-backfill', {
 				method: 'POST',
-				headers: { 'X-Admin-Api-Key': 'secret' }
+				headers: { 'X-Admin-Api-Key': 'secret' },
 			}),
-			{ ADMIN_API_KEY: 'secret', DB: {} as D1Database } as Env
+			{ ADMIN_API_KEY: 'secret', DB: {} as D1Database } as Env,
 		);
 		expect(res.status).toBe(503);
 		const body = (await res.json()) as { error: string };
@@ -35,7 +35,7 @@ describe('VOD backfill admin routes (worker.fetch)', () => {
 			channels_processed: 2,
 			videos_fetched: 5,
 			sessions_upserted: 4,
-			pages: 3
+			pages: 3,
 		});
 
 		const res = await worker.fetch(
@@ -43,16 +43,16 @@ describe('VOD backfill admin routes (worker.fetch)', () => {
 				method: 'POST',
 				headers: {
 					'X-Admin-Api-Key': 'secret',
-					'content-type': 'application/json'
+					'content-type': 'application/json',
 				},
-				body: JSON.stringify({ limit: 2 })
+				body: JSON.stringify({ limit: 2 }),
 			}),
 			{
 				ADMIN_API_KEY: 'secret',
 				TWITCH_CLIENT_ID: 'id',
 				TWITCH_CLIENT_SECRET: 'secret',
-				DB: {} as D1Database
-			} as Env
+				DB: {} as D1Database,
+			} as Env,
 		);
 
 		expect(res.status).toBe(200);

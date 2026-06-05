@@ -8,10 +8,9 @@ export function twitchAppCredentialsErrorResponse(): Response {
 	return Response.json(
 		{
 			error: 'Twitch credentials not configured',
-			hint:
-				'Set TWITCH_CLIENT_ID and TWITCH_CLIENT_SECRET in workers/ingest/.dev.vars (copy from .dev.vars.example). Restart local ingest after editing: stop wrangler dev, then bun run dev:ingest from the repo root. Wrangler reads .dev.vars only at startup.',
-			dev_vars: 'workers/ingest/.dev.vars'
+			hint: 'Set TWITCH_CLIENT_ID and TWITCH_CLIENT_SECRET in workers/ingest/.dev.vars (copy from .dev.vars.example). Restart local ingest after editing: stop wrangler dev, then bun run dev:ingest from the repo root. Wrangler reads .dev.vars only at startup.',
+			dev_vars: 'workers/ingest/.dev.vars',
 		},
-		{ status: 503 }
+		{ status: 503 },
 	);
 }

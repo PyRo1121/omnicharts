@@ -1,8 +1,5 @@
 import { parseRankingPeriod } from '@omnicharts/domain';
-import {
-	buildChannelDetailResponse,
-	resolveChannelSlug
-} from '@omnicharts/rollup';
+import { buildChannelDetailResponse, resolveChannelSlug } from '@omnicharts/rollup';
 import { getIngestBaseUrl } from '$lib/server/ingest';
 import { periodForApi } from '$lib/server/period-api';
 import type { ServerLoadContext } from '$lib/server/load-context';
@@ -67,15 +64,13 @@ type IngestChannelResponse = {
 	}[];
 };
 
-function mapDaily(
-	rows: IngestChannelResponse['daily'] | undefined
-): ChannelDailyPoint[] {
+function mapDaily(rows: IngestChannelResponse['daily'] | undefined): ChannelDailyPoint[] {
 	if (!rows?.length) return [];
 	return rows.map((d) => ({
 		date: d.date,
 		hoursWatched: d.hours_watched,
 		averageViewers: d.average_viewers,
-		peakViewers: d.peak_viewers
+		peakViewers: d.peak_viewers,
 	}));
 }
 
@@ -99,16 +94,12 @@ function mapChannelBody(body: IngestChannelResponse, period: RankingPeriod): Cha
 			peakViewers: body.totals.peak_viewers,
 			airtimeHours: body.totals.airtime_hours,
 			streamCount: body.totals.stream_count,
-			followersGain: body.totals.followers_gain
-		}
+			followersGain: body.totals.followers_gain,
+		},
 	};
 }
 
-function notFoundLoad(
-	slug: string,
-	platform: string,
-	period: RankingPeriod
-): ChannelDetailLoad {
+function notFoundLoad(slug: string, platform: string, period: RankingPeriod): ChannelDetailLoad {
 	return {
 		source: 'not_found',
 		platform,
@@ -128,8 +119,8 @@ function notFoundLoad(
 			peakViewers: 0,
 			airtimeHours: 0,
 			streamCount: 0,
-			followersGain: null
-		}
+			followersGain: null,
+		},
 	};
 }
 
@@ -153,8 +144,8 @@ function errorLoad(slug: string, platform: string, period: RankingPeriod): Chann
 			peakViewers: 0,
 			airtimeHours: 0,
 			streamCount: 0,
-			followersGain: null
-		}
+			followersGain: null,
+		},
 	};
 }
 
@@ -173,7 +164,7 @@ const CHANNEL_LOOKUP_PLATFORMS = ['twitch', 'kick', 'youtube'] as const;
 export async function findChannelOnOtherPlatforms(
 	ctx: ServerLoadContext,
 	slug: string,
-	currentPlatform: string
+	currentPlatform: string,
 ): Promise<ChannelPlatformSuggestion[]> {
 	const others = CHANNEL_LOOKUP_PLATFORMS.filter((platform) => platform !== currentPlatform);
 	const matches = await Promise.all(
@@ -190,21 +181,17 @@ export async function findChannelOnOtherPlatforms(
 				return {
 					slug: body.slug,
 					platform: body.platform ?? platform,
-					displayName: body.display_name
+					displayName: body.display_name,
 				};
 			} catch {
 				return null;
 			}
-		})
+		}),
 	);
 	return matches.filter((row): row is ChannelPlatformSuggestion => row != null);
 }
 
-export async function resolveChannelSlugFromHistory(
-	ctx: ServerLoadContext,
-	slug: string,
-	platform: string
-): Promise<string | null> {
+export async function resolveChannelSlugFromHistory(ctx: ServerLoadContext, slug: string, platform: string): Promise<string | null> {
 	if (ctx.db && (platform === 'twitch' || platform === 'kick' || platform === 'youtube')) {
 		try {
 			const resolved = await resolveChannelSlug(ctx.db, { platform, slug });
@@ -218,7 +205,7 @@ export async function resolveChannelSlugFromHistory(
 	const params = new URLSearchParams({ slug, platform });
 	try {
 		const res = await ctx.fetch(`${getIngestBaseUrl()}/v1/channels/resolve?${params}`, {
-			headers: { accept: 'application/json' }
+			headers: { accept: 'application/json' },
 		});
 		if (!res.ok) return null;
 		const body = (await res.json()) as { slug: string; from_history?: boolean };
@@ -233,7 +220,7 @@ export async function loadChannelDetail(
 	ctx: ServerLoadContext,
 	slug: string,
 	platform: string,
-	period: RankingPeriod
+	period: RankingPeriod,
 ): Promise<ChannelDetailLoad> {
 	const apiPeriod = parseRankingPeriod(periodForApi(period));
 
@@ -243,7 +230,7 @@ export async function loadChannelDetail(
 				const body = await buildChannelDetailResponse(ctx.db, {
 					platform,
 					slug,
-					period: apiPeriod
+					period: apiPeriod,
 				});
 				if (body) return mapChannelBody(body as IngestChannelResponse, period);
 			} catch {

@@ -7,9 +7,7 @@ import { ingestHelixStream } from '../src/twitch/ingest-stream';
 import { runDailyRollup } from '../src/rollup/daily-job';
 
 const fixtureDir = dirname(fileURLToPath(import.meta.url));
-const helixPayload = JSON.parse(
-	readFileSync(join(fixtureDir, 'fixtures/helix-streams-sample.json'), 'utf8')
-) as { data: HelixStream[] };
+const helixPayload = JSON.parse(readFileSync(join(fixtureDir, 'fixtures/helix-streams-sample.json'), 'utf8')) as { data: HelixStream[] };
 
 const ROLLUP_DATE = new Date().toISOString().slice(0, 10);
 const CHANNEL_ID = 'twitch-ch-545050196';
@@ -24,7 +22,7 @@ function fixtureStream(): HelixStream {
 		user_name: 'Kato',
 		game_name: 'Just Chatting',
 		viewer_count: 100,
-		started_at: `${ROLLUP_DATE}T10:00:00.000Z`
+		started_at: `${ROLLUP_DATE}T10:00:00.000Z`,
 	};
 }
 
@@ -62,8 +60,8 @@ function createHelixToRollupDb() {
 				return {
 					bind: () => ({
 						first: async () => null,
-						all: async () => ({ results: [] })
-					})
+						all: async () => ({ results: [] }),
+					}),
 				};
 			}
 			if (sql.includes('INSERT INTO stream_sessions')) {
@@ -77,7 +75,7 @@ function createHelixToRollupDb() {
 					bind: (...args: unknown[]) => {
 						rawSamples.push(args);
 						return { run: async () => ({}) };
-					}
+					},
 				};
 			}
 			if (sql.includes('game_categories')) {
@@ -89,12 +87,12 @@ function createHelixToRollupDb() {
 					viewer_count: Number(args[2]),
 					session_id: SESSION_ID,
 					channel_id: CHANNEL_ID,
-					game_category_id: GAME_CATEGORY_ID
+					game_category_id: GAME_CATEGORY_ID,
 				}));
 				return {
 					bind: () => ({
-						all: async () => ({ results: rollupRows })
-					})
+						all: async () => ({ results: rollupRows }),
+					}),
 				};
 			}
 			if (sql.includes('DELETE FROM viewer_samples')) {
@@ -103,8 +101,8 @@ function createHelixToRollupDb() {
 			if (sql.includes('SELECT id, follower_count FROM channels')) {
 				return {
 					bind: () => ({
-						all: async () => ({ results: [{ id: CHANNEL_ID, follower_count: 1000 }] })
-					})
+						all: async () => ({ results: [{ id: CHANNEL_ID, follower_count: 1000 }] }),
+					}),
 				};
 			}
 			if (sql.includes('SELECT key, value FROM ingest_metadata')) {
@@ -115,7 +113,7 @@ function createHelixToRollupDb() {
 					bind: (...args: unknown[]) => {
 						channelRollups.push(args);
 						return { run: async () => ({}) };
-					}
+					},
 				};
 			}
 			if (sql.includes('INSERT INTO game_daily_rollups')) {
@@ -128,7 +126,7 @@ function createHelixToRollupDb() {
 				return { bind: () => ({ run: async () => ({ meta: { changes: 0 } }) }) };
 			}
 			return {
-				bind: () => ({ run: async () => ({}), first: async () => null, all: async () => ({}) })
+				bind: () => ({ run: async () => ({}), first: async () => null, all: async () => ({}) }),
 			};
 		},
 		async batch(statements: { run: () => Promise<unknown> }[]) {
@@ -137,7 +135,7 @@ function createHelixToRollupDb() {
 				results.push(await stmt.run());
 			}
 			return results;
-		}
+		},
 	} as unknown as D1Database;
 
 	return { db, rawSamples, channelRollups };

@@ -7,9 +7,7 @@ describe('isDevAdminRouteAllowed', () => {
 	});
 
 	it('allows production when ALLOW_DEV_SEED=1', () => {
-		expect(
-			isDevAdminRouteAllowed({ ENVIRONMENT: 'production', ALLOW_DEV_SEED: '1' } as Env)
-		).toBe(true);
+		expect(isDevAdminRouteAllowed({ ENVIRONMENT: 'production', ALLOW_DEV_SEED: '1' } as Env)).toBe(true);
 	});
 
 	it('allows local wrangler dev by default', () => {

@@ -46,10 +46,7 @@ export function periodToDays(period: RankingPeriod): number {
 }
 
 /** Honest UI note when rollup history is shorter than the selected ranking window. */
-export function periodCoverageNote(
-	period: RankingPeriod,
-	availableRollupDays: number | null
-): string | null {
+export function periodCoverageNote(period: RankingPeriod, availableRollupDays: number | null): string | null {
 	if (availableRollupDays == null || availableRollupDays <= 0) return null;
 	const requested = periodToDays(period);
 	if (availableRollupDays >= requested) return null;

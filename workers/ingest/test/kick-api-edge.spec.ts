@@ -20,8 +20,8 @@ describe('KickPublicApiClient edge cases', () => {
 			if (url.includes('id.kick.com')) {
 				return Promise.resolve(
 					new Response(JSON.stringify({ access_token: 'tok', expires_in: 3600 }), {
-						status: 200
-					})
+						status: 200,
+					}),
 				);
 			}
 			liveCalls += 1;
@@ -29,21 +29,35 @@ describe('KickPublicApiClient edge cases', () => {
 				return Promise.resolve(
 					new Response('rate limited', {
 						status: 429,
-						headers: { 'Retry-After': '0' }
-					})
+						headers: { 'Retry-After': '0' },
+					}),
 				);
 			}
 			return Promise.resolve(
-				new Response(JSON.stringify({ data: [{ broadcaster_user_id: 1, channel_id: 10, slug: 'one', stream_title: 'T', started_at: '2026-06-01T00:00:00Z', viewer_count: 5 }] }), {
-					status: 200
-				})
+				new Response(
+					JSON.stringify({
+						data: [
+							{
+								broadcaster_user_id: 1,
+								channel_id: 10,
+								slug: 'one',
+								stream_title: 'T',
+								started_at: '2026-06-01T00:00:00Z',
+								viewer_count: 5,
+							},
+						],
+					}),
+					{
+						status: 200,
+					},
+				),
 			);
 		});
 		vi.stubGlobal('fetch', fetchMock);
 
 		const client = new KickPublicApiClient({
 			KICK_CLIENT_ID: 'id',
-			KICK_CLIENT_SECRET: 'secret'
+			KICK_CLIENT_SECRET: 'secret',
 		} as Env);
 		const streams = await client.getLivestreamsByBroadcasterIds(['1']);
 		expect(streams).toHaveLength(1);
@@ -56,8 +70,8 @@ describe('KickPublicApiClient edge cases', () => {
 			if (url.includes('id.kick.com')) {
 				return Promise.resolve(
 					new Response(JSON.stringify({ access_token: 'tok', expires_in: 3600 }), {
-						status: 200
-					})
+						status: 200,
+					}),
 				);
 			}
 			liveCalls.push(url);
@@ -68,7 +82,7 @@ describe('KickPublicApiClient edge cases', () => {
 		const ids = Array.from({ length: 51 }, (_, i) => String(i + 1));
 		const client = new KickPublicApiClient({
 			KICK_CLIENT_ID: 'id',
-			KICK_CLIENT_SECRET: 'secret'
+			KICK_CLIENT_SECRET: 'secret',
 		} as Env);
 		await client.getLivestreamsByBroadcasterIds(ids);
 
@@ -88,8 +102,8 @@ describe('KickPublicApiClient edge cases', () => {
 			if (url.includes('id.kick.com')) {
 				return Promise.resolve(
 					new Response(JSON.stringify({ access_token: 'tok', expires_in: 3600 }), {
-						status: 200
-					})
+						status: 200,
+					}),
 				);
 			}
 			expect(url).toContain('slug=not-a-real-channel-xyz');
@@ -99,7 +113,7 @@ describe('KickPublicApiClient edge cases', () => {
 
 		const client = new KickPublicApiClient({
 			KICK_CLIENT_ID: 'id',
-			KICK_CLIENT_SECRET: 'secret'
+			KICK_CLIENT_SECRET: 'secret',
 		} as Env);
 		const channels = await client.getChannelsBySlug('not-a-real-channel-xyz');
 		expect(channels).toEqual([]);

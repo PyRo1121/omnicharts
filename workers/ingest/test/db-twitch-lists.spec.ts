@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-	listChannelIdsToPoll,
-	listPlatformIdsForRollupDate,
-	listRecentlyTrackedPlatformIds
-} from '../src/db/twitch';
+import { listChannelIdsToPoll, listPlatformIdsForRollupDate, listRecentlyTrackedPlatformIds } from '../src/db/twitch';
 
 function mockDb(rows: { platform_channel_id: string }[], captureSql = false) {
 	const sql: string[] = [];
@@ -13,12 +9,12 @@ function mockDb(rows: { platform_channel_id: string }[], captureSql = false) {
 				if (captureSql) sql.push(q);
 				return {
 					bind: () => ({
-						all: async () => ({ results: rows })
-					})
+						all: async () => ({ results: rows }),
+					}),
 				};
-			}
+			},
 		} as unknown as D1Database,
-		sql
+		sql,
 	};
 }
 

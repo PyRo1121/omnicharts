@@ -28,21 +28,15 @@ function adminApiKey(): string | undefined {
 
 async function main(): Promise<void> {
 	const secret = readDevVar('TWITCH_EVENTSUB_SECRET') ?? process.env.TWITCH_EVENTSUB_SECRET?.trim();
-	const callback =
-		readDevVar('TWITCH_EVENTSUB_CALLBACK_URL') ??
-		process.env.TWITCH_EVENTSUB_CALLBACK_URL?.trim();
+	const callback = readDevVar('TWITCH_EVENTSUB_CALLBACK_URL') ?? process.env.TWITCH_EVENTSUB_CALLBACK_URL?.trim();
 
 	if (!secret || !callback) {
-		console.error(
-			'FAIL: TWITCH_EVENTSUB_SECRET and TWITCH_EVENTSUB_CALLBACK_URL required in workers/ingest/.dev.vars'
-		);
+		console.error('FAIL: TWITCH_EVENTSUB_SECRET and TWITCH_EVENTSUB_CALLBACK_URL required in workers/ingest/.dev.vars');
 		process.exit(1);
 	}
 
 	if (!isValidTwitchEventSubSecret(secret)) {
-		console.error(
-			`FAIL: TWITCH_EVENTSUB_SECRET must be 10–100 characters (got ${secret.length}); see workers/ingest/.dev.vars.example`
-		);
+		console.error(`FAIL: TWITCH_EVENTSUB_SECRET must be 10–100 characters (got ${secret.length}); see workers/ingest/.dev.vars.example`);
 		process.exit(1);
 	}
 
@@ -67,9 +61,9 @@ async function main(): Promise<void> {
 		method: 'POST',
 		headers: {
 			'content-type': 'application/json',
-			'X-Admin-Api-Key': key
+			'X-Admin-Api-Key': key,
 		},
-		signal: AbortSignal.timeout(300_000)
+		signal: AbortSignal.timeout(300_000),
 	});
 	const raw = await res.text();
 	let json: Record<string, unknown> | null = null;
@@ -80,17 +74,12 @@ async function main(): Promise<void> {
 	}
 
 	if (!res.ok || json?.ok !== true) {
-		const detail =
-			typeof json?.error === 'string'
-				? json.error
-				: raw.replace(/\s+/g, ' ').trim().slice(0, 400);
+		const detail = typeof json?.error === 'string' ? json.error : raw.replace(/\s+/g, ' ').trim().slice(0, 400);
 		const samples = (json?.stats as { errorSamples?: string[] } | undefined)?.errorSamples ?? [];
-		const secretLengthIssue = [detail, ...samples].some((s) =>
-			/TWITCH_EVENTSUB_SECRET must be \d+–\d+ characters/i.test(String(s))
-		);
+		const secretLengthIssue = [detail, ...samples].some((s) => /TWITCH_EVENTSUB_SECRET must be \d+–\d+ characters/i.test(String(s)));
 		if (secretLengthIssue) {
 			console.log(
-				`SKIP: EventSub secret invalid in running ingest — fix workers/ingest/.dev.vars (10–100 chars) and restart: bun run dev:ingest`
+				`SKIP: EventSub secret invalid in running ingest — fix workers/ingest/.dev.vars (10–100 chars) and restart: bun run dev:ingest`,
 			);
 			process.exit(0);
 		}

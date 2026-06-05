@@ -17,8 +17,8 @@ describe('KickPublicApiClient', () => {
 			if (url.includes('id.kick.com')) {
 				return Promise.resolve(
 					new Response(JSON.stringify({ access_token: 'tok', expires_in: 3600 }), {
-						status: 200
-					})
+						status: 200,
+					}),
 				);
 			}
 			expect(url).toContain('api.kick.com/public/v1/livestreams');
@@ -35,12 +35,12 @@ describe('KickPublicApiClient', () => {
 								stream_title: 'Live',
 								started_at: '2026-06-01T00:00:00Z',
 								viewer_count: 100,
-								category: { id: 5, name: 'Slots' }
-							}
-						]
+								category: { id: 5, name: 'Slots' },
+							},
+						],
 					}),
-					{ status: 200 }
-				)
+					{ status: 200 },
+				),
 			);
 		});
 		vi.stubGlobal('fetch', fetchMock);
@@ -63,8 +63,8 @@ describe('KickPublicApiClient', () => {
 			if (url.includes('id.kick.com')) {
 				return Promise.resolve(
 					new Response(JSON.stringify({ access_token: 'tok', expires_in: 3600 }), {
-						status: 200
-					})
+						status: 200,
+					}),
 				);
 			}
 			expect(url).toContain('api.kick.com/public/v2/categories');
@@ -74,17 +74,17 @@ describe('KickPublicApiClient', () => {
 					JSON.stringify({
 						data: [{ id: 9, name: 'Rust', tags: ['survival'] }],
 						message: 'OK',
-						pagination: { next_cursor: 'abc' }
+						pagination: { next_cursor: 'abc' },
 					}),
-					{ status: 200 }
-				)
+					{ status: 200 },
+				),
 			);
 		});
 		vi.stubGlobal('fetch', fetchMock);
 
 		const client = new KickPublicApiClient({
 			KICK_CLIENT_ID: 'id',
-			KICK_CLIENT_SECRET: 'secret'
+			KICK_CLIENT_SECRET: 'secret',
 		} as Env);
 		const page = await client.getCategoriesV2({ limit: 50 });
 
@@ -97,8 +97,8 @@ describe('KickPublicApiClient', () => {
 			if (url.includes('id.kick.com')) {
 				return Promise.resolve(
 					new Response(JSON.stringify({ access_token: 'tok', expires_in: 3600 }), {
-						status: 200
-					})
+						status: 200,
+					}),
 				);
 			}
 			expect(url).toContain('category_id=42');
@@ -114,23 +114,23 @@ describe('KickPublicApiClient', () => {
 								slug: 'seven',
 								stream_title: 'Live',
 								started_at: '2026-06-01T00:00:00Z',
-								viewer_count: 50
-							}
-						]
+								viewer_count: 50,
+							},
+						],
 					}),
-					{ status: 200 }
-				)
+					{ status: 200 },
+				),
 			);
 		});
 		vi.stubGlobal('fetch', fetchMock);
 
 		const client = new KickPublicApiClient({
 			KICK_CLIENT_ID: 'id',
-			KICK_CLIENT_SECRET: 'secret'
+			KICK_CLIENT_SECRET: 'secret',
 		} as Env);
 		const streams = await client.getLivestreamsByCategoryId(42, {
 			limit: 100,
-			sort: 'viewer_count'
+			sort: 'viewer_count',
 		});
 
 		expect(streams).toHaveLength(1);
@@ -142,8 +142,8 @@ describe('KickPublicApiClient', () => {
 			if (url.includes('id.kick.com')) {
 				return Promise.resolve(
 					new Response(JSON.stringify({ access_token: 'tok', expires_in: 3600 }), {
-						status: 200
-					})
+						status: 200,
+					}),
 				);
 			}
 			return Promise.resolve(new Response('upstream error', { status: 503 }));
@@ -152,7 +152,7 @@ describe('KickPublicApiClient', () => {
 
 		const client = new KickPublicApiClient({
 			KICK_CLIENT_ID: 'id',
-			KICK_CLIENT_SECRET: 'secret'
+			KICK_CLIENT_SECRET: 'secret',
 		} as Env);
 
 		await expect(client.getLivestreamsByCategoryId(1)).rejects.toThrow(/503/);

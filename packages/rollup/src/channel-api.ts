@@ -1,11 +1,4 @@
-import {
-	PLATFORM_TWITCH,
-	isPlatformId,
-	isRankingPeriod,
-	parseRankingPeriod,
-	periodToDays,
-	type RankingPeriod
-} from '@omnicharts/domain';
+import { PLATFORM_TWITCH, isPlatformId, isRankingPeriod, parseRankingPeriod, periodToDays, type RankingPeriod } from '@omnicharts/domain';
 import type { D1Database } from './d1';
 
 export type ChannelDetailDaily = {
@@ -63,14 +56,12 @@ type RollupRow = {
 
 export async function resolveChannelSlug(
 	db: D1Database,
-	opts: { platform: string; slug: string }
+	opts: { platform: string; slug: string },
 ): Promise<{ slug: string; from_history: boolean } | null> {
 	if (!opts.slug) return null;
 
 	const current = await db
-		.prepare(
-			`SELECT slug FROM channels WHERE platform_id = ? AND lower(slug) = lower(?)`
-		)
+		.prepare(`SELECT slug FROM channels WHERE platform_id = ? AND lower(slug) = lower(?)`)
 		.bind(opts.platform, opts.slug)
 		.first<{ slug: string }>();
 
@@ -81,7 +72,7 @@ export async function resolveChannelSlug(
 			`SELECT new_slug FROM slug_history
        WHERE platform_id = ? AND lower(old_slug) = lower(?)
        ORDER BY changed_at DESC
-       LIMIT 1`
+       LIMIT 1`,
 		)
 		.bind(opts.platform, opts.slug)
 		.first<{ new_slug: string }>();
@@ -113,13 +104,13 @@ export function parseChannelDetailQuery(url: URL): ParsedChannelDetailQuery {
 
 export async function buildChannelDetailResponse(
 	db: D1Database,
-	opts: { platform: string; slug: string; period: RankingPeriod }
+	opts: { platform: string; slug: string; period: RankingPeriod },
 ): Promise<ChannelDetailResponse | null> {
 	if (!opts.slug) return null;
 
 	const resolved = await resolveChannelSlug(db, {
 		platform: opts.platform,
-		slug: opts.slug
+		slug: opts.slug,
 	});
 	if (!resolved) return null;
 
@@ -128,7 +119,7 @@ export async function buildChannelDetailResponse(
 			`SELECT id, slug, display_name, avatar_url, language, first_observed_at,
               ingest_state, follower_count, description
        FROM channels
-       WHERE platform_id = ? AND slug = ?`
+       WHERE platform_id = ? AND slug = ?`,
 		)
 		.bind(opts.platform, resolved.slug)
 		.first<ChannelRow>();
@@ -136,9 +127,7 @@ export async function buildChannelDetailResponse(
 	if (!channel) return null;
 
 	const days = periodToDays(opts.period);
-	const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
-		.toISOString()
-		.slice(0, 10);
+	const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
 	const { results } = await db
 		.prepare(
@@ -146,7 +135,7 @@ export async function buildChannelDetailResponse(
               airtime_minutes, stream_count, followers_delta
        FROM channel_daily_rollups
        WHERE channel_id = ? AND date >= ?
-       ORDER BY date ASC`
+       ORDER BY date ASC`,
 		)
 		.bind(channel.id, since)
 		.all<RollupRow>();
@@ -158,17 +147,14 @@ export async function buildChannelDetailResponse(
 		average_viewers: Math.round(r.average_viewers),
 		peak_viewers: r.peak_viewers,
 		airtime_hours: Math.round((r.airtime_minutes / 60) * 10) / 10,
-		stream_count: r.stream_count
+		stream_count: r.stream_count,
 	}));
 
 	const sumHw = dailyRows.reduce((a, r) => a + r.hours_watched, 0);
 	const sumAirtimeMin = dailyRows.reduce((a, r) => a + r.airtime_minutes, 0);
 	const peak = dailyRows.reduce((m, r) => Math.max(m, r.peak_viewers), 0);
 	const streamCount = dailyRows.reduce((a, r) => a + r.stream_count, 0);
-	const followersGain = dailyRows.reduce(
-		(a, r) => a + (r.followers_delta ?? 0),
-		0
-	);
+	const followersGain = dailyRows.reduce((a, r) => a + (r.followers_delta ?? 0), 0);
 	const hasFollowerDelta = dailyRows.some((r) => r.followers_delta != null);
 
 	return {
@@ -184,15 +170,12 @@ export async function buildChannelDetailResponse(
 		period: opts.period,
 		totals: {
 			hours_watched: Math.round(sumHw),
-			average_viewers:
-				sumAirtimeMin > 0
-					? Math.round((sumHw / (sumAirtimeMin / 60)) * 10) / 10
-					: 0,
+			average_viewers: sumAirtimeMin > 0 ? Math.round((sumHw / (sumAirtimeMin / 60)) * 10) / 10 : 0,
 			peak_viewers: peak,
 			airtime_hours: Math.round((sumAirtimeMin / 60) * 10) / 10,
 			stream_count: streamCount,
-			followers_gain: hasFollowerDelta ? followersGain : null
+			followers_gain: hasFollowerDelta ? followersGain : null,
 		},
-		daily
+		daily,
 	};
 }

@@ -7,12 +7,7 @@ export type WatchlistCsvRow = {
 	slug: string;
 };
 
-export type WatchlistCsvParseErrorCode =
-	| 'invalid_platform'
-	| 'missing_slug'
-	| 'missing_platform'
-	| 'malformed_row'
-	| 'duplicate_slug';
+export type WatchlistCsvParseErrorCode = 'invalid_platform' | 'missing_slug' | 'missing_platform' | 'malformed_row' | 'duplicate_slug';
 
 export type WatchlistCsvParseError = {
 	line: number;
@@ -26,8 +21,6 @@ export type ParseWatchlistCsvResult = {
 	rows: WatchlistCsvRow[];
 	errors: WatchlistCsvParseError[];
 };
-
-const HEADER_ALIASES = new Set(['platform', 'slug', 'handle']);
 
 function parseCsvLine(line: string): string[] {
 	const fields: string[] = [];
@@ -89,7 +82,7 @@ export function parseWatchlistCsv(text: string): ParseWatchlistCsvResult {
 				line: lineNo,
 				code: 'malformed_row',
 				message: 'Expected platform,slug columns',
-				raw: trimmed
+				raw: trimmed,
 			});
 			continue;
 		}
@@ -107,7 +100,7 @@ export function parseWatchlistCsv(text: string): ParseWatchlistCsvResult {
 				line: lineNo,
 				code: 'missing_platform',
 				message: 'platform is required',
-				raw: trimmed
+				raw: trimmed,
 			});
 			continue;
 		}
@@ -117,7 +110,7 @@ export function parseWatchlistCsv(text: string): ParseWatchlistCsvResult {
 				line: lineNo,
 				code: 'invalid_platform',
 				message: `Unknown platform "${platformRaw}"`,
-				raw: trimmed
+				raw: trimmed,
 			});
 			continue;
 		}
@@ -128,7 +121,7 @@ export function parseWatchlistCsv(text: string): ParseWatchlistCsvResult {
 				line: lineNo,
 				code: 'missing_slug',
 				message: 'slug is required',
-				raw: trimmed
+				raw: trimmed,
 			});
 			continue;
 		}
@@ -139,7 +132,7 @@ export function parseWatchlistCsv(text: string): ParseWatchlistCsvResult {
 				line: lineNo,
 				code: 'duplicate_slug',
 				message: `Duplicate ${platformRaw}/${slug}`,
-				slug
+				slug,
 			});
 			continue;
 		}

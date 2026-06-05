@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-	isKickViewerCountKnown,
-	kickPlatformStreamId,
-	kickSessionRowId
-} from '../src/kick/stream-fields';
+import { isKickViewerCountKnown, kickPlatformStreamId, kickSessionRowId } from '../src/kick/stream-fields';
 
 describe('kick stream-fields', () => {
 	it('kickPlatformStreamId uses channel_id and started_at', () => {
@@ -13,8 +9,8 @@ describe('kick stream-fields', () => {
 				channel_id: 99,
 				slug: 'x',
 				stream_title: 't',
-				started_at: '2026-06-01T12:00:00Z'
-			})
+				started_at: '2026-06-01T12:00:00Z',
+			}),
 		).toBe('99-2026-06-01T12:00:00Z');
 	});
 
@@ -31,7 +27,7 @@ describe('kick stream-fields', () => {
 			channel_id: 99,
 			slug: 'x',
 			stream_title: 't',
-			started_at: '2026-06-01T12:00:00Z'
+			started_at: '2026-06-01T12:00:00Z',
 		};
 		expect(kickSessionRowId(stream)).toBe(kickSessionRowId(stream));
 	});

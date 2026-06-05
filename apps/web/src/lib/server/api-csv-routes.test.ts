@@ -4,8 +4,7 @@ import { GET as getChannelRankings } from '../../routes/api/v1/rankings/channels
 function mockD1WithRankings(): D1Database {
 	return {
 		prepare(sql: string) {
-			const isRollup =
-				sql.includes('channel_daily_rollups') || sql.includes('FROM channels');
+			const isRollup = sql.includes('channel_daily_rollups') || sql.includes('FROM channels');
 			return {
 				bind: (..._args: unknown[]) => ({
 					first: async () => {
@@ -21,7 +20,7 @@ function mockD1WithRankings(): D1Database {
 								airtime_minutes: 120,
 								stream_count: 1,
 								hours_watched: 500,
-								average_viewers: 50
+								average_viewers: 50,
 							};
 						}
 						return null;
@@ -38,14 +37,14 @@ function mockD1WithRankings(): D1Database {
 										airtime_minutes: 120,
 										stream_count: 1,
 										hours_watched: 500,
-										average_viewers: 50
-									}
+										average_viewers: 50,
+									},
 								]
-							: []
-					})
-				})
+							: [],
+					}),
+				}),
 			};
-		}
+		},
 	} as unknown as D1Database;
 }
 
@@ -53,11 +52,9 @@ describe('GET /api/v1/rankings/channels?format=csv', () => {
 	it('returns text/csv with ranking header row', async () => {
 		const db = mockD1WithRankings();
 		const res = await getChannelRankings({
-			url: new URL(
-				'http://localhost/api/v1/rankings/channels?platform=twitch&period=7d&limit=20&format=csv'
-			),
+			url: new URL('http://localhost/api/v1/rankings/channels?platform=twitch&period=7d&limit=20&format=csv'),
 			fetch: vi.fn(),
-			platform: { env: { DB: db } } as App.Platform
+			platform: { env: { DB: db } } as App.Platform,
 		} as unknown as Parameters<typeof getChannelRankings>[0]);
 
 		expect(res.status).toBe(200);
@@ -69,16 +66,14 @@ describe('GET /api/v1/rankings/channels?format=csv', () => {
 
 	it('returns invalid_format for unknown format', async () => {
 		const res = await getChannelRankings({
-			url: new URL(
-				'http://localhost/api/v1/rankings/channels?platform=twitch&format=xlsx'
-			),
+			url: new URL('http://localhost/api/v1/rankings/channels?platform=twitch&format=xlsx'),
 			fetch: vi.fn(),
-			platform: { env: { DB: mockD1WithRankings() } } as App.Platform
+			platform: { env: { DB: mockD1WithRankings() } } as App.Platform,
 		} as unknown as Parameters<typeof getChannelRankings>[0]);
 
 		expect(res.status).toBe(400);
 		expect(await res.json()).toEqual({
-			error: { code: 'invalid_format', message: 'format must be json or csv' }
+			error: { code: 'invalid_format', message: 'format must be json or csv' },
 		});
 	});
 });

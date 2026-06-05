@@ -22,23 +22,18 @@ export async function seedDevRankings(env: Env): Promise<SeedRankingsStats> {
 		const slug = `dev_rank_${rank}`;
 		const hwPerDay = (21 - rank) * 10;
 
-		await db.prepare(
-			`INSERT INTO channels (
+		await db
+			.prepare(
+				`INSERT INTO channels (
          id, platform_id, platform_channel_id, slug, display_name,
          first_observed_at, ingest_state
        ) VALUES (?, 'twitch', ?, ?, ?, ?, 'tracked')
        ON CONFLICT(id) DO UPDATE SET
          slug = excluded.slug,
          display_name = excluded.display_name,
-         ingest_state = 'tracked'`
-		)
-			.bind(
-				channelId,
-				`dev-${rank}`,
-				slug,
-				`Dev Rank ${rank}`,
-				now.toISOString()
+         ingest_state = 'tracked'`,
 			)
+			.bind(channelId, `dev-${rank}`, slug, `Dev Rank ${rank}`, now.toISOString())
 			.run();
 
 		for (let d = 0; d < days; d++) {
@@ -49,8 +44,9 @@ export async function seedDevRankings(env: Env): Promise<SeedRankingsStats> {
 			const airtimeMinutes = 120;
 			const averageViewers = hoursWatched / (airtimeMinutes / 60);
 
-			await db.prepare(
-				`INSERT INTO channel_daily_rollups (
+			await db
+				.prepare(
+					`INSERT INTO channel_daily_rollups (
            channel_id, date, hours_watched, average_viewers, peak_viewers,
            airtime_minutes, stream_count
          ) VALUES (?, ?, ?, ?, ?, ?, 1)
@@ -59,24 +55,18 @@ export async function seedDevRankings(env: Env): Promise<SeedRankingsStats> {
            average_viewers = excluded.average_viewers,
            peak_viewers = excluded.peak_viewers,
            airtime_minutes = excluded.airtime_minutes,
-           stream_count = excluded.stream_count`
-			)
-				.bind(
-					channelId,
-					dateStr,
-					hoursWatched,
-					averageViewers,
-					Math.round(averageViewers * 1.5),
-					airtimeMinutes
+           stream_count = excluded.stream_count`,
 				)
+				.bind(channelId, dateStr, hoursWatched, averageViewers, Math.round(averageViewers * 1.5), airtimeMinutes)
 				.run();
 		}
 	}
 
-	await db.prepare(
-		`INSERT INTO ingest_metadata (key, value) VALUES ('last_rollup_at', ?)
-     ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-	)
+	await db
+		.prepare(
+			`INSERT INTO ingest_metadata (key, value) VALUES ('last_rollup_at', ?)
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
+		)
 		.bind(now.toISOString())
 		.run();
 

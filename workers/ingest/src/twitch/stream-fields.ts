@@ -18,6 +18,6 @@ export function helixStreamSessionPersist(stream: HelixStream): HelixStreamSessi
 		language: stream.language ?? null,
 		tags_json: helixTagsJson(stream.tags),
 		thumbnail_url: stream.thumbnail_url ?? null,
-		stream_type: stream.type ?? null
+		stream_type: stream.type ?? null,
 	};
 }

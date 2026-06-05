@@ -59,10 +59,7 @@ async function sleep(ms: number): Promise<void> {
 	await new Promise((r) => setTimeout(r, ms));
 }
 
-function runCmd(
-	cmd: string[],
-	cwd: string
-): Promise<{ ok: boolean; exitCode: number | null; output: string }> {
+function runCmd(cmd: string[], cwd: string): Promise<{ ok: boolean; exitCode: number | null; output: string }> {
 	return new Promise((resolve) => {
 		const proc = spawn(cmd[0]!, cmd.slice(1), { cwd, stdio: ['ignore', 'pipe', 'pipe'] });
 		let output = '';
@@ -72,9 +69,7 @@ function runCmd(
 		proc.stderr?.on('data', (d) => {
 			output += d.toString();
 		});
-		proc.on('close', (code) =>
-			resolve({ ok: code === 0, exitCode: code, output: output.trim() })
-		);
+		proc.on('close', (code) => resolve({ ok: code === 0, exitCode: code, output: output.trim() }));
 	});
 }
 
@@ -92,15 +87,11 @@ async function runD1MigrateLocal(): Promise<{ ok: boolean; detail: string }> {
 		const result = await runCmd(['bun', 'run', 'd1:migrate:local'], REPO_ROOT);
 		last = { exitCode: result.exitCode, output: result.output };
 		if (result.ok) {
-			const hint = /no migrations to apply/i.test(result.output)
-				? 'already applied'
-				: 'applied';
+			const hint = /no migrations to apply/i.test(result.output) ? 'already applied' : 'applied';
 			return { ok: true, detail: hint };
 		}
 		if (!migrateLooksLocked(result.output) || attempt === MIGRATE_RETRY_ATTEMPTS) break;
-		console.log(
-			`  d1:migrate:local locked by running ingest — retry ${attempt}/${MIGRATE_RETRY_ATTEMPTS}…`
-		);
+		console.log(`  d1:migrate:local locked by running ingest — retry ${attempt}/${MIGRATE_RETRY_ATTEMPTS}…`);
 		await sleep(MIGRATE_RETRY_MS);
 	}
 	const code = last.exitCode ?? '?';
@@ -143,10 +134,7 @@ async function waitForStableIngest(): Promise<void> {
 	while (Date.now() < deadline) {
 		const h = await fetchHealth();
 		const stable =
-			h.ok &&
-			(h.body?.status === 'ok' || h.body?.status === 'degraded') &&
-			h.body?.db === 'connected' &&
-			h.body?.twitch === 'configured';
+			h.ok && (h.body?.status === 'ok' || h.body?.status === 'degraded') && h.body?.db === 'connected' && h.body?.twitch === 'configured';
 		if (stable) {
 			okStreak++;
 			if (okStreak >= 3) return;
@@ -168,7 +156,7 @@ function startIngestBackground(): void {
 	spawn('bun', ['run', 'dev:ingest'], {
 		cwd: REPO_ROOT,
 		detached: true,
-		stdio: 'ignore'
+		stdio: 'ignore',
 	}).unref();
 }
 
@@ -199,13 +187,13 @@ function adminErrorHint(status: number, json: Record<string, unknown> | null, ra
 async function postJson(
 	path: string,
 	body: Record<string, unknown> = {},
-	timeoutMs = ADMIN_PIPELINE_TIMEOUT_MS
+	timeoutMs = ADMIN_PIPELINE_TIMEOUT_MS,
 ): Promise<{ status: number; json: Record<string, unknown> | null; raw: string }> {
 	const res = await fetch(`${BASE}${path}`, {
 		method: 'POST',
 		headers: adminFetchHeaders(),
 		body: JSON.stringify(body),
-		signal: AbortSignal.timeout(timeoutMs)
+		signal: AbortSignal.timeout(timeoutMs),
 	});
 	const raw = await res.text();
 	let json: Record<string, unknown> | null = null;
@@ -219,15 +207,13 @@ async function postJson(
 
 async function postJsonWithRetry(
 	path: string,
-	body: Record<string, unknown> = {}
+	body: Record<string, unknown> = {},
 ): Promise<{ status: number; json: Record<string, unknown> | null; raw: string }> {
 	try {
 		let last = await postJson(path, body);
 		for (let attempt = 1; attempt < ADMIN_RETRY_ATTEMPTS; attempt++) {
 			if (!adminShouldRetry(last.status, last.raw)) return last;
-			console.log(
-				`  ${path} HTTP ${last.status} — retry ${attempt}/${ADMIN_RETRY_ATTEMPTS - 1}…`
-			);
+			console.log(`  ${path} HTTP ${last.status} — retry ${attempt}/${ADMIN_RETRY_ATTEMPTS - 1}…`);
 			await sleep(ADMIN_RETRY_MS);
 			await waitForStableIngest();
 			last = await postJson(path, body);
@@ -280,7 +266,7 @@ async function main(): Promise<number> {
 		name: 'workers/ingest/.dev.vars',
 		critical: true,
 		pass: devVarsOk,
-		detail: devVarsOk ? 'file exists' : 'missing — copy from .dev.vars.example'
+		detail: devVarsOk ? 'file exists' : 'missing — copy from .dev.vars.example',
 	});
 	if (!devVarsOk) return finish(1);
 
@@ -292,7 +278,7 @@ async function main(): Promise<number> {
 			critical: true,
 			pass: true,
 			skip: true,
-			detail: 'skipped — ingest running (avoids SQLITE_BUSY); db=connected in /health'
+			detail: 'skipped — ingest running (avoids SQLITE_BUSY); db=connected in /health',
 		});
 	} else {
 		const migrate = await runD1MigrateLocal();
@@ -300,7 +286,7 @@ async function main(): Promise<number> {
 			name: 'd1:migrate:local',
 			critical: true,
 			pass: migrate.ok,
-			detail: migrate.detail
+			detail: migrate.detail,
 		});
 		if (!migrate.ok) return finish(1);
 	}
@@ -317,7 +303,7 @@ async function main(): Promise<number> {
 			name: 'GET /health',
 			critical: true,
 			pass: false,
-			detail: `no response — start dev:ingest in another terminal (${BASE}/health)`
+			detail: `no response — start dev:ingest in another terminal (${BASE}/health)`,
 		});
 		return finish(1);
 	}
@@ -328,7 +314,7 @@ async function main(): Promise<number> {
 		name: 'GET /health',
 		critical: true,
 		pass: true,
-		detail: `status=${health.body.status} db=${health.body.db} twitch=${twitch}`
+		detail: `status=${health.body.status} db=${health.body.db} twitch=${twitch}`,
 	});
 
 	record({
@@ -337,7 +323,7 @@ async function main(): Promise<number> {
 		pass: twitchOk,
 		detail: twitchOk
 			? 'configured'
-			: 'missing_credentials — restart ingest after editing .dev.vars (wrangler reads secrets only at startup)'
+			: 'missing_credentials — restart ingest after editing .dev.vars (wrangler reads secrets only at startup)',
 	});
 	if (!twitchOk) return finish(1);
 
@@ -351,7 +337,7 @@ async function main(): Promise<number> {
 		pass: reset.status >= 200 && reset.status < 300,
 		detail: isOkAdmin(reset.json, reset.status)
 			? `cleared ${(reset.json?.stats as { channelsDeleted?: number })?.channelsDeleted ?? 0} dev-seed channels`
-			: adminErrorHint(reset.status, reset.json, reset.raw)
+			: adminErrorHint(reset.status, reset.json, reset.raw),
 	});
 
 	await sleep(STEP_WAIT_MS);
@@ -364,7 +350,7 @@ async function main(): Promise<number> {
 		pass: isOkAdmin(discover.json, discover.status),
 		detail: isOkAdmin(discover.json, discover.status)
 			? `games=${(discover.json?.stats as { gamesScanned?: number })?.gamesScanned ?? '?'} channels=${(discover.json?.stats as { channelsUpserted?: number })?.channelsUpserted ?? '?'}`
-			: adminErrorHint(discover.status, discover.json, discover.raw)
+			: adminErrorHint(discover.status, discover.json, discover.raw),
 	});
 
 	await sleep(STEP_WAIT_MS);
@@ -377,7 +363,7 @@ async function main(): Promise<number> {
 		pass: isOkAdmin(poll.json, poll.status),
 		detail: isOkAdmin(poll.json, poll.status)
 			? `mode=${String(poll.json?.mode ?? 'coverage_cycle')} streams=${(poll.json?.stats as { streamsSeen?: number })?.streamsSeen ?? (poll.json?.stats as { global?: { streamsSeen?: number } })?.global?.streamsSeen ?? '?'}`
-			: adminErrorHint(poll.status, poll.json, poll.raw)
+			: adminErrorHint(poll.status, poll.json, poll.raw),
 	});
 
 	if (!FULL_POLL) {
@@ -390,7 +376,7 @@ async function main(): Promise<number> {
 			pass: isOkAdmin(poll2.json, poll2.status),
 			detail: isOkAdmin(poll2.json, poll2.status)
 				? `mode=${String(poll2.json?.mode ?? '?')} streams=${(poll2.json?.stats as { streamsSeen?: number })?.streamsSeen ?? '?'}`
-				: adminErrorHint(poll2.status, poll2.json, poll2.raw)
+				: adminErrorHint(poll2.status, poll2.json, poll2.raw),
 		});
 	}
 
@@ -403,9 +389,7 @@ async function main(): Promise<number> {
 			(enrich.status === 0 ||
 				enrich.status >= 500 ||
 				adminShouldRetry(enrich.status, enrich.raw) ||
-				/enrich|helix|credentials|no candidates/i.test(
-					adminErrorHint(enrich.status, enrich.json, enrich.raw)
-				));
+				/enrich|helix|credentials|no candidates/i.test(adminErrorHint(enrich.status, enrich.json, enrich.raw)));
 		record({
 			name: 'POST /admin/twitch/enrich-profiles',
 			critical: false,
@@ -415,7 +399,7 @@ async function main(): Promise<number> {
 				? `updated=${(enrich.json?.stats as { updated?: number })?.updated ?? 0}`
 				: enrichSkip
 					? `skipped — ${adminErrorHint(enrich.status, enrich.json, enrich.raw)}`
-					: adminErrorHint(enrich.status, enrich.json, enrich.raw)
+					: adminErrorHint(enrich.status, enrich.json, enrich.raw),
 		});
 	}
 
@@ -436,7 +420,7 @@ async function main(): Promise<number> {
 		pass: isOkAdmin(rollup.json, rollup.status),
 		detail: isOkAdmin(rollup.json, rollup.status)
 			? `date=${rollupDate} channels=${rollupChannels ?? '?'}`
-			: adminErrorHint(rollup.status, rollup.json, rollup.raw)
+			: adminErrorHint(rollup.status, rollup.json, rollup.raw),
 	});
 
 	await sleep(STEP_WAIT_MS);
@@ -451,7 +435,7 @@ async function main(): Promise<number> {
 		detail:
 			channelCount > 0
 				? `HTTP ${rankings.status} items=${channelCount}`
-				: `HTTP ${rankings.status} items=0 — need samples today, tracked state, rollup date=${rollupDate}; local wrangler uses TWITCH_RANKING_MIN_AIRTIME_MINUTES=1`
+				: `HTTP ${rankings.status} items=0 — need samples today, tracked state, rollup date=${rollupDate}; local wrangler uses TWITCH_RANKING_MIN_AIRTIME_MINUTES=1`,
 	});
 
 	await sleep(STEP_WAIT_MS);
@@ -462,7 +446,7 @@ async function main(): Promise<number> {
 		name: 'GET /v1/rankings/games',
 		critical: true,
 		pass: games.status === 200,
-		detail: `HTTP ${games.status} items=${gameCount}`
+		detail: `HTTP ${games.status} items=${gameCount}`,
 	});
 
 	await sleep(STEP_WAIT_MS);
@@ -473,20 +457,17 @@ async function main(): Promise<number> {
 			critical: true,
 			pass: true,
 			skip: true,
-			detail: 'skipped — no channels in 7d rankings (discover/poll/rollup may need data)'
+			detail: 'skipped — no channels in 7d rankings (discover/poll/rollup may need data)',
 		});
 	} else {
 		const channelPath = `/v1/channels/${encodeURIComponent(sampleSlug)}?platform=twitch`;
 		const channel = await getJson(channelPath);
-		const channelOk =
-			channel.status === 200 &&
-			channel.json != null &&
-			typeof channel.json.slug === 'string';
+		const channelOk = channel.status === 200 && channel.json != null && typeof channel.json.slug === 'string';
 		record({
 			name: 'GET /v1/channels/{slug}',
 			critical: true,
 			pass: channelOk,
-			detail: `slug=${sampleSlug} HTTP ${channel.status}`
+			detail: `slug=${sampleSlug} HTTP ${channel.status}`,
 		});
 	}
 
@@ -499,9 +480,7 @@ function finish(_ignored: number): number {
 	for (const s of steps) {
 		const mark = s.skip ? 'SKIP' : s.pass ? 'PASS' : 'FAIL';
 		const crit = s.critical ? '' : ' (opt)';
-		console.log(
-			`  ${mark.padEnd(4)} ${s.name.padEnd(nameWidth)}${crit}  ${s.detail}`
-		);
+		console.log(`  ${mark.padEnd(4)} ${s.name.padEnd(nameWidth)}${crit}  ${s.detail}`);
 	}
 
 	const rankingsStep = steps.find((s) => s.name === 'GET /v1/rankings/channels');
@@ -528,7 +507,7 @@ main()
 			name: 'checkpoint runner',
 			critical: true,
 			pass: false,
-			detail: msg
+			detail: msg,
 		});
 		process.exit(finish(1));
 	});

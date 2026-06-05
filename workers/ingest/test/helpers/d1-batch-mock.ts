@@ -1,18 +1,15 @@
 /** Minimal D1 mock helpers for batch ingest (`IN` queries + `batch()`). */
 
-export function d1BindRunner(
-	sql: string,
-	onRun?: (sql: string) => void
-): { run: () => Promise<Record<string, never>> } {
+export function d1BindRunner(sql: string, onRun?: (sql: string) => void): { run: () => Promise<Record<string, never>> } {
 	return {
 		run: async () => {
 			onRun?.(sql);
 			return {};
-		}
+		},
 	};
 }
 
-export function d1BatchFromDb(db: {
+export function d1BatchFromDb(_db: {
 	prepare: (sql: string) => { bind: (...args: unknown[]) => { run: () => Promise<unknown> } };
 }): (statements: { run: () => Promise<unknown> }[]) => Promise<unknown[]> {
 	return async (statements) => {

@@ -10,10 +10,7 @@ export const load: PageServerLoad = async ({ fetch, params, url, setHeaders, pla
 
 	const ctx = serverLoadContext(fetch, cfPlatform);
 	const platformId = url.searchParams.get('platform') ?? 'twitch';
-	const { period, periodNote } = await resolvePeriodContext(
-		url.searchParams.get('period'),
-		ctx.db
-	);
+	const { period, periodNote } = await resolvePeriodContext(url.searchParams.get('period'), ctx.db);
 	const game = await loadGameDetail(ctx, params.slug, platformId, period);
 
 	if (game.source === 'not_found') {

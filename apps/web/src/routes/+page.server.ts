@@ -12,10 +12,7 @@ export const load: PageServerLoad = async ({ fetch, url, setHeaders, platform: c
 
 	const ctx = serverLoadContext(fetch, cfPlatform);
 
-	const { period, periodNote } = await resolvePeriodContext(
-		url.searchParams.get('period'),
-		ctx.db
-	);
+	const { period, periodNote } = await resolvePeriodContext(url.searchParams.get('period'), ctx.db);
 	const platform = parseUiPlatform(url.searchParams.get('platform'));
 	const mockEnabled = isDevMockEnabled(url.searchParams.get('demo'));
 
@@ -31,13 +28,13 @@ export const load: PageServerLoad = async ({ fetch, url, setHeaders, platform: c
 		source: 'live' as const,
 		period,
 		updatedAt: null,
-		rows: []
+		rows: [],
 	};
 	const emptyGameRankings = {
 		source: 'live' as const,
 		period,
 		updatedAt: null,
-		rows: []
+		rows: [],
 	};
 
 	if (platform === 'kick' || platform === 'youtube') {
@@ -50,7 +47,7 @@ export const load: PageServerLoad = async ({ fetch, url, setHeaders, platform: c
 			overview,
 			channelRankings,
 			gameRankings,
-			trending: trendingFromRankings(channelRankings.rows, { platform, mockEnabled })
+			trending: trendingFromRankings(channelRankings.rows, { platform, mockEnabled }),
 		};
 	}
 
@@ -63,6 +60,6 @@ export const load: PageServerLoad = async ({ fetch, url, setHeaders, platform: c
 		overview,
 		channelRankings,
 		gameRankings: overview.gameRankings ?? emptyGameRankings,
-		trending: trendingFromRankings(channelRankings.rows, { mockEnabled })
+		trending: trendingFromRankings(channelRankings.rows, { mockEnabled }),
 	};
 };

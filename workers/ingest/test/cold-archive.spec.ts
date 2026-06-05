@@ -4,26 +4,14 @@ import {
 	encodeRowsToParquet,
 	putColdArchiveParquet,
 	shouldColdArchive,
-	type ColdArchiveKind
+	type ColdArchiveKind,
 } from '../src/r2/cold-archive';
 
 describe('coldArchiveObjectKey', () => {
 	const cases: [ColdArchiveKind, string, string][] = [
-		[
-			'viewer_samples',
-			'2026-03-15',
-			'samples/year=2026/month=03/day=15/platform=twitch/part-test.parquet'
-		],
-		[
-			'channel_daily_rollups',
-			'2026-03-15',
-			'rollups/year=2026/month=03/kind=channel_daily/part-test.parquet'
-		],
-		[
-			'game_daily_rollups',
-			'2026-03-15',
-			'rollups/year=2026/month=03/kind=game_daily/part-test.parquet'
-		]
+		['viewer_samples', '2026-03-15', 'samples/year=2026/month=03/day=15/platform=twitch/part-test.parquet'],
+		['channel_daily_rollups', '2026-03-15', 'rollups/year=2026/month=03/kind=channel_daily/part-test.parquet'],
+		['game_daily_rollups', '2026-03-15', 'rollups/year=2026/month=03/kind=game_daily/part-test.parquet'],
 	];
 
 	it.each(cases)('builds hive path for %s', (kind, partitionDate, expected) => {
@@ -51,8 +39,8 @@ describe('encodeRowsToParquet', () => {
 				sampled_at: '2026-03-01T12:00:00.000Z',
 				viewer_count: 42,
 				channel_id: 'ch-1',
-				platform_id: 'twitch'
-			}
+				platform_id: 'twitch',
+			},
 		]);
 		expect(buf.byteLength).toBeGreaterThan(0);
 		expect(String.fromCharCode(...new Uint8Array(buf).slice(0, 4))).toBe('PAR1');
@@ -68,8 +56,8 @@ describe('encodeRowsToParquet', () => {
 				peak_viewers: 20,
 				airtime_minutes: 60,
 				stream_count: 1,
-				followers_delta: null
-			}
+				followers_delta: null,
+			},
 		]);
 		const gameBuf = encodeRowsToParquet('game_daily_rollups', [
 			{
@@ -79,8 +67,8 @@ describe('encodeRowsToParquet', () => {
 				average_viewers: 15,
 				peak_viewers: 30,
 				airtime_minutes: 90,
-				live_channels: 4
-			}
+				live_channels: 4,
+			},
 		]);
 		expect(String.fromCharCode(...new Uint8Array(channelBuf).slice(0, 4))).toBe('PAR1');
 		expect(String.fromCharCode(...new Uint8Array(gameBuf).slice(0, 4))).toBe('PAR1');
@@ -99,7 +87,7 @@ describe('putColdArchiveParquet', () => {
 			'viewer_samples',
 			'2026-03-01',
 			'twitch',
-			new Uint8Array([1, 2, 3])
+			new Uint8Array([1, 2, 3]),
 		);
 		expect(result).toEqual({ archived: 0, skipped: 'disabled' });
 		expect(put).not.toHaveBeenCalled();
@@ -113,8 +101,8 @@ describe('putColdArchiveParquet', () => {
 				'viewer_samples',
 				'2026-03-01',
 				'twitch',
-				new Uint8Array()
-			)
+				new Uint8Array(),
+			),
 		).toEqual({ archived: 0, skipped: 'empty' });
 		expect(put).not.toHaveBeenCalled();
 	});
@@ -127,12 +115,10 @@ describe('putColdArchiveParquet', () => {
 			'viewer_samples',
 			'2026-03-01',
 			'twitch',
-			body
+			body,
 		);
 		expect(result.archived).toBe(4);
-		expect(result.key).toMatch(
-			/^samples\/year=2026\/month=03\/day=01\/platform=twitch\/part-.+\.parquet$/
-		);
+		expect(result.key).toMatch(/^samples\/year=2026\/month=03\/day=01\/platform=twitch\/part-.+\.parquet$/);
 		expect(put).toHaveBeenCalledOnce();
 		const [key, value, opts] = put.mock.calls[0] as [string, Uint8Array, { httpMetadata: object }];
 		expect(key).toBe(result.key);
@@ -150,14 +136,14 @@ describe('archiveRowsToColdStorage', () => {
 				sampled_at: '2026-03-01T12:00:00.000Z',
 				viewer_count: 42,
 				channel_id: 'ch-1',
-				platform_id: 'twitch'
-			}
+				platform_id: 'twitch',
+			},
 		];
 		const { archiveRowsToColdStorage } = await import('../src/r2/cold-archive');
 		const result = await archiveRowsToColdStorage(
 			{ COLD_ARCHIVE_ENABLED: '1', SAMPLES: { put } } as unknown as Env,
 			'viewer_samples',
-			rows
+			rows,
 		);
 		expect(result.archived).toBeGreaterThan(0);
 		expect(result.key).toMatch(/\.parquet$/);
@@ -168,7 +154,7 @@ describe('archiveRowsToColdStorage', () => {
 		const { archiveRowsToColdStorage } = await import('../src/r2/cold-archive');
 		expect(await archiveRowsToColdStorage({} as Env, 'viewer_samples', [])).toEqual({
 			archived: 0,
-			skipped: 'empty'
+			skipped: 'empty',
 		});
 		expect(
 			await archiveRowsToColdStorage({ COLD_ARCHIVE_ENABLED: '0', SAMPLES: {} } as Env, 'viewer_samples', [
@@ -177,9 +163,9 @@ describe('archiveRowsToColdStorage', () => {
 					sampled_at: '2026-03-01T00:00:00.000Z',
 					viewer_count: 1,
 					channel_id: 'c',
-					platform_id: 'twitch'
-				}
-			])
+					platform_id: 'twitch',
+				},
+			]),
 		).toEqual({ archived: 0, skipped: 'disabled' });
 		expect(
 			await archiveRowsToColdStorage({ COLD_ARCHIVE_ENABLED: '1' } as Env, 'viewer_samples', [
@@ -188,9 +174,9 @@ describe('archiveRowsToColdStorage', () => {
 					sampled_at: '2026-03-01T00:00:00.000Z',
 					viewer_count: 1,
 					channel_id: 'c',
-					platform_id: 'twitch'
-				}
-			])
+					platform_id: 'twitch',
+				},
+			]),
 		).toEqual({ archived: 0, skipped: 'no_bucket' });
 	});
 });

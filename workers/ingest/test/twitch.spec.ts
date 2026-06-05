@@ -12,5 +12,4 @@ describe('twitch helpers', () => {
 		await budget.consume(10);
 		expect(budget.snapshot().remaining).toBeLessThan(720);
 	});
-
 });

@@ -11,12 +11,7 @@
 		"sourceMap": true,
 		"strict": true,
 		"moduleResolution": "bundler",
-		"types": [
-			"./worker-configuration.d.ts"
-		]
+		"types": ["./worker-configuration.d.ts"]
 	},
-	"references": [
-		{ "path": "../../packages/domain" },
-		{ "path": "../../packages/rollup" }
-	]
+	"references": [{ "path": "../../packages/domain" }, { "path": "../../packages/rollup" }]
 }

@@ -1,10 +1,6 @@
 import { getAppAccessToken } from '../auth';
 import { HelixRateBudget } from '../rate-limit';
-import type {
-	CreateSubscriptionResult,
-	EventSubSubscriptionType,
-	HelixEventSubSubscription
-} from './types';
+import type { CreateSubscriptionResult, EventSubSubscriptionType, HelixEventSubSubscription } from './types';
 
 type HelixEventSubListResponse = {
 	data: HelixEventSubSubscription[];
@@ -28,15 +24,17 @@ type HelixEventSubCreateResponse = {
 export class TwitchEventSubApi {
 	constructor(
 		private readonly env: Env,
-		private readonly budget = new HelixRateBudget()
+		private readonly budget = new HelixRateBudget(),
 	) {}
 
-	async listSubscriptions(opts: {
-		status?: 'enabled' | 'webhook_callback_verification_pending';
-		type?: EventSubSubscriptionType;
-		userId?: string;
-		after?: string;
-	} = {}): Promise<HelixEventSubListResponse> {
+	async listSubscriptions(
+		opts: {
+			status?: 'enabled' | 'webhook_callback_verification_pending';
+			type?: EventSubSubscriptionType;
+			userId?: string;
+			after?: string;
+		} = {},
+	): Promise<HelixEventSubListResponse> {
 		const token = await getAppAccessToken(this.env, this.budget);
 		await this.budget.consume(1);
 
@@ -49,8 +47,8 @@ export class TwitchEventSubApi {
 		const res = await fetch(url, {
 			headers: {
 				Authorization: `Bearer ${token}`,
-				'Client-Id': this.env.TWITCH_CLIENT_ID!
-			}
+				'Client-Id': this.env.TWITCH_CLIENT_ID!,
+			},
 		});
 
 		if (!res.ok) {
@@ -72,23 +70,13 @@ export class TwitchEventSubApi {
 		return out;
 	}
 
-	async findEnabledSubscription(
-		type: EventSubSubscriptionType,
-		broadcasterUserId: string
-	): Promise<HelixEventSubSubscription | null> {
+	async findEnabledSubscription(type: EventSubSubscriptionType, broadcasterUserId: string): Promise<HelixEventSubSubscription | null> {
 		const page = await this.listSubscriptions({
 			status: 'enabled',
 			type,
-			userId: broadcasterUserId
+			userId: broadcasterUserId,
 		});
-		return (
-			page.data?.find(
-				(s) =>
-					s.type === type && s.condition.broadcaster_user_id === broadcasterUserId
-			) ??
-			page.data?.[0] ??
-			null
-		);
+		return page.data?.find((s) => s.type === type && s.condition.broadcaster_user_id === broadcasterUserId) ?? page.data?.[0] ?? null;
 	}
 
 	async createSubscription(opts: {
@@ -107,8 +95,8 @@ export class TwitchEventSubApi {
 			transport: {
 				method: 'webhook',
 				callback: opts.callbackUrl,
-				secret: opts.secret
-			}
+				secret: opts.secret,
+			},
 		};
 
 		const res = await fetch('https://api.twitch.tv/helix/eventsub/subscriptions', {
@@ -116,9 +104,9 @@ export class TwitchEventSubApi {
 			headers: {
 				Authorization: `Bearer ${token}`,
 				'Client-Id': this.env.TWITCH_CLIENT_ID!,
-				'Content-Type': 'application/json'
+				'Content-Type': 'application/json',
 			},
-			body: JSON.stringify(body)
+			body: JSON.stringify(body),
 		});
 
 		const text = await res.text();
@@ -133,7 +121,7 @@ export class TwitchEventSubApi {
 			return {
 				subscriptionId: null,
 				status: 'already_exists',
-				error: text.slice(0, 200)
+				error: text.slice(0, 200),
 			};
 		}
 
@@ -141,14 +129,14 @@ export class TwitchEventSubApi {
 			return {
 				subscriptionId: null,
 				status: 'error',
-				error: `${res.status}: ${text.slice(0, 300)}`
+				error: `${res.status}: ${text.slice(0, 300)}`,
 			};
 		}
 
 		const sub = (json as HelixEventSubCreateResponse).data?.[0];
 		return {
 			subscriptionId: sub?.id ?? null,
-			status: sub?.status ?? 'unknown'
+			status: sub?.status ?? 'unknown',
 		};
 	}
 
@@ -163,8 +151,8 @@ export class TwitchEventSubApi {
 			method: 'DELETE',
 			headers: {
 				Authorization: `Bearer ${token}`,
-				'Client-Id': this.env.TWITCH_CLIENT_ID!
-			}
+				'Client-Id': this.env.TWITCH_CLIENT_ID!,
+			},
 		});
 
 		if (!res.ok && res.status !== 404) {

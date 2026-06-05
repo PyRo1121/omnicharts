@@ -11,17 +11,14 @@ export type TopGameRanking = {
 	hoursWatched: number;
 };
 
-export function rankTopGamesFromRollupRows(
-	rows: GameRollupQueryRow[],
-	limit: number
-): TopGameRanking[] {
+export function rankTopGamesFromRollupRows(rows: GameRollupQueryRow[], limit: number): TopGameRanking[] {
 	const bySlug = new Map(rows.map((r) => [r.slug, r]));
 	const sorted = sortGamesByAverageViewers(
 		rows.map((r) => ({
 			slug: r.slug,
 			averageViewers: r.average_viewers,
-			hoursWatched: r.hours_watched
-		}))
+			hoursWatched: r.hours_watched,
+		})),
 	);
 	return sorted.slice(0, limit).map((r, i) => {
 		const row = bySlug.get(r.slug);
@@ -30,7 +27,7 @@ export function rankTopGamesFromRollupRows(
 			slug: r.slug,
 			name: row?.name ?? r.slug,
 			averageViewers: r.averageViewers,
-			hoursWatched: r.hoursWatched
+			hoursWatched: r.hoursWatched,
 		};
 	});
 }
@@ -43,7 +40,7 @@ export async function getTopGamesByAverageViewers(
 		limit?: number;
 		minAirtimeMinutes?: number;
 		minAverageViewers?: number;
-	}
+	},
 ): Promise<TopGameRanking[]> {
 	const days = opts.days ?? 7;
 	const limit = Math.min(opts.limit ?? 20, 100);
@@ -53,7 +50,7 @@ export async function getTopGamesByAverageViewers(
 		days,
 		limit,
 		minAirtimeMinutes: opts.minAirtimeMinutes,
-		minAverageViewers: opts.minAverageViewers
+		minAverageViewers: opts.minAverageViewers,
 	});
 
 	return rankTopGamesFromRollupRows(rows, limit);
@@ -66,7 +63,7 @@ export async function getTopTwitchGamesByAverageViewers(
 		limit?: number;
 		minAirtimeMinutes?: number;
 		minAverageViewers?: number;
-	} = {}
+	} = {},
 ): Promise<TopGameRanking[]> {
 	return getTopGamesByAverageViewers(db, { platformId: PLATFORM_TWITCH, ...opts });
 }

@@ -1,8 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-	fetchIngestOperationalMetrics,
-	ingestLagSecondsFromMaxSample
-} from '../src/health/operational-metrics';
+import { fetchIngestOperationalMetrics, ingestLagSecondsFromMaxSample } from '../src/health/operational-metrics';
 
 function mockDb(rows: Record<string, number | string | null>) {
 	return {
@@ -23,17 +20,17 @@ function mockDb(rows: Record<string, number | string | null>) {
 						return { max_sampled_at: rows.max_sampled_at ?? null } as T;
 					}
 					return null;
-				}
+				},
 			};
 			return stmt;
 		},
 		async batch(stmts: { sql: string }[]) {
 			return Promise.all(
 				stmts.map(async (s) => ({
-					results: [await mockDb(rows).prepare(s.sql).first()]
-				}))
+					results: [await mockDb(rows).prepare(s.sql).first()],
+				})),
 			);
-		}
+		},
 	} as unknown as D1Database;
 }
 

@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'bun:test';
-import {
-	buildGameDetailResponse,
-	buildGameTopChannels,
-	parseGameDetailQuery
-} from '../src/game-api';
+import { buildGameDetailResponse, buildGameTopChannels, parseGameDetailQuery } from '../src/game-api';
 
 describe('parseGameDetailQuery', () => {
 	it('parses slug from path and defaults', () => {
@@ -37,7 +33,7 @@ describe('buildGameDetailResponse', () => {
 		const res = await buildGameDetailResponse(db, {
 			platform: 'kick',
 			slug: '',
-			period: '7d'
+			period: '7d',
 		});
 		expect(res).toBeNull();
 	});
@@ -51,11 +47,11 @@ describe('buildGameDetailResponse', () => {
 							first: async () => ({
 								id: 'kick-game-1',
 								slug: 'just-chatting',
-								name: 'Just Chatting'
+								name: 'Just Chatting',
 							}),
 							_platform: platform,
-							_slug: slug
-						})
+							_slug: slug,
+						}),
 					};
 				}
 				if (sql.includes('game_daily_rollups')) {
@@ -69,21 +65,21 @@ describe('buildGameDetailResponse', () => {
 										average_viewers: 250,
 										peak_viewers: 800,
 										airtime_minutes: 240,
-										live_channels: 20
-									}
-								]
-							})
-						})
+										live_channels: 20,
+									},
+								],
+							}),
+						}),
 					};
 				}
 				return { bind: () => ({ first: async () => null, all: async () => ({ results: [] }) }) };
-			}
+			},
 		} as unknown as D1Database;
 
 		const res = await buildGameDetailResponse(db, {
 			platform: 'kick',
 			slug: 'just-chatting',
-			period: '7d'
+			period: '7d',
 		});
 
 		expect(res).toMatchObject({
@@ -93,8 +89,8 @@ describe('buildGameDetailResponse', () => {
 			totals: {
 				hours_watched: 500,
 				peak_viewers: 800,
-				live_channels: 20
-			}
+				live_channels: 20,
+			},
 		});
 		expect(res!.daily).toHaveLength(1);
 	});
@@ -108,16 +104,16 @@ describe('buildGameDetailResponse', () => {
 							first: async () => ({
 								id: 'kick-game-1',
 								slug: 'just-chatting',
-								name: 'Just Chatting'
-							})
-						})
+								name: 'Just Chatting',
+							}),
+						}),
 					};
 				}
 				if (sql.includes('game_daily_rollups')) {
 					return {
 						bind: () => ({
-							all: async () => ({ results: [] })
-						})
+							all: async () => ({ results: [] }),
+						}),
 					};
 				}
 				if (sql.includes('channel_daily_rollups')) {
@@ -129,23 +125,19 @@ describe('buildGameDetailResponse', () => {
 										slug: 'xqc',
 										display_name: 'xQc',
 										avatar_url: null,
-										hours_watched: 9000
-									}
-								]
+										hours_watched: 9000,
+									},
+								],
 							}),
-							_platform: platform
-						})
+							_platform: platform,
+						}),
 					};
 				}
 				return { bind: () => ({ first: async () => null, all: async () => ({}) }) };
-			}
+			},
 		} as unknown as D1Database;
 
-		const res = await buildGameDetailResponse(
-			db,
-			{ platform: 'kick', slug: 'just-chatting', period: '7d' },
-			{ minAirtimeMinutes: 60 }
-		);
+		const res = await buildGameDetailResponse(db, { platform: 'kick', slug: 'just-chatting', period: '7d' }, { minAirtimeMinutes: 60 });
 
 		expect(res?.top_channels).toEqual([
 			{
@@ -153,8 +145,8 @@ describe('buildGameDetailResponse', () => {
 				slug: 'xqc',
 				display_name: 'xQc',
 				avatar_url: null,
-				hours_watched: 9000
-			}
+				hours_watched: 9000,
+			},
 		]);
 	});
 });
@@ -163,13 +155,13 @@ describe('buildGameTopChannels', () => {
 	it('returns empty for youtube when no rollups', async () => {
 		const db = {
 			prepare: () => ({
-				bind: () => ({ all: async () => ({ results: [] }) })
-			})
+				bind: () => ({ all: async () => ({ results: [] }) }),
+			}),
 		} as unknown as D1Database;
 		const rows = await buildGameTopChannels(db, {
 			platform: 'youtube',
 			gameSlug: 'valorant',
-			period: '7d'
+			period: '7d',
 		});
 		expect(rows).toEqual([]);
 	});

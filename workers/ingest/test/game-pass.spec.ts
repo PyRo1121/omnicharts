@@ -5,15 +5,15 @@ import { runTwitchGamePass } from '../src/twitch/game-pass';
 
 vi.mock('../src/twitch/ingest-stream', () => ({
 	ingestHelixStreamsBatch: vi.fn().mockResolvedValue([]),
-	flushSampleArchivePage: vi.fn().mockResolvedValue(undefined)
+	flushSampleArchivePage: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../src/twitch/auth', () => ({
-	getAppAccessToken: vi.fn().mockResolvedValue('test-token')
+	getAppAccessToken: vi.fn().mockResolvedValue('test-token'),
 }));
 
 vi.mock('../src/db/twitch', () => ({
-	upsertGameCategory: vi.fn().mockResolvedValue('game-1')
+	upsertGameCategory: vi.fn().mockResolvedValue('game-1'),
 }));
 
 describe('runTwitchGamePass', () => {
@@ -24,7 +24,7 @@ describe('runTwitchGamePass', () => {
 	it('returns early when no top games', async () => {
 		vi.spyOn(topGamesCache, 'resolveTopGamesForCoverage').mockResolvedValue({
 			games: [],
-			helixPointsUsed: 0
+			helixPointsUsed: 0,
 		});
 		const stats = await runTwitchGamePass({ TWITCH_MIN_VIEWERS: '2', DB: {} } as Env);
 		expect(stats.gamesScanned).toBe(0);
@@ -33,7 +33,7 @@ describe('runTwitchGamePass', () => {
 	it('ingests streams from rotating game slice', async () => {
 		vi.spyOn(topGamesCache, 'resolveTopGamesForCoverage').mockResolvedValue({
 			games: [{ id: 'g1', name: 'G1', box_art_url: '' }],
-			helixPointsUsed: 0
+			helixPointsUsed: 0,
 		});
 		vi.spyOn(TwitchHelixClient.prototype, 'getStreamsByGameId').mockResolvedValue({
 			data: [
@@ -47,10 +47,10 @@ describe('runTwitchGamePass', () => {
 					title: 'T',
 					viewer_count: 100,
 					started_at: '2026-06-01T00:00:00Z',
-					type: 'live'
-				}
+					type: 'live',
+				},
 			],
-			pagination: {}
+			pagination: {},
 		});
 
 		const stats = await runTwitchGamePass({ TWITCH_MIN_VIEWERS: '2', DB: {} } as Env);
@@ -61,7 +61,7 @@ describe('runTwitchGamePass', () => {
 	it('skips empty pages when Helix returns a cursor', async () => {
 		vi.spyOn(topGamesCache, 'resolveTopGamesForCoverage').mockResolvedValue({
 			games: [{ id: 'g1', name: 'G1', box_art_url: '' }],
-			helixPointsUsed: 0
+			helixPointsUsed: 0,
 		});
 		let call = 0;
 		vi.spyOn(TwitchHelixClient.prototype, 'getStreamsByGameId').mockImplementation(async () => {
@@ -81,17 +81,17 @@ describe('runTwitchGamePass', () => {
 						title: 'T',
 						viewer_count: 100,
 						started_at: '2026-06-01T00:00:00Z',
-						type: 'live'
-					}
+						type: 'live',
+					},
 				],
-				pagination: {}
+				pagination: {},
 			};
 		});
 
 		const stats = await runTwitchGamePass({
 			TWITCH_MIN_VIEWERS: '2',
 			GAME_PASS_GAMES_PER_CYCLE: '1',
-			DB: {}
+			DB: {},
 		} as Env);
 		expect(stats.pagesFetched).toBe(2);
 		expect(stats.channelsIngested).toBe(1);
@@ -100,7 +100,7 @@ describe('runTwitchGamePass', () => {
 	it('paginates until below min viewers', async () => {
 		vi.spyOn(topGamesCache, 'resolveTopGamesForCoverage').mockResolvedValue({
 			games: [{ id: 'g1', name: 'G1', box_art_url: '' }],
-			helixPointsUsed: 0
+			helixPointsUsed: 0,
 		});
 		let page = 0;
 		const getStreams = vi.spyOn(TwitchHelixClient.prototype, 'getStreamsByGameId').mockImplementation(async () => {
@@ -118,10 +118,10 @@ describe('runTwitchGamePass', () => {
 							title: 'T',
 							viewer_count: 1,
 							started_at: '2026-06-01T00:00:00Z',
-							type: 'live'
-						}
+							type: 'live',
+						},
 					],
-					pagination: { cursor: 'next' }
+					pagination: { cursor: 'next' },
 				};
 			}
 			return { data: [], pagination: {} };
@@ -131,7 +131,7 @@ describe('runTwitchGamePass', () => {
 			TWITCH_MIN_VIEWERS: '50',
 			TWITCH_CLIENT_ID: 'id',
 			TWITCH_CLIENT_SECRET: 'sec',
-			DB: {}
+			DB: {},
 		} as Env);
 		expect(getStreams).toHaveBeenCalled();
 		expect(stats.pagesFetched).toBeGreaterThanOrEqual(1);
@@ -140,7 +140,7 @@ describe('runTwitchGamePass', () => {
 	it('skips streams already seen in a shared sweep/game-pass cycle', async () => {
 		vi.spyOn(topGamesCache, 'resolveTopGamesForCoverage').mockResolvedValue({
 			games: [{ id: 'g1', name: 'G1', box_art_url: '' }],
-			helixPointsUsed: 0
+			helixPointsUsed: 0,
 		});
 		vi.spyOn(TwitchHelixClient.prototype, 'getStreamsByGameId').mockResolvedValue({
 			data: [
@@ -154,10 +154,10 @@ describe('runTwitchGamePass', () => {
 					title: 'T',
 					viewer_count: 100,
 					started_at: '2026-06-01T00:00:00Z',
-					type: 'live'
-				}
+					type: 'live',
+				},
 			],
-			pagination: {}
+			pagination: {},
 		});
 
 		const seenUserIds = new Set(['u1']);
@@ -165,9 +165,9 @@ describe('runTwitchGamePass', () => {
 			{
 				TWITCH_MIN_VIEWERS: '2',
 				GAME_PASS_GAMES_PER_CYCLE: '1',
-				DB: {}
+				DB: {},
 			} as Env,
-			{ seenUserIds }
+			{ seenUserIds },
 		);
 		expect(stats.duplicatesSkipped).toBe(1);
 		expect(stats.channelsIngested).toBe(0);

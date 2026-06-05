@@ -1,0 +1,17 @@
+{
+	"$schema": "./node_modules/oxfmt/configuration_schema.json",
+	"printWidth": 140,
+	"singleQuote": true,
+	"semi": true,
+	"useTabs": true,
+	"ignorePatterns": [
+		"**/node_modules/**",
+		"**/.svelte-kit/**",
+		"**/build/**",
+		"**/dist/**",
+		"**/.wrangler/**",
+		"**/worker-configuration.d.ts",
+		"**/*.tsbuildinfo",
+		"**/*.jsonc"
+	]
+}

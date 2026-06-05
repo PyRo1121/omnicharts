@@ -1,16 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import {
-	EVENTSUB_MESSAGE_DEDUP_TTL_MS,
-	isDuplicateEventSubMessage,
-	recordEventSubMessageId
-} from '../src/twitch/eventsub/message-dedup';
+import { EVENTSUB_MESSAGE_DEDUP_TTL_MS, isDuplicateEventSubMessage, recordEventSubMessageId } from '../src/twitch/eventsub/message-dedup';
 
 describe('EventSub message dedup', () => {
 	it('returns false when key missing', async () => {
 		const db = {
 			prepare() {
 				return { bind: () => ({ first: async () => null }) };
-			}
+			},
 		} as unknown as D1Database;
 		expect(await isDuplicateEventSubMessage(db, 'msg-1')).toBe(false);
 	});
@@ -23,13 +19,13 @@ describe('EventSub message dedup', () => {
 						first: async () =>
 							sql.includes('SELECT')
 								? {
-										value: JSON.stringify({ seenAt: new Date().toISOString() })
+										value: JSON.stringify({ seenAt: new Date().toISOString() }),
 									}
 								: null,
-						run: async () => ({})
-					})
+						run: async () => ({}),
+					}),
 				};
-			}
+			},
 		} as unknown as D1Database;
 		expect(await isDuplicateEventSubMessage(db, 'msg-1')).toBe(true);
 	});
@@ -40,14 +36,11 @@ describe('EventSub message dedup', () => {
 			prepare(sql: string) {
 				return {
 					bind: () => ({
-						first: async () =>
-							sql.includes('SELECT')
-								? { value: JSON.stringify({ seenAt: stale }) }
-								: null,
-						run: async () => ({})
-					})
+						first: async () => (sql.includes('SELECT') ? { value: JSON.stringify({ seenAt: stale }) } : null),
+						run: async () => ({}),
+					}),
 				};
-			}
+			},
 		} as unknown as D1Database;
 		expect(await isDuplicateEventSubMessage(db, 'msg-old')).toBe(false);
 	});
@@ -58,7 +51,7 @@ describe('EventSub message dedup', () => {
 			prepare(q: string) {
 				sql.push(q);
 				return { bind: () => ({ run: async () => ({}) }) };
-			}
+			},
 		} as unknown as D1Database;
 		await recordEventSubMessageId(db, 'msg-new');
 		expect(sql.some((s) => s.includes('ingest_metadata'))).toBe(true);

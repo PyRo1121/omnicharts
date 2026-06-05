@@ -1,15 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
 import * as rollup from '@omnicharts/rollup';
-import {
-	findChannelOnOtherPlatforms,
-	loadChannelDetail,
-	parseChannelPeriod,
-	resolveChannelSlugFromHistory
-} from './channel';
+import { findChannelOnOtherPlatforms, loadChannelDetail, parseChannelPeriod, resolveChannelSlugFromHistory } from './channel';
 import { testLoadContext, testLoadContextWithDb } from './test-helpers';
 
 vi.mock('$env/dynamic/private', () => ({
-	env: { INGEST_URL: 'http://ingest.test' }
+	env: { INGEST_URL: 'http://ingest.test' },
 }));
 
 describe('loadChannelDetail', () => {
@@ -25,26 +20,20 @@ describe('loadChannelDetail', () => {
 	it('resolveChannelSlugFromHistory returns canonical slug', async () => {
 		const fetchFn = vi.fn().mockResolvedValue({
 			ok: true,
-			json: async () => ({ slug: 'newname', from_history: true })
+			json: async () => ({ slug: 'newname', from_history: true }),
 		});
 		const slug = await resolveChannelSlugFromHistory(testLoadContext(fetchFn as typeof fetch), 'oldname', 'twitch');
 		expect(slug).toBe('newname');
 	});
 
 	it('resolveChannelSlugFromHistory falls back to ingest when D1 throws', async () => {
-		vi.spyOn(rollup, 'resolveChannelSlug').mockRejectedValueOnce(
-			new Error('D1_ERROR: no such table: channels')
-		);
+		vi.spyOn(rollup, 'resolveChannelSlug').mockRejectedValueOnce(new Error('D1_ERROR: no such table: channels'));
 		const db = {} as D1Database;
 		const fetchFn = vi.fn().mockResolvedValue({
 			ok: true,
-			json: async () => ({ slug: 'canonical', from_history: true })
+			json: async () => ({ slug: 'canonical', from_history: true }),
 		});
-		const slug = await resolveChannelSlugFromHistory(
-			testLoadContextWithDb(fetchFn as typeof fetch, db),
-			'oldname',
-			'twitch'
-		);
+		const slug = await resolveChannelSlugFromHistory(testLoadContextWithDb(fetchFn as typeof fetch, db), 'oldname', 'twitch');
 		expect(slug).toBe('canonical');
 		vi.restoreAllMocks();
 	});
@@ -70,13 +59,13 @@ describe('loadChannelDetail', () => {
 					peak_viewers: 20,
 					airtime_hours: 2,
 					stream_count: 3,
-					followers_gain: 1
+					followers_gain: 1,
 				},
 				daily: [
 					{ date: '2026-06-01', hours_watched: 4, average_viewers: 2, peak_viewers: 5 },
-					{ date: '2026-06-02', hours_watched: 6, average_viewers: 3, peak_viewers: 8 }
-				]
-			})
+					{ date: '2026-06-02', hours_watched: 6, average_viewers: 3, peak_viewers: 8 },
+				],
+			}),
 		});
 
 		const load = await loadChannelDetail(testLoadContext(fetchFn as typeof fetch), 'ninja', 'twitch', '7d');
@@ -111,18 +100,14 @@ describe('findChannelOnOtherPlatforms', () => {
 					json: async () => ({
 						platform: 'kick',
 						slug: 'xqc',
-						display_name: 'xQc'
-					})
+						display_name: 'xQc',
+					}),
 				});
 			}
 			return Promise.resolve({ ok: false, status: 404 });
 		});
 
-		const suggestions = await findChannelOnOtherPlatforms(
-			testLoadContext(fetchFn as typeof fetch),
-			'xqc',
-			'twitch'
-		);
+		const suggestions = await findChannelOnOtherPlatforms(testLoadContext(fetchFn as typeof fetch), 'xqc', 'twitch');
 		expect(suggestions).toEqual([{ slug: 'xqc', platform: 'kick', displayName: 'xQc' }]);
 	});
 });

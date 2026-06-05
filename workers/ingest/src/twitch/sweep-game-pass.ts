@@ -14,7 +14,7 @@ export type SweepAndGamePassStats = {
  */
 export async function runTwitchSweepAndGamePass(env: Env): Promise<SweepAndGamePassStats> {
 	const client = new TwitchHelixClient(env, {
-		budgetPoints: helixSafePointsPerMinuteFromEnv(env)
+		budgetPoints: helixSafePointsPerMinuteFromEnv(env),
 	});
 	const seenUserIds = new Set<string>();
 	const passOpts = { client, seenUserIds };

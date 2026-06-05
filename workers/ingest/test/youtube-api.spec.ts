@@ -20,17 +20,17 @@ describe('YoutubeDataApiClient', () => {
 								snippet: {
 									channelId: 'UC1',
 									title: 'Live',
-									liveBroadcastContent: 'live'
+									liveBroadcastContent: 'live',
 								},
 								liveStreamingDetails: {
 									actualStartTime: '2026-06-01T00:00:00Z',
-									concurrentViewers: '42'
-								}
-							}
-						]
+									concurrentViewers: '42',
+								},
+							},
+						],
 					}),
-					{ status: 200 }
-				)
+					{ status: 200 },
+				),
 			);
 		});
 		vi.stubGlobal('fetch', fetchMock);
@@ -59,12 +59,12 @@ describe('YoutubeDataApiClient', () => {
 					items: [
 						{
 							id: 'UCabcdefghijklmnopqrstuv',
-							snippet: { title: 'MrBeast', customUrl: '@MrBeast' }
-						}
-					]
+							snippet: { title: 'MrBeast', customUrl: '@MrBeast' },
+						},
+					],
 				}),
-				{ status: 200 }
-			)
+				{ status: 200 },
+			),
 		);
 		vi.stubGlobal('fetch', fetchMock);
 
@@ -86,10 +86,10 @@ describe('YoutubeDataApiClient', () => {
 		const fetchMock = vi.fn().mockResolvedValue(
 			new Response(
 				JSON.stringify({
-					items: [{ id: 'UC1', snippet: { title: 'One' } }]
+					items: [{ id: 'UC1', snippet: { title: 'One' } }],
 				}),
-				{ status: 200 }
-			)
+				{ status: 200 },
+			),
 		);
 		vi.stubGlobal('fetch', fetchMock);
 
@@ -105,12 +105,12 @@ describe('YoutubeDataApiClient', () => {
 				JSON.stringify({
 					items: [
 						{
-							contentDetails: { relatedPlaylists: { uploads: 'UUuploads123' } }
-						}
-					]
+							contentDetails: { relatedPlaylists: { uploads: 'UUuploads123' } },
+						},
+					],
 				}),
-				{ status: 200 }
-			)
+				{ status: 200 },
+			),
 		);
 		vi.stubGlobal('fetch', fetchMock);
 
@@ -122,10 +122,10 @@ describe('YoutubeDataApiClient', () => {
 		const fetchMock = vi.fn().mockResolvedValue(
 			new Response(
 				JSON.stringify({
-					items: [{ snippet: { resourceId: { videoId: 'vid1' } } }]
+					items: [{ snippet: { resourceId: { videoId: 'vid1' } } }],
 				}),
-				{ status: 200 }
-			)
+				{ status: 200 },
+			),
 		);
 		vi.stubGlobal('fetch', fetchMock);
 
@@ -148,8 +148,8 @@ describe('YoutubeDataApiClient', () => {
 	it('getUploadsPlaylistId returns null when uploads playlist missing', async () => {
 		const fetchMock = vi.fn().mockResolvedValue(
 			new Response(JSON.stringify({ items: [{ contentDetails: { relatedPlaylists: {} } }] }), {
-				status: 200
-			})
+				status: 200,
+			}),
 		);
 		vi.stubGlobal('fetch', fetchMock);
 

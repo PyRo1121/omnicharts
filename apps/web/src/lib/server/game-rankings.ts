@@ -1,9 +1,5 @@
 import { parseRankingPeriod, type PlatformId } from '@omnicharts/domain';
-import {
-	buildRankingsGamesResponse,
-	formatCompactMetric,
-	type RankingsGamesResponse
-} from '@omnicharts/rollup';
+import { buildRankingsGamesResponse, formatCompactMetric, type RankingsGamesResponse } from '@omnicharts/rollup';
 import { getIngestBaseUrl } from '$lib/server/ingest';
 import type { ServerLoadContext } from '$lib/server/load-context';
 import { resolveWebRankingEnv } from '$lib/server/ranking-env';
@@ -19,12 +15,7 @@ export type GameRankingsLoad = {
 	rows: GameRow[];
 };
 
-function mapGameRankingsBody(
-	body: RankingsGamesResponse,
-	period: RankingPeriod,
-	limit: number,
-	platform: PlatformId
-): GameRankingsLoad {
+function mapGameRankingsBody(body: RankingsGamesResponse, period: RankingPeriod, limit: number, platform: PlatformId): GameRankingsLoad {
 	if (!body.items?.length) {
 		return { source: 'live', period, updatedAt: body.updated_at, rows: [] };
 	}
@@ -39,8 +30,8 @@ function mapGameRankingsBody(
 			platform,
 			boxArtUrl: item.box_art_url ?? '',
 			metric: formatCompactMetric(item.average_viewers),
-			metricLabel: 'Avg viewers'
-		}))
+			metricLabel: 'Avg viewers',
+		})),
 	};
 }
 
@@ -55,14 +46,10 @@ async function loadFromD1(
 	platform: PlatformId,
 	period: RankingPeriod,
 	limit: number,
-	cfEnv: ServerLoadContext['cfEnv']
+	cfEnv: ServerLoadContext['cfEnv'],
 ): Promise<GameRankingsLoad> {
 	const apiPeriod = parseRankingPeriod(periodForApi(period));
-	const body = await buildRankingsGamesResponse(
-		db,
-		{ platform, period: apiPeriod, limit },
-		resolveWebRankingEnv(cfEnv)
-	);
+	const body = await buildRankingsGamesResponse(db, { platform, period: apiPeriod, limit }, resolveWebRankingEnv(cfEnv));
 	return mapGameRankingsBody(body, period, limit, platform);
 }
 
@@ -70,7 +57,7 @@ async function loadFromIngest(
 	fetchFn: typeof fetch,
 	platform: PlatformId,
 	period: RankingPeriod,
-	limit: number
+	limit: number,
 ): Promise<GameRankingsLoad | null> {
 	const apiPeriod = periodForApi(period);
 	const url = `${getIngestBaseUrl()}/v1/rankings/games?platform=${encodeURIComponent(platform)}&period=${apiPeriod}&limit=${limit}`;
@@ -85,7 +72,7 @@ export async function loadGameRankings(
 	platform: PlatformId,
 	period: RankingPeriod,
 	limit = 20,
-	mockEnabled = false
+	mockEnabled = false,
 ): Promise<GameRankingsLoad> {
 	if (!supportsRollupGameRankings(platform)) {
 		return { source: 'live', period, updatedAt: null, rows: [] };

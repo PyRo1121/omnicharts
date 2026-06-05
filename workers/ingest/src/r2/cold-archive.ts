@@ -7,10 +7,7 @@
 
 import { parquetWriteBuffer } from 'hyparquet-writer';
 
-export type ColdArchiveKind =
-	| 'viewer_samples'
-	| 'channel_daily_rollups'
-	| 'game_daily_rollups';
+export type ColdArchiveKind = 'viewer_samples' | 'channel_daily_rollups' | 'game_daily_rollups';
 
 export type ColdArchiveSkipReason = 'disabled' | 'no_bucket' | 'empty';
 
@@ -49,29 +46,21 @@ export type GameRollupArchiveRow = {
 	live_channels: number;
 };
 
-export type ColdArchiveRow =
-	| ViewerSampleArchiveRow
-	| ChannelRollupArchiveRow
-	| GameRollupArchiveRow;
+export type ColdArchiveRow = ViewerSampleArchiveRow | ChannelRollupArchiveRow | GameRollupArchiveRow;
 
 const KIND_PATH: Record<ColdArchiveKind, string> = {
 	viewer_samples: 'samples',
 	channel_daily_rollups: 'rollups',
-	game_daily_rollups: 'rollups'
+	game_daily_rollups: 'rollups',
 };
 
 const KIND_SUFFIX: Record<ColdArchiveKind, string> = {
 	viewer_samples: '',
 	channel_daily_rollups: '/kind=channel_daily',
-	game_daily_rollups: '/kind=game_daily'
+	game_daily_rollups: '/kind=game_daily',
 };
 
-export function coldArchiveObjectKey(
-	kind: ColdArchiveKind,
-	partitionDate: string,
-	platform: string,
-	partId: string
-): string {
+export function coldArchiveObjectKey(kind: ColdArchiveKind, partitionDate: string, platform: string, partId: string): string {
 	const year = partitionDate.slice(0, 4);
 	const month = partitionDate.slice(5, 7);
 	const base = KIND_PATH[kind];
@@ -113,8 +102,8 @@ export function encodeRowsToParquet(kind: ColdArchiveKind, rows: ColdArchiveRow[
 				{ name: 'sampled_at', data: sampleRows.map((r) => r.sampled_at), type: 'STRING' },
 				{ name: 'viewer_count', data: sampleRows.map((r) => r.viewer_count), type: 'INT32' },
 				{ name: 'channel_id', data: sampleRows.map((r) => r.channel_id), type: 'STRING' },
-				{ name: 'platform_id', data: sampleRows.map((r) => r.platform_id), type: 'STRING' }
-			]
+				{ name: 'platform_id', data: sampleRows.map((r) => r.platform_id), type: 'STRING' },
+			],
 		});
 	}
 
@@ -134,9 +123,9 @@ export function encodeRowsToParquet(kind: ColdArchiveKind, rows: ColdArchiveRow[
 					name: 'followers_delta',
 					data: rollupRows.map((r) => r.followers_delta),
 					type: 'INT32',
-					nullable: true
-				}
-			]
+					nullable: true,
+				},
+			],
 		});
 	}
 
@@ -150,8 +139,8 @@ export function encodeRowsToParquet(kind: ColdArchiveKind, rows: ColdArchiveRow[
 			{ name: 'average_viewers', data: gameRows.map((r) => r.average_viewers), type: 'DOUBLE' },
 			{ name: 'peak_viewers', data: gameRows.map((r) => r.peak_viewers), type: 'INT32' },
 			{ name: 'airtime_minutes', data: gameRows.map((r) => r.airtime_minutes), type: 'INT32' },
-			{ name: 'live_channels', data: gameRows.map((r) => r.live_channels), type: 'INT32' }
-		]
+			{ name: 'live_channels', data: gameRows.map((r) => r.live_channels), type: 'INT32' },
+		],
 	});
 }
 
@@ -160,7 +149,7 @@ export async function putColdArchiveParquet(
 	kind: ColdArchiveKind,
 	partitionDate: string,
 	platform: string,
-	body: ArrayBuffer | Uint8Array
+	body: ArrayBuffer | Uint8Array,
 ): Promise<ColdArchivePutResult> {
 	const byteLength = body.byteLength;
 	if (byteLength === 0) return { archived: 0, skipped: 'empty' };
@@ -171,24 +160,19 @@ export async function putColdArchiveParquet(
 	const bucket = env.SAMPLES!;
 	const key = coldArchiveObjectKey(kind, partitionDate, platform, crypto.randomUUID());
 	await bucket.put(key, body, {
-		httpMetadata: { contentType: 'application/vnd.apache.parquet' }
+		httpMetadata: { contentType: 'application/vnd.apache.parquet' },
 	});
 	return { archived: byteLength, key };
 }
 
-export async function archiveRowsToColdStorage(
-	env: Env,
-	kind: ColdArchiveKind,
-	rows: ColdArchiveRow[]
-): Promise<ColdArchivePutResult> {
+export async function archiveRowsToColdStorage(env: Env, kind: ColdArchiveKind, rows: ColdArchiveRow[]): Promise<ColdArchivePutResult> {
 	if (rows.length === 0) return { archived: 0, skipped: 'empty' };
 
 	const skip = shouldColdArchive(env);
 	if (skip) return { archived: 0, skipped: skip };
 
 	const partitionDate = partitionDateFromRows(kind, rows);
-	const platform =
-		kind === 'viewer_samples' ? platformFromSampleRows(rows as ViewerSampleArchiveRow[]) : 'rollup';
+	const platform = kind === 'viewer_samples' ? platformFromSampleRows(rows as ViewerSampleArchiveRow[]) : 'rollup';
 	const body = encodeRowsToParquet(kind, rows);
 	return putColdArchiveParquet(env, kind, partitionDate, platform, body);
 }

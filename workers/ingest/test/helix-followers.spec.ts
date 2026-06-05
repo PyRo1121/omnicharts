@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { TwitchHelixClient } from '../src/twitch/helix';
 
 vi.mock('../src/twitch/auth', () => ({
-	getAppAccessToken: vi.fn().mockResolvedValue('test-token')
+	getAppAccessToken: vi.fn().mockResolvedValue('test-token'),
 }));
 
 describe('TwitchHelixClient followers and stream batches', () => {
@@ -19,9 +19,9 @@ describe('TwitchHelixClient followers and stream batches', () => {
 							status: 200,
 							headers: {
 								'Ratelimit-Remaining': '500',
-								'Ratelimit-Reset': String(Math.floor(Date.now() / 1000) + 60)
-							}
-						})
+								'Ratelimit-Reset': String(Math.floor(Date.now() / 1000) + 60),
+							},
+						}),
 					);
 				}
 				if (url.includes('/helix/streams') && url.includes('user_id')) {
@@ -39,22 +39,22 @@ describe('TwitchHelixClient followers and stream batches', () => {
 										title: 'T',
 										viewer_count: 10,
 										started_at: '2026-06-01T00:00:00Z',
-										type: 'live'
-									}
-								]
+										type: 'live',
+									},
+								],
 							}),
 							{
 								status: 200,
 								headers: {
 									'Ratelimit-Remaining': '499',
-									'Ratelimit-Reset': String(Math.floor(Date.now() / 1000) + 60)
-								}
-							}
-						)
+									'Ratelimit-Reset': String(Math.floor(Date.now() / 1000) + 60),
+								},
+							},
+						),
 					);
 				}
 				return Promise.resolve(new Response('err', { status: 500 }));
-			})
+			}),
 		);
 	});
 
@@ -93,10 +93,10 @@ describe('TwitchHelixClient followers and stream batches', () => {
 					status: 500,
 					headers: {
 						'Ratelimit-Remaining': '100',
-						'Ratelimit-Reset': String(Math.floor(Date.now() / 1000) + 60)
-					}
-				})
-			)
+						'Ratelimit-Reset': String(Math.floor(Date.now() / 1000) + 60),
+					},
+				}),
+			),
 		);
 		const client = new TwitchHelixClient(env);
 		expect(await client.getChannelFollowerTotal('1')).toBeNull();

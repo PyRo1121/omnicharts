@@ -8,13 +8,13 @@ const onlineEvent: StreamOnlineEvent = {
 	broadcaster_user_login: 'tester',
 	broadcaster_user_name: 'Tester',
 	type: 'live',
-	started_at: '2026-06-01T12:00:00.000Z'
+	started_at: '2026-06-01T12:00:00.000Z',
 };
 
 const offlineEvent: StreamOfflineEvent = {
 	broadcaster_user_id: '123',
 	broadcaster_user_login: 'tester',
-	broadcaster_user_name: 'Tester'
+	broadcaster_user_name: 'Tester',
 };
 
 describe('EventSub lifecycle', () => {
@@ -28,7 +28,7 @@ describe('EventSub lifecycle', () => {
 				}
 				if (sql.includes('SELECT id FROM channels')) {
 					return {
-						bind: () => ({ first: async () => ({ id: 'twitch-ch-123' }) })
+						bind: () => ({ first: async () => ({ id: 'twitch-ch-123' }) }),
 					};
 				}
 				if (sql.includes('INSERT INTO stream_sessions')) {
@@ -40,12 +40,12 @@ describe('EventSub lifecycle', () => {
 							run: async () => {
 								sessionUpdates.push({ sql, endedAt: _endedAt });
 								expect(platformStreamId).toBe('stream-1');
-							}
-						})
+							},
+						}),
 					};
 				}
 				return { bind: () => ({ run: async () => ({}) }) };
-			}
+			},
 		} as unknown as D1Database;
 
 		await applyStreamOnline({ DB: db } as Env, onlineEvent);
@@ -60,7 +60,7 @@ describe('EventSub lifecycle', () => {
 			prepare(sql: string) {
 				if (sql.includes('SELECT id FROM channels')) {
 					return {
-						bind: () => ({ first: async () => ({ id: 'twitch-ch-123' }) })
+						bind: () => ({ first: async () => ({ id: 'twitch-ch-123' }) }),
 					};
 				}
 				if (sql.includes('UPDATE channels SET last_seen_at')) {
@@ -71,12 +71,12 @@ describe('EventSub lifecycle', () => {
 						bind: () => ({
 							run: async () => {
 								closed = true;
-							}
-						})
+							},
+						}),
 					};
 				}
 				return { bind: () => ({ run: async () => ({}) }) };
-			}
+			},
 		} as unknown as D1Database;
 
 		await applyStreamOffline({ DB: db } as Env, offlineEvent);
@@ -94,10 +94,10 @@ describe('EventSub lifecycle', () => {
 						first: async () => ({ id: 'twitch-ch-123' }),
 						run: async () => {
 							binds.push([sql, ...args]);
-						}
-					})
+						},
+					}),
 				};
-			}
+			},
 		} as unknown as D1Database;
 
 		await applyStreamOffline({ DB: db } as Env, { ...offlineEvent, ended_at: endedAt });
@@ -115,10 +115,10 @@ describe('EventSub lifecycle', () => {
 						first: async () => ({ id: 'twitch-ch-123' }),
 						run: async () => {
 							binds.push([sql, ...args]);
-						}
-					})
+						},
+					}),
 				};
-			}
+			},
 		} as unknown as D1Database;
 
 		await applyStreamOffline({ DB: db } as Env, offlineEvent, { endedAt });

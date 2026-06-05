@@ -5,7 +5,7 @@ import type { PageData as ChannelsPageData } from '../../routes/channels/$types'
 import type { PageData as GamesPageData } from '../../routes/games/$types';
 
 vi.mock('$env/dynamic/private', () => ({
-	env: { INGEST_URL: 'http://ingest.test' }
+	env: { INGEST_URL: 'http://ingest.test' },
 }));
 
 type ChannelsLoad = (event: Parameters<typeof channelsLoad>[0]) => Promise<ChannelsPageData>;
@@ -25,12 +25,12 @@ function channelsLoadArgs(platform: string | null) {
 				platform: 'youtube',
 				period: '7d',
 				updated_at: '2026-06-01T00:00:00Z',
-				items: []
-			})
+				items: [],
+			}),
 		}),
 		url,
 		setHeaders: vi.fn(),
-		platform: undefined
+		platform: undefined,
 	} as unknown as Parameters<typeof channelsLoad>[0];
 }
 
@@ -45,12 +45,12 @@ function gamesLoadArgs(platform: string | null) {
 				platform: 'youtube',
 				period: '7d',
 				updated_at: '2026-06-01T00:00:00Z',
-				items: []
-			})
+				items: [],
+			}),
 		}),
 		url,
 		setHeaders: vi.fn(),
-		platform: undefined
+		platform: undefined,
 	} as unknown as Parameters<typeof gamesLoad>[0];
 }
 

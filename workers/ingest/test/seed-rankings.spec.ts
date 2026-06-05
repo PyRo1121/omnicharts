@@ -10,9 +10,9 @@ describe('seedDevRankings', () => {
 					bind(...args: unknown[]) {
 						runs.push({ sql, args });
 						return { run: async () => ({}) };
-					}
+					},
 				};
-			}
+			},
 		} as unknown as D1Database;
 
 		const stats = await seedDevRankings({ DB: db } as Env);

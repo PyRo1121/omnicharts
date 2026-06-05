@@ -4,7 +4,7 @@ import { parseUiPeriod } from '$lib/ui/platform.svelte';
 
 export async function resolvePeriodContext(
 	raw: string | null,
-	db?: D1Database | null
+	db?: D1Database | null,
 ): Promise<{ period: RankingPeriod; periodNote: string | null }> {
 	const parsed = parseUiPeriod(raw);
 	if (parsed.periodNote || !db) return parsed;

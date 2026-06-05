@@ -1,9 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import {
-	buildEventSubHmacMessage,
-	clearEventSubKeyCacheForTests,
-	verifyTwitchEventSubSignature
-} from '../src/twitch/eventsub/verify';
+import { buildEventSubHmacMessage, clearEventSubKeyCacheForTests, verifyTwitchEventSubSignature } from '../src/twitch/eventsub/verify';
 
 describe('EventSub signature verification', () => {
 	const secret = 's3cre77890ab';
@@ -22,13 +18,7 @@ describe('EventSub signature verification', () => {
 		const timestamp = String(Math.floor(Date.now() / 1000));
 		const rawBody = '{"subscription":{"type":"stream.online"},"event":{}}';
 
-		const key = await crypto.subtle.importKey(
-			'raw',
-			new TextEncoder().encode(secret),
-			{ name: 'HMAC', hash: 'SHA-256' },
-			false,
-			['sign']
-		);
+		const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
 		const message = buildEventSubHmacMessage(messageId, timestamp, rawBody);
 		const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(message));
 		const hex = Array.from(new Uint8Array(sig))
@@ -40,7 +30,7 @@ describe('EventSub signature verification', () => {
 			messageId,
 			timestamp,
 			signatureHeader: `sha256=${hex}`,
-			rawBody
+			rawBody,
 		});
 		expect(ok).toBe(true);
 	});
@@ -50,13 +40,7 @@ describe('EventSub signature verification', () => {
 		const timestamp = String(Math.floor(Date.now() / 1000));
 		const rawBody = '{"subscription":{"type":"stream.online"},"event":{}}';
 
-		const key = await crypto.subtle.importKey(
-			'raw',
-			new TextEncoder().encode(secret),
-			{ name: 'HMAC', hash: 'SHA-256' },
-			false,
-			['sign']
-		);
+		const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
 		const message = buildEventSubHmacMessage(messageId, timestamp, rawBody);
 		const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(message));
 		const hex = Array.from(new Uint8Array(sig))
@@ -68,7 +52,7 @@ describe('EventSub signature verification', () => {
 			messageId,
 			timestamp,
 			signatureHeader: `sha256=${hex}`,
-			rawBody: rawBody.replace('online', 'offline')
+			rawBody: rawBody.replace('online', 'offline'),
 		});
 		expect(ok).toBe(false);
 	});

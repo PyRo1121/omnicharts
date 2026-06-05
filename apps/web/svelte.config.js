@@ -4,16 +4,16 @@ import adapter from '@sveltejs/adapter-cloudflare';
 const config = {
 	compilerOptions: {
 		// Force runes mode for the project, except for libraries. Can be removed in svelte 6.
-		runes: ({ filename }) => filename.split(/[/\\]/).includes('node_modules') ? undefined : true
+		runes: ({ filename }) => (filename.split(/[/\\]/).includes('node_modules') ? undefined : true),
 	},
 	kit: {
 		adapter: adapter({
 			// Emulates platform.env.DB from wrangler.jsonc during vite dev (doc 19 platformProxy).
 			platformProxy: {
-				configPath: 'wrangler.jsonc'
-			}
-		})
-	}
+				configPath: 'wrangler.jsonc',
+			},
+		}),
+	},
 };
 
 export default config;

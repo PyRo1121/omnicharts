@@ -9,13 +9,13 @@ describe('getTopTwitchGamesByAverageViewers', () => {
 				slug: 'valorant',
 				name: 'VALORANT',
 				hours_watched: 90000,
-				average_viewers: 8000
-			}
+				average_viewers: 8000,
+			},
 		]);
 
 		const rows = await getTopTwitchGamesByAverageViewers({} as D1Database, {
 			days: 7,
-			limit: 5
+			limit: 5,
 		});
 
 		expect(rows).toEqual([
@@ -24,8 +24,8 @@ describe('getTopTwitchGamesByAverageViewers', () => {
 				slug: 'valorant',
 				name: 'VALORANT',
 				averageViewers: 8000,
-				hoursWatched: 90000
-			}
+				hoursWatched: 90000,
+			},
 		]);
 		vi.restoreAllMocks();
 	});

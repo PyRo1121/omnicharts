@@ -1,15 +1,6 @@
 import { PLATFORM_YOUTUBE } from '@omnicharts/domain';
-import {
-	batchRecordYoutubeLiveSamples,
-	clearYoutubeLiveVideoIds,
-	type YoutubeLiveSampleInput
-} from '../db/youtube-live-batch';
-import {
-	listYoutubePollTargets,
-	listYoutubeTrackedMissingLiveVideoId,
-	setYoutubeLiveVideoId,
-	type YoutubePollTarget
-} from '../db/youtube';
+import { batchRecordYoutubeLiveSamples, clearYoutubeLiveVideoIds, type YoutubeLiveSampleInput } from '../db/youtube-live-batch';
+import { listYoutubePollTargets, listYoutubeTrackedMissingLiveVideoId, setYoutubeLiveVideoId, type YoutubePollTarget } from '../db/youtube';
 import { resolveYoutubeLiveVideoId } from './live-video-id';
 import { runD1Batches } from '../db/d1-batch';
 import { closeOpenSessionsForPlatformChannelIds } from '../db/session-lifecycle';
@@ -17,18 +8,8 @@ import { archiveSampleBatch } from '../r2/sample-archive';
 import { ingestWarn } from '../log';
 import { requireDb } from '../worker-bindings';
 import { YoutubeDataApiClient } from './api';
-import {
-	youtubeApiKeyConfigured,
-	youtubeMaxTrackedFromEnv,
-	youtubeMinViewersFromEnv,
-	YOUTUBE_VIDEOS_BATCH_SIZE
-} from './config';
-import {
-	isYoutubeConcurrentViewersKnown,
-	isYoutubeLive,
-	parseYoutubeConcurrentViewers,
-	youtubeStreamEnded
-} from './stream-fields';
+import { youtubeApiKeyConfigured, youtubeMaxTrackedFromEnv, youtubeMinViewersFromEnv, YOUTUBE_VIDEOS_BATCH_SIZE } from './config';
+import { isYoutubeConcurrentViewersKnown, isYoutubeLive, parseYoutubeConcurrentViewers, youtubeStreamEnded } from './stream-fields';
 
 export type YoutubePollResult = {
 	batches: number;
@@ -70,12 +51,7 @@ export async function runYoutubeCatalogPoll(env: Env): Promise<YoutubePollResult
 	return totals;
 }
 
-async function bootstrapYoutubeLiveVideoIds(
-	env: Env,
-	db: D1Database,
-	client: YoutubeDataApiClient,
-	limit: number
-): Promise<void> {
+async function bootstrapYoutubeLiveVideoIds(env: Env, db: D1Database, client: YoutubeDataApiClient, limit: number): Promise<void> {
 	const missing = await listYoutubeTrackedMissingLiveVideoId(db, limit);
 	for (const row of missing) {
 		try {
@@ -93,7 +69,7 @@ async function refreshYoutubeLiveVideoIdOnPollMiss(
 	env: Env,
 	db: D1Database,
 	client: YoutubeDataApiClient,
-	target: YoutubePollTarget
+	target: YoutubePollTarget,
 ): Promise<string | null> {
 	try {
 		const videoId = await resolveYoutubeLiveVideoId(client, target.platformChannelId);
@@ -107,17 +83,14 @@ async function refreshYoutubeLiveVideoIdOnPollMiss(
 	return null;
 }
 
-export async function runYoutubePollBatch(
-	env: Env,
-	targets: YoutubePollTarget[]
-): Promise<YoutubePollResult> {
+export async function runYoutubePollBatch(env: Env, targets: YoutubePollTarget[]): Promise<YoutubePollResult> {
 	const db = requireDb(env);
 	const client = new YoutubeDataApiClient(env);
 	const minViewers = youtubeMinViewersFromEnv(env);
 	const result: YoutubePollResult = {
 		batches: targets.length > 0 ? 1 : 0,
 		liveVideos: 0,
-		samplesWritten: 0
+		samplesWritten: 0,
 	};
 
 	if (targets.length === 0) return result;
@@ -148,11 +121,7 @@ export async function runYoutubePollBatch(
 		liveVideoIds.add(video.id);
 
 		const viewers = parseYoutubeConcurrentViewers(video.liveStreamingDetails?.concurrentViewers);
-		if (
-			!isYoutubeConcurrentViewersKnown(video.liveStreamingDetails?.concurrentViewers) ||
-			viewers == null ||
-			viewers < minViewers
-		) {
+		if (!isYoutubeConcurrentViewersKnown(video.liveStreamingDetails?.concurrentViewers) || viewers == null || viewers < minViewers) {
 			continue;
 		}
 
@@ -173,7 +142,7 @@ export async function runYoutubePollBatch(
 
 	const archiveRows = await batchRecordYoutubeLiveSamples(db, sampleInputs, {
 		env,
-		scope: 'youtube:poll:samples'
+		scope: 'youtube:poll:samples',
 	});
 	result.samplesWritten = archiveRows.length;
 	await archiveSampleBatch(env, archiveRows);
@@ -182,7 +151,7 @@ export async function runYoutubePollBatch(
 		const uniqueEnded = [...new Set(endedChannelIds)];
 		await clearYoutubeLiveVideoIds(db, uniqueEnded, {
 			env,
-			scope: 'youtube:poll:clear_live_video_id'
+			scope: 'youtube:poll:clear_live_video_id',
 		});
 		const endedPlatformIds = uniqueEnded
 			.map((id) => targets.find((t) => t.channelRowId === id)?.platformChannelId)
@@ -190,21 +159,19 @@ export async function runYoutubePollBatch(
 		const now = new Date().toISOString();
 		await closeOpenSessionsForPlatformChannelIds(db, PLATFORM_YOUTUBE, endedPlatformIds, now, {
 			env,
-			scope: 'youtube:poll:ended_close_sessions'
+			scope: 'youtube:poll:ended_close_sessions',
 		});
 	}
 
 	const now = new Date().toISOString();
 	const lastSeenStatements = targets.map((t) =>
 		db
-			.prepare(
-				`UPDATE channels SET last_seen_at = ? WHERE platform_id = ? AND platform_channel_id = ?`
-			)
-			.bind(now, PLATFORM_YOUTUBE, t.platformChannelId)
+			.prepare(`UPDATE channels SET last_seen_at = ? WHERE platform_id = ? AND platform_channel_id = ?`)
+			.bind(now, PLATFORM_YOUTUBE, t.platformChannelId),
 	);
 	await runD1Batches(db, lastSeenStatements, {
 		env,
-		scope: 'youtube:poll:last_seen'
+		scope: 'youtube:poll:last_seen',
 	});
 
 	return result;

@@ -1,12 +1,5 @@
 import type { D1Database } from './d1';
-import {
-	isPlatformId,
-	isRankingPeriod,
-	parseRankingPeriod,
-	periodToDays,
-	PLATFORM_TWITCH,
-	type RankingPeriod
-} from '@omnicharts/domain';
+import { isPlatformId, isRankingPeriod, parseRankingPeriod, periodToDays, PLATFORM_TWITCH, type RankingPeriod } from '@omnicharts/domain';
 import { MIN_RANKING_AIRTIME_MINUTES } from './eligibility';
 import { rankingQueryOptionsForPlatform, type RankingEligibilityEnv } from './ranking-env';
 import { getTopGamesByAverageViewers } from './top-games';
@@ -55,7 +48,7 @@ export function parseRankingsGamesQuery(url: URL): ParsedRankingsGamesQuery {
 export async function buildRankingsGamesResponse(
 	db: D1Database,
 	opts: { platform: string; period: RankingPeriod; limit: number },
-	env?: RankingEligibilityEnv
+	env?: RankingEligibilityEnv,
 ): Promise<RankingsGamesResponse> {
 	const days = periodToDays(opts.period);
 	const eligibility = env
@@ -66,7 +59,7 @@ export async function buildRankingsGamesResponse(
 		days,
 		limit: opts.limit,
 		minAirtimeMinutes: eligibility.minAirtimeMinutes,
-		minAverageViewers: eligibility.minAverageViewers
+		minAverageViewers: eligibility.minAverageViewers,
 	});
 
 	return {
@@ -79,7 +72,7 @@ export async function buildRankingsGamesResponse(
 			name: r.name,
 			average_viewers: Math.round(r.averageViewers),
 			hours_watched: Math.round(r.hoursWatched),
-			box_art_url: null
-		}))
+			box_art_url: null,
+		})),
 	};
 }

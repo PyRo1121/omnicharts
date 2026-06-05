@@ -5,7 +5,7 @@ import type {
 	YoutubeChannelListResponse,
 	YoutubePlaylistItemsResponse,
 	YoutubeVideoItem,
-	YoutubeVideoListResponse
+	YoutubeVideoListResponse,
 } from './types';
 
 export class YoutubeDataApiClient {

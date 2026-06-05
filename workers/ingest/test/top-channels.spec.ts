@@ -12,7 +12,7 @@ describe('getTopTwitchChannelsByHoursWatched', () => {
 				first_observed_at: '2026-01-01T00:00:00.000Z',
 				hours_watched: 100,
 				average_viewers: 10,
-				airtime_minutes: 120
+				airtime_minutes: 120,
 			},
 			{
 				slug: 'a-stream',
@@ -21,13 +21,13 @@ describe('getTopTwitchChannelsByHoursWatched', () => {
 				first_observed_at: '2026-01-02T00:00:00.000Z',
 				hours_watched: 100,
 				average_viewers: 20,
-				airtime_minutes: 120
-			}
+				airtime_minutes: 120,
+			},
 		]);
 
 		const rankings = await getTopTwitchChannelsByHoursWatched({} as D1Database, {
 			days: 7,
-			limit: 20
+			limit: 20,
 		});
 
 		expect(rankings[0].slug).toBe('a-stream');

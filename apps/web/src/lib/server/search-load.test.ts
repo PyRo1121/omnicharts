@@ -3,7 +3,7 @@ import { load } from '../../routes/search/+page.server';
 import type { PageData } from '../../routes/search/$types';
 
 vi.mock('$env/dynamic/private', () => ({
-	env: { INGEST_URL: 'http://ingest.test' }
+	env: { INGEST_URL: 'http://ingest.test' },
 }));
 
 type SearchLoad = (event: Parameters<typeof load>[0]) => Promise<PageData>;
@@ -17,7 +17,7 @@ function searchLoadArgs(q: string, platform: string) {
 		fetch: vi.fn(),
 		url,
 		setHeaders,
-		platform: undefined
+		platform: undefined,
 	} as unknown as Parameters<typeof load>[0];
 }
 
@@ -36,10 +36,10 @@ describe('search page load — platform=kick', () => {
 								slug: 'xqc',
 								display_name: 'xQc',
 								avatar_url: null,
-								platform_id: 'kick'
-							}
-						]
-					})
+								platform_id: 'kick',
+							},
+						],
+					}),
 				});
 			}
 			if (url.includes('/v1/channels/xqc') && url.includes('platform=kick')) {
@@ -62,15 +62,15 @@ describe('search page load — platform=kick', () => {
 							peak_viewers: 20,
 							airtime_hours: 2,
 							stream_count: 3,
-							followers_gain: null
-						}
-					})
+							followers_gain: null,
+						},
+					}),
 				});
 			}
 			if (url.includes('/v1/rankings/channels')) {
 				return Promise.resolve({
 					ok: true,
-					json: async () => ({ items: [] })
+					json: async () => ({ items: [] }),
 				});
 			}
 			return Promise.resolve({ ok: false, status: 503 });
@@ -88,7 +88,7 @@ describe('search page load — platform=kick', () => {
 		expect(result.results[0]).toMatchObject({
 			slug: 'xqc',
 			platform: 'kick',
-			hoursWatched7d: '12.5K'
+			hoursWatched7d: '12.5K',
 		});
 	});
 
@@ -130,10 +130,10 @@ describe('search page load — platform=kick', () => {
 								display_name: 'xQc',
 								avatar_url: null,
 								hours_watched: 1,
-								average_viewers: 1
-							}
-						]
-					})
+								average_viewers: 1,
+							},
+						],
+					}),
 				});
 			}
 			return Promise.resolve({ ok: false, status: 503 });

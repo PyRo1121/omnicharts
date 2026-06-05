@@ -3,7 +3,7 @@ import type { KickLivestream } from '../src/kick/types';
 import {
 	batchRecordKickLiveSamples,
 	batchUpsertKickChannelsFromLivestreams,
-	batchUpsertKickGameCategories
+	batchUpsertKickGameCategories,
 } from '../src/db/kick-live-batch';
 
 function mockDb() {
@@ -19,14 +19,14 @@ function mockDb() {
 				return { meta: { changes: 1 } };
 			},
 			all: async () => ({ results: [] as unknown[] }),
-			first: async () => null
-		})
+			first: async () => null,
+		}),
 	}));
 	return {
 		db: { prepare, batch } as unknown as D1Database,
 		runs,
 		prepare,
-		batch
+		batch,
 	};
 }
 
@@ -38,7 +38,7 @@ const baseStream = (over: Partial<KickLivestream> = {}): KickLivestream => ({
 	started_at: '2026-06-01T12:00:00Z',
 	viewer_count: 100,
 	category: { id: 7, name: 'Just Chatting' },
-	...over
+	...over,
 });
 
 describe('batchUpsertKickGameCategories', () => {
@@ -47,7 +47,7 @@ describe('batchUpsertKickGameCategories', () => {
 		const map = await batchUpsertKickGameCategories(db, [
 			{ id: 7, name: 'Just Chatting' },
 			{ id: 7, name: 'Just Chatting' },
-			{ id: 9, name: 'IRL' }
+			{ id: 9, name: 'IRL' },
 		]);
 		expect(map.get('7')).toBe('kick-game-7');
 		expect(map.get('9')).toBe('kick-game-9');
@@ -64,7 +64,7 @@ describe('batchUpsertKickGameCategories', () => {
 		const { db, prepare } = mockDb();
 		const map = await batchUpsertKickGameCategories(db, [
 			{ id: Number.NaN, name: 'Bad' },
-			{ id: 3, name: 'Good' }
+			{ id: 3, name: 'Good' },
 		]);
 		expect(map.size).toBe(1);
 		expect(prepare).toHaveBeenCalledTimes(1);
@@ -74,11 +74,10 @@ describe('batchUpsertKickGameCategories', () => {
 describe('batchUpsertKickChannelsFromLivestreams', () => {
 	it('inserts discovered channel and records live sighting when eligible', async () => {
 		const { db, runs } = mockDb();
-		const map = await batchUpsertKickChannelsFromLivestreams(
-			db,
-			[baseStream({ viewer_count: 50 })],
-			{ minViewers: 5, promoteToTracked: true }
-		);
+		const map = await batchUpsertKickChannelsFromLivestreams(db, [baseStream({ viewer_count: 50 })], {
+			minViewers: 5,
+			promoteToTracked: true,
+		});
 		expect(map.get('42')).toBe('kick-ch-42');
 		expect(runs.some((s) => s.includes('INSERT INTO channels'))).toBe(true);
 		expect(runs.some((s) => s.includes('channel_live_sightings'))).toBe(true);
@@ -86,27 +85,19 @@ describe('batchUpsertKickChannelsFromLivestreams', () => {
 
 	it('skips sighting when viewer_count below minViewers', async () => {
 		const { db, runs } = mockDb();
-		await batchUpsertKickChannelsFromLivestreams(
-			db,
-			[baseStream({ viewer_count: 2 })],
-			{ minViewers: 5, promoteToTracked: true }
-		);
+		await batchUpsertKickChannelsFromLivestreams(db, [baseStream({ viewer_count: 2 })], { minViewers: 5, promoteToTracked: true });
 		expect(runs.some((s) => s.includes('channel_live_sightings'))).toBe(false);
 	});
 
 	it('skips sighting when viewer_count is hidden', async () => {
 		const { db, runs } = mockDb();
-		await batchUpsertKickChannelsFromLivestreams(
-			db,
-			[baseStream({ viewer_count: null })],
-			{ minViewers: 5, promoteToTracked: true }
-		);
+		await batchUpsertKickChannelsFromLivestreams(db, [baseStream({ viewer_count: null })], { minViewers: 5, promoteToTracked: true });
 		expect(runs.some((s) => s.includes('channel_live_sightings'))).toBe(false);
 	});
 
 	it('uses slug fallback when slug collides with another broadcaster', async () => {
 		const prepare = vi.fn((sql: string) => ({
-			bind: (...args: unknown[]) => ({
+			bind: (..._args: unknown[]) => ({
 				run: async () => ({ meta: { changes: 1 } }),
 				all: async () => {
 					if (sql.includes('platform_channel_id IN')) {
@@ -117,26 +108,23 @@ describe('batchUpsertKickChannelsFromLivestreams', () => {
 					}
 					return { results: [] };
 				},
-				first: async () => null
-			})
+				first: async () => null,
+			}),
 		}));
 		const db = { prepare, batch: vi.fn(async () => []) } as unknown as D1Database;
 
-		await batchUpsertKickChannelsFromLivestreams(
-			db,
-			[baseStream({ broadcaster_user_id: 42, slug: 'streamer' })],
-			{ minViewers: 5, promoteToTracked: false }
-		);
+		await batchUpsertKickChannelsFromLivestreams(db, [baseStream({ broadcaster_user_id: 42, slug: 'streamer' })], {
+			minViewers: 5,
+			promoteToTracked: false,
+		});
 
-		const channelInsert = prepare.mock.calls.find(([sql]) =>
-			String(sql).includes('INSERT INTO channels')
-		);
+		const channelInsert = prepare.mock.calls.find(([sql]) => String(sql).includes('INSERT INTO channels'));
 		expect(channelInsert).toBeTruthy();
 	});
 
 	it('writes slug_history when existing channel slug changes', async () => {
 		const prepare = vi.fn((sql: string) => ({
-			bind: (...args: unknown[]) => ({
+			bind: (..._args: unknown[]) => ({
 				run: async () => ({ meta: { changes: 1 } }),
 				all: async () => {
 					if (sql.includes('platform_channel_id IN')) {
@@ -147,41 +135,33 @@ describe('batchUpsertKickChannelsFromLivestreams', () => {
 									slug: 'old-slug',
 									ingest_state: 'tracked',
 									first_observed_at: '2026-01-01T00:00:00Z',
-									platform_channel_id: '42'
-								}
-							]
+									platform_channel_id: '42',
+								},
+							],
 						};
 					}
 					return { results: [] };
 				},
-				first: async () => null
-			})
+				first: async () => null,
+			}),
 		}));
 		const batch = vi.fn(async () => []);
 		const db = { prepare, batch } as unknown as D1Database;
 
-		await batchUpsertKickChannelsFromLivestreams(
-			db,
-			[baseStream({ slug: 'new-slug' })],
-			{ minViewers: 5, promoteToTracked: false }
-		);
+		await batchUpsertKickChannelsFromLivestreams(db, [baseStream({ slug: 'new-slug' })], { minViewers: 5, promoteToTracked: false });
 
 		expect(batch).toHaveBeenCalled();
-		expect(
-			prepare.mock.calls.some(([sql]) => String(sql).includes('INSERT INTO slug_history'))
-		).toBe(true);
+		expect(prepare.mock.calls.some(([sql]) => String(sql).includes('INSERT INTO slug_history'))).toBe(true);
 	});
 
 	it('promotes discovered channel immediately for directoryListing', async () => {
 		const { db, runs } = mockDb();
-		await batchUpsertKickChannelsFromLivestreams(
-			db,
-			[baseStream({ viewer_count: 100 })],
-			{ minViewers: 5, promoteToTracked: true, directoryListing: true }
-		);
-		expect(runs.some((s) => s.includes("ingest_state = 'tracked'") || s.includes('tracked'))).toBe(
-			true
-		);
+		await batchUpsertKickChannelsFromLivestreams(db, [baseStream({ viewer_count: 100 })], {
+			minViewers: 5,
+			promoteToTracked: true,
+			directoryListing: true,
+		});
+		expect(runs.some((s) => s.includes("ingest_state = 'tracked'") || s.includes('tracked'))).toBe(true);
 	});
 
 	it('leaves retired channel ingest_state unchanged', async () => {
@@ -197,23 +177,19 @@ describe('batchUpsertKickChannelsFromLivestreams', () => {
 									slug: 'streamer',
 									ingest_state: 'retired',
 									first_observed_at: '2026-01-01T00:00:00Z',
-									platform_channel_id: '42'
-								}
-							]
+									platform_channel_id: '42',
+								},
+							],
 						};
 					}
 					return { results: [] };
 				},
-				first: async () => null
-			})
+				first: async () => null,
+			}),
 		}));
 		const db = { prepare, batch: vi.fn(async () => []) } as unknown as D1Database;
 
-		await batchUpsertKickChannelsFromLivestreams(
-			db,
-			[baseStream()],
-			{ minViewers: 5, promoteToTracked: true, directoryListing: true }
-		);
+		await batchUpsertKickChannelsFromLivestreams(db, [baseStream()], { minViewers: 5, promoteToTracked: true, directoryListing: true });
 
 		const insertSql = prepare.mock.calls.find(([sql]) => String(sql).includes('INSERT INTO channels'));
 		expect(String(insertSql?.[0])).toContain("'retired'");
@@ -227,8 +203,8 @@ describe('batchRecordKickLiveSamples', () => {
 			{
 				channelId: 'kick-ch-42',
 				stream: baseStream(),
-				gameCategoryId: 'kick-game-7'
-			}
+				gameCategoryId: 'kick-game-7',
+			},
 		]);
 		expect(archive).toHaveLength(1);
 		expect(archive[0]?.platform).toBe('kick');
@@ -241,8 +217,8 @@ describe('batchRecordKickLiveSamples', () => {
 			{
 				channelId: 'kick-ch-42',
 				stream: baseStream({ viewer_count: undefined }),
-				gameCategoryId: null
-			}
+				gameCategoryId: null,
+			},
 		]);
 		expect(archive).toEqual([]);
 	});
@@ -260,14 +236,14 @@ describe('batchRecordKickLiveSamples', () => {
 									id: 'sess-1',
 									channel_id: 'kick-ch-42',
 									platform_stream_id: platformStreamId,
-									started_at: '2026-06-01T12:00:00Z'
-								}
-							]
+									started_at: '2026-06-01T12:00:00Z',
+								},
+							],
 						};
 					}
 					return { results: [] };
-				}
-			})
+				},
+			}),
 		}));
 		const batch = vi.fn(async () => []);
 		const db = { prepare, batch } as unknown as D1Database;
@@ -276,13 +252,11 @@ describe('batchRecordKickLiveSamples', () => {
 			{
 				channelId: 'kick-ch-42',
 				stream: baseStream(),
-				gameCategoryId: 'kick-game-7'
-			}
+				gameCategoryId: 'kick-game-7',
+			},
 		]);
 
-		expect(
-			prepare.mock.calls.some(([sql]) => String(sql).includes('UPDATE stream_sessions SET'))
-		).toBe(true);
+		expect(prepare.mock.calls.some(([sql]) => String(sql).includes('UPDATE stream_sessions SET'))).toBe(true);
 	});
 
 	it('closes stale session and inserts new session when platform_stream_id changes', async () => {
@@ -297,14 +271,14 @@ describe('batchRecordKickLiveSamples', () => {
 									id: 'sess-old',
 									channel_id: 'kick-ch-42',
 									platform_stream_id: '420-2026-06-01T10:00:00Z',
-									started_at: '2026-06-01T10:00:00Z'
-								}
-							]
+									started_at: '2026-06-01T10:00:00Z',
+								},
+							],
 						};
 					}
 					return { results: [] };
-				}
-			})
+				},
+			}),
 		}));
 		const batch = vi.fn(async () => []);
 		const db = { prepare, batch } as unknown as D1Database;
@@ -313,14 +287,12 @@ describe('batchRecordKickLiveSamples', () => {
 			{
 				channelId: 'kick-ch-42',
 				stream: baseStream({ started_at: '2026-06-01T12:00:00Z' }),
-				gameCategoryId: null
-			}
+				gameCategoryId: null,
+			},
 		]);
 
 		expect(batch).toHaveBeenCalled();
-		expect(prepare.mock.calls.some(([sql]) => String(sql).includes('INSERT INTO stream_sessions'))).toBe(
-			true
-		);
+		expect(prepare.mock.calls.some(([sql]) => String(sql).includes('INSERT INTO stream_sessions'))).toBe(true);
 	});
 
 	it('upserts game category inline when stream has category and no gameCategoryId', async () => {
@@ -329,12 +301,10 @@ describe('batchRecordKickLiveSamples', () => {
 			{
 				channelId: 'kick-ch-42',
 				stream: baseStream({ category: { id: 12, name: 'Rust' } }),
-				gameCategoryId: null
-			}
+				gameCategoryId: null,
+			},
 		]);
-		expect(prepare.mock.calls.some(([sql]) => String(sql).includes('INSERT INTO game_categories'))).toBe(
-			true
-		);
+		expect(prepare.mock.calls.some(([sql]) => String(sql).includes('INSERT INTO game_categories'))).toBe(true);
 	});
 
 	it('promotes discovered channel to tracked after enough sightings', async () => {
@@ -349,21 +319,15 @@ describe('batchRecordKickLiveSamples', () => {
 					}
 					return { results: [] };
 				},
-				first: async () => null
-			})
+				first: async () => null,
+			}),
 		}));
 		const batch = vi.fn(async () => []);
 		const db = { prepare, batch } as unknown as D1Database;
 
-		await batchUpsertKickChannelsFromLivestreams(
-			db,
-			[baseStream({ viewer_count: 50 })],
-			{ minViewers: 5, promoteToTracked: true }
-		);
+		await batchUpsertKickChannelsFromLivestreams(db, [baseStream({ viewer_count: 50 })], { minViewers: 5, promoteToTracked: true });
 
-		expect(
-			prepare.mock.calls.some(([sql]) => String(sql).includes("ingest_state = 'tracked'"))
-		).toBe(true);
+		expect(prepare.mock.calls.some(([sql]) => String(sql).includes("ingest_state = 'tracked'"))).toBe(true);
 	});
 
 	it('promotes dormant channel to tracked when eligible', async () => {
@@ -379,23 +343,19 @@ describe('batchRecordKickLiveSamples', () => {
 									slug: 'streamer',
 									ingest_state: 'dormant',
 									first_observed_at: '2026-01-01T00:00:00Z',
-									platform_channel_id: '42'
-								}
-							]
+									platform_channel_id: '42',
+								},
+							],
 						};
 					}
 					return { results: [] };
 				},
-				first: async () => null
-			})
+				first: async () => null,
+			}),
 		}));
 		const db = { prepare, batch: vi.fn(async () => []) } as unknown as D1Database;
 
-		await batchUpsertKickChannelsFromLivestreams(
-			db,
-			[baseStream({ viewer_count: 50 })],
-			{ minViewers: 5, promoteToTracked: true }
-		);
+		await batchUpsertKickChannelsFromLivestreams(db, [baseStream({ viewer_count: 50 })], { minViewers: 5, promoteToTracked: true });
 
 		const channelSql = prepare.mock.calls.find(([sql]) => String(sql).includes('INSERT INTO channels'));
 		expect(String(channelSql?.[0])).toContain("'tracked'");
@@ -414,23 +374,19 @@ describe('batchRecordKickLiveSamples', () => {
 									slug: 'streamer',
 									ingest_state: 'tracked',
 									first_observed_at: '2026-01-01T00:00:00Z',
-									platform_channel_id: '42'
-								}
-							]
+									platform_channel_id: '42',
+								},
+							],
 						};
 					}
 					return { results: [] };
 				},
-				first: async () => null
-			})
+				first: async () => null,
+			}),
 		}));
 		const db = { prepare, batch: vi.fn(async () => []) } as unknown as D1Database;
 
-		await batchUpsertKickChannelsFromLivestreams(
-			db,
-			[baseStream()],
-			{ minViewers: 5, promoteToTracked: true }
-		);
+		await batchUpsertKickChannelsFromLivestreams(db, [baseStream()], { minViewers: 5, promoteToTracked: true });
 
 		expect(prepare.mock.calls.some(([sql]) => String(sql).includes('INSERT INTO channels'))).toBe(true);
 	});

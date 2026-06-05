@@ -7,7 +7,7 @@ import {
 	TWITCH_DISCOVERY_24H_SQL,
 	TWITCH_LIVE_COUNT_SQL,
 	TWITCH_MAX_SAMPLE_SQL,
-	TWITCH_TRACKED_COUNT_SQL
+	TWITCH_TRACKED_COUNT_SQL,
 } from '../src/operational-sql';
 
 describe('operational SQL constants', () => {
@@ -17,9 +17,7 @@ describe('operational SQL constants', () => {
 
 	test('TWITCH_LIVE_COUNT_SQL requires open session and recent sample', () => {
 		expect(TWITCH_LIVE_COUNT_SQL).toContain('ss.ended_at IS NULL');
-		expect(TWITCH_LIVE_COUNT_SQL).toContain(
-			`datetime('now', '-${LIVE_COUNT_RECENT_SAMPLE_MINUTES} minutes')`
-		);
+		expect(TWITCH_LIVE_COUNT_SQL).toContain(`datetime('now', '-${LIVE_COUNT_RECENT_SAMPLE_MINUTES} minutes')`);
 	});
 
 	test('TWITCH_TRACKED_COUNT_SQL uses domain ingest state constant', () => {
@@ -45,9 +43,7 @@ describe('countFromBatchRow', () => {
 
 describe('maxSampleFromBatchRow', () => {
 	test('reads max_sampled_at from first batch row', () => {
-		expect(maxSampleFromBatchRow({ results: [{ max_sampled_at: '2026-01-01' }] })).toBe(
-			'2026-01-01'
-		);
+		expect(maxSampleFromBatchRow({ results: [{ max_sampled_at: '2026-01-01' }] })).toBe('2026-01-01');
 		expect(maxSampleFromBatchRow({ results: [] })).toBeNull();
 	});
 });

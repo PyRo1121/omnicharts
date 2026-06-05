@@ -11,7 +11,7 @@ function mockEnv(overrides: Partial<Env> = {}): Env {
 				},
 				bind() {
 					return stmt;
-				}
+				},
 			};
 			return stmt;
 		},
@@ -21,7 +21,7 @@ function mockEnv(overrides: Partial<Env> = {}): Env {
 					{ results: [{ ok: 1 }] },
 					{ results: [{ value: '2026-05-31T00:15:00.000Z' }] },
 					{ results: [{ ingest_state: 'tracked', n: 42 }] },
-					{ results: [{ value: '{"at":"2026-06-01T00:00:00.000Z"}' }] }
+					{ results: [{ value: '{"at":"2026-06-01T00:00:00.000Z"}' }] },
 				];
 			}
 			if (stmts.length === 2) {
@@ -32,16 +32,16 @@ function mockEnv(overrides: Partial<Env> = {}): Env {
 				{ results: [{ n: 1 }] },
 				{ results: [{ n: 1 }] },
 				{ results: [{ n: 2 }] },
-				{ results: [{ max_sampled_at: new Date().toISOString() }] }
+				{ results: [{ max_sampled_at: new Date().toISOString() }] },
 			];
-		}
+		},
 	} as unknown as D1Database;
 
 	return {
 		DB: db,
 		TWITCH_CLIENT_ID: 'id',
 		TWITCH_CLIENT_SECRET: 'secret',
-		...overrides
+		...overrides,
 	} as Env;
 }
 
@@ -67,9 +67,7 @@ describe('buildIngestHealth', () => {
 	});
 
 	it('returns unavailable without credentials', async () => {
-		const payload = await buildIngestHealth(
-			mockEnv({ TWITCH_CLIENT_ID: undefined, TWITCH_CLIENT_SECRET: undefined })
-		);
+		const payload = await buildIngestHealth(mockEnv({ TWITCH_CLIENT_ID: undefined, TWITCH_CLIENT_SECRET: undefined }));
 		expect(payload.status).toBe('unavailable');
 		expect(ingestHealthHttpStatus(payload)).toBe(503);
 	});

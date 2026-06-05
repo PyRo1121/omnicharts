@@ -31,9 +31,7 @@ test.describe('OmniCharts smoke (REM-035)', () => {
 			test.skip(true, `ingest not reachable at ${INGEST_URL} — start: bun run dev:ingest`);
 		}
 
-		const rankingsRes = await fetch(
-			`${INGEST_URL}/v1/rankings/channels?platform=twitch&period=7d&limit=1`
-		);
+		const rankingsRes = await fetch(`${INGEST_URL}/v1/rankings/channels?platform=twitch&period=7d&limit=1`);
 		if (!rankingsRes.ok) {
 			test.skip(true, 'rankings endpoint unavailable');
 		}
@@ -46,7 +44,7 @@ test.describe('OmniCharts smoke (REM-035)', () => {
 		const res = await page.goto(`/channels/${slug}?platform=twitch`);
 		expect(res?.status()).toBe(200);
 		await expect(page.getByRole('heading', { level: 1, name: /.+/ })).toBeVisible({
-			timeout: 10_000
+			timeout: 10_000,
 		});
 	});
 });

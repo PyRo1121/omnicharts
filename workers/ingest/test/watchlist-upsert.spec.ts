@@ -32,10 +32,7 @@ function createMemoryDb() {
 						const platform = args[0] as string;
 						const platformChannelId = args[1] as string;
 						for (const row of channels.values()) {
-							if (
-								row.platform_id === platform &&
-								row.platform_channel_id === platformChannelId
-							) {
+							if (row.platform_id === platform && row.platform_channel_id === platformChannelId) {
 								return { id: row.id, ingest_state: row.ingest_state };
 							}
 						}
@@ -53,9 +50,7 @@ function createMemoryDb() {
 					const ingest_state = 'tracked';
 
 					const existing = [...channels.values()].find(
-						(row) =>
-							row.platform_id === platform_id &&
-							row.platform_channel_id === platform_channel_id
+						(row) => row.platform_id === platform_id && row.platform_channel_id === platform_channel_id,
 					);
 
 					if (existing && sql.includes('ON CONFLICT')) {
@@ -71,13 +66,13 @@ function createMemoryDb() {
 							platform_channel_id,
 							slug,
 							display_name,
-							ingest_state
+							ingest_state,
 						});
 					}
 					return {};
-				}
-			})
-		})
+				},
+			}),
+		}),
 	} as unknown as D1Database;
 
 	return { db, channels };
@@ -94,7 +89,7 @@ describe('watchlist upsert', () => {
 			broadcaster_type: 'partner',
 			description: '',
 			profile_image_url: 'https://example.com/ninja.jpg',
-			created_at: '2011-01-01T00:00:00Z'
+			created_at: '2011-01-01T00:00:00Z',
 		});
 
 		expect(result.created).toBe(true);
@@ -110,7 +105,7 @@ describe('watchlist upsert', () => {
 			platform_channel_id: '123',
 			slug: 'ninja',
 			display_name: 'Ninja',
-			ingest_state: 'discovered'
+			ingest_state: 'discovered',
 		});
 
 		const result = await upsertTwitchChannelFromUser(db, {
@@ -121,7 +116,7 @@ describe('watchlist upsert', () => {
 			broadcaster_type: 'partner',
 			description: '',
 			profile_image_url: 'https://example.com/ninja.jpg',
-			created_at: '2011-01-01T00:00:00Z'
+			created_at: '2011-01-01T00:00:00Z',
 		});
 
 		expect(result.promoted).toBe(true);
@@ -133,7 +128,7 @@ describe('watchlist upsert', () => {
 		const result = await upsertKickChannelFromLookup(db, {
 			broadcaster_user_id: 42,
 			channel_id: 1,
-			slug: 'newkick'
+			slug: 'newkick',
 		});
 
 		expect(result.created).toBe(true);
@@ -148,13 +143,13 @@ describe('watchlist upsert', () => {
 			platform_channel_id: '42',
 			slug: 'newkick',
 			display_name: 'newkick',
-			ingest_state: 'discovered'
+			ingest_state: 'discovered',
 		});
 
 		const result = await upsertKickChannelFromLookup(db, {
 			broadcaster_user_id: 42,
 			channel_id: 1,
-			slug: 'newkick'
+			slug: 'newkick',
 		});
 
 		expect(result.promoted).toBe(true);
@@ -168,7 +163,7 @@ describe('watchlist upsert', () => {
 			platform_channel_id: '123',
 			slug: 'ninja',
 			display_name: 'Ninja',
-			ingest_state: 'tracked'
+			ingest_state: 'tracked',
 		});
 
 		const result = await upsertTwitchChannelFromUser(db, {
@@ -179,7 +174,7 @@ describe('watchlist upsert', () => {
 			broadcaster_type: 'partner',
 			description: '',
 			profile_image_url: null,
-			created_at: '2011-01-01T00:00:00Z'
+			created_at: '2011-01-01T00:00:00Z',
 		});
 
 		expect(result.skipped).toBe(true);
@@ -193,13 +188,13 @@ describe('watchlist upsert', () => {
 			platform_channel_id: '99',
 			slug: 'xqc',
 			display_name: 'xqc',
-			ingest_state: 'tracked'
+			ingest_state: 'tracked',
 		});
 
 		const result = await upsertKickChannelFromLookup(db, {
 			broadcaster_user_id: 99,
 			channel_id: 1,
-			slug: 'xqc'
+			slug: 'xqc',
 		});
 
 		expect(result.skipped).toBe(true);

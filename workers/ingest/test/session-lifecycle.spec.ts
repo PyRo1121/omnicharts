@@ -3,7 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 import {
 	batchCloseStaleOpenSessionsForChannels,
 	closeOpenSessionsForPlatformChannelIds,
-	closeStaleOpenSessionsForChannel
+	closeStaleOpenSessionsForChannel,
 } from '../src/db/session-lifecycle';
 
 describe('session-lifecycle', () => {
@@ -11,13 +11,13 @@ describe('session-lifecycle', () => {
 		const batch = vi.fn().mockResolvedValue([]);
 		const prepare = vi.fn((sql: string) => ({
 			sql,
-			bind: vi.fn().mockReturnThis()
+			bind: vi.fn().mockReturnThis(),
 		}));
 		const db = { prepare, batch } as unknown as D1Database;
 
 		const ids = Array.from({ length: 75 }, (_, i) => String(i));
 		await closeOpenSessionsForPlatformChannelIds(db, PLATFORM_TWITCH, ids, '2026-06-03T00:00:00.000Z', {
-			scope: 'test'
+			scope: 'test',
 		});
 
 		expect(batch).toHaveBeenCalledTimes(1);
@@ -30,7 +30,7 @@ describe('session-lifecycle', () => {
 		const batch = vi.fn().mockResolvedValue([]);
 		const prepare = vi.fn((sql: string) => ({
 			bind: vi.fn().mockReturnThis(),
-			sql
+			sql,
 		}));
 		const db = { prepare, batch } as unknown as D1Database;
 
@@ -44,13 +44,13 @@ describe('session-lifecycle', () => {
 		const batch = vi.fn().mockResolvedValue([]);
 		const prepare = vi.fn((sql: string) => ({
 			bind: vi.fn().mockReturnThis(),
-			sql
+			sql,
 		}));
 		const db = { prepare, batch } as unknown as D1Database;
 
 		const closes = Array.from({ length: 75 }, (_, i) => ({
 			channelId: `ch-${i}`,
-			platformStreamId: `stream-${i}`
+			platformStreamId: `stream-${i}`,
 		}));
 		await batchCloseStaleOpenSessionsForChannels(db, closes, '2026-06-03T00:00:00.000Z');
 

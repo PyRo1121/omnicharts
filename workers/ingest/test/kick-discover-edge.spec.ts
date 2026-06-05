@@ -11,16 +11,16 @@ describe('kick discover edge cases', () => {
 	it('runKickDiscovery handles empty category list', async () => {
 		vi.spyOn(KickPublicApiClient.prototype, 'getCategoriesV2').mockResolvedValue({
 			data: [],
-			pagination: {}
+			pagination: {},
 		});
 
 		const result = await runKickDiscovery(
 			{
 				KICK_CLIENT_ID: 'id',
 				KICK_CLIENT_SECRET: 'secret',
-				DB: {} as D1Database
+				DB: {} as D1Database,
 			} as Env,
-			{ quick: true }
+			{ quick: true },
 		);
 
 		expect(result.categoriesScanned).toBe(0);
@@ -32,13 +32,11 @@ describe('kick discover edge cases', () => {
 		vi.spyOn(KickPublicApiClient.prototype, 'getCategoriesV2').mockResolvedValue({
 			data: [
 				{ id: Number.NaN, name: 'Bad' },
-				{ id: 5, name: 'Good' }
+				{ id: 5, name: 'Good' },
 			],
-			pagination: {}
+			pagination: {},
 		});
-		const liveSpy = vi
-			.spyOn(KickPublicApiClient.prototype, 'getLivestreamsByCategoryId')
-			.mockResolvedValue([]);
+		const liveSpy = vi.spyOn(KickPublicApiClient.prototype, 'getLivestreamsByCategoryId').mockResolvedValue([]);
 		vi.spyOn(kickDb, 'batchUpsertKickGameCategories').mockResolvedValue(new Map());
 		vi.spyOn(kickDb, 'batchUpsertKickChannelsFromLivestreams').mockResolvedValue(new Map());
 
@@ -46,9 +44,9 @@ describe('kick discover edge cases', () => {
 			{
 				KICK_CLIENT_ID: 'id',
 				KICK_CLIENT_SECRET: 'secret',
-				DB: {} as D1Database
+				DB: {} as D1Database,
 			} as Env,
-			{ quick: true }
+			{ quick: true },
 		);
 
 		expect(result.categoriesScanned).toBe(1);

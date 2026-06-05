@@ -6,8 +6,8 @@ describe('youtubeSlugFromChannel', () => {
 		expect(
 			youtubeSlugFromChannel({
 				id: 'UCabc',
-				snippet: { title: 'MrBeast', customUrl: '@MrBeast' }
-			})
+				snippet: { title: 'MrBeast', customUrl: '@MrBeast' },
+			}),
 		).toBe('mrbeast');
 	});
 
@@ -15,8 +15,8 @@ describe('youtubeSlugFromChannel', () => {
 		expect(
 			youtubeSlugFromChannel({
 				id: 'UCabc',
-				snippet: { title: 'Some Creator Name' }
-			})
+				snippet: { title: 'Some Creator Name' },
+			}),
 		).toBe('some-creator-name');
 	});
 
@@ -24,8 +24,8 @@ describe('youtubeSlugFromChannel', () => {
 		expect(
 			youtubeSlugFromChannel({
 				id: 'UCabc',
-				snippet: { title: '!!!' }
-			})
+				snippet: { title: '!!!' },
+			}),
 		).toMatch(/^channel-ucabc$/i);
 	});
 });

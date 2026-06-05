@@ -1,16 +1,10 @@
 import type { KickLivestream } from './types';
 
-export function kickPlatformStreamIdFromChannelId(
-	channelId: number | string,
-	startedAt: string
-): string {
+export function kickPlatformStreamIdFromChannelId(channelId: number | string, startedAt: string): string {
 	return `${channelId}-${startedAt}`;
 }
 
-export function kickSessionRowIdFromChannelId(
-	channelId: number | string,
-	startedAt: string
-): string {
+export function kickSessionRowIdFromChannelId(channelId: number | string, startedAt: string): string {
 	const startedKey = startedAt.replace(/[^0-9]/g, '');
 	return `kick-sess-${channelId}-${startedKey}`;
 }
@@ -47,6 +41,6 @@ export function kickStreamSessionPersist(stream: KickLivestream): {
 		language: stream.language ?? null,
 		tags_json: kickTagsJson(stream.custom_tags),
 		thumbnail_url: stream.thumbnail ?? null,
-		stream_type: 'live'
+		stream_type: 'live',
 	};
 }

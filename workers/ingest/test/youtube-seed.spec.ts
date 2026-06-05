@@ -23,11 +23,11 @@ describe('youtube seed', () => {
 			platformChannelId: 'UCabcdefghijklmnopqrstuv',
 			slug: 'mrbeast',
 			displayName: 'MrBeast',
-			avatarUrl: 'https://example.com/a.jpg'
+			avatarUrl: 'https://example.com/a.jpg',
 		});
 		vi.spyOn(upsert, 'upsertYoutubeChannel').mockResolvedValue({
 			id: 'youtube-ch-UCabcdefghijklmnopqrstuv',
-			slug: 'mrbeast'
+			slug: 'mrbeast',
 		} as Awaited<ReturnType<typeof upsert.upsertYoutubeChannel>>);
 
 		const db = {} as D1Database;
@@ -45,10 +45,7 @@ describe('youtube seed', () => {
 
 	it('seedYoutubeChannels counts errors when resolve throws', async () => {
 		vi.spyOn(resolve, 'fetchYoutubeChannelByQuery').mockRejectedValue(new Error('api down'));
-		const stats = await seedModule.seedYoutubeChannels(
-			{ YOUTUBE_API_KEY: 'key', DB: {} as D1Database } as Env,
-			['@fail']
-		);
+		const stats = await seedModule.seedYoutubeChannels({ YOUTUBE_API_KEY: 'key', DB: {} as D1Database } as Env, ['@fail']);
 		expect(stats.errors).toBe(1);
 		expect(stats.seeded).toBe(0);
 	});

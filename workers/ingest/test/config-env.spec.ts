@@ -5,7 +5,7 @@ import {
 	minViewersFromEnv,
 	maxTrackedFromEnv,
 	rankingMinAirtimeMinutesFromEnv,
-	eventsubSyncMaxChannelsFromEnv
+	eventsubSyncMaxChannelsFromEnv,
 } from '../src/twitch/config';
 
 describe('twitch config env parsers', () => {
@@ -22,20 +22,14 @@ describe('twitch config env parsers', () => {
 
 	it('rankingMinAirtimeMinutesFromEnv parses override', () => {
 		expect(rankingMinAirtimeMinutesFromEnv({} as Env)).toBe(60);
-		expect(rankingMinAirtimeMinutesFromEnv({ TWITCH_RANKING_MIN_AIRTIME_MINUTES: '1' } as Env)).toBe(
-			1
-		);
+		expect(rankingMinAirtimeMinutesFromEnv({ TWITCH_RANKING_MIN_AIRTIME_MINUTES: '1' } as Env)).toBe(1);
 	});
 
 	it('eventsubSyncMaxChannelsFromEnv defaults to 125 and parses override', () => {
-		expect(eventsubSyncMaxChannelsFromEnv({} as Env)).toBe(
-			DEFAULT_EVENTSUB_SYNC_MAX_CHANNELS_PER_RUN
-		);
-		expect(eventsubSyncMaxChannelsFromEnv({ EVENTSUB_SYNC_MAX_CHANNELS_PER_RUN: '50' } as Env)).toBe(
-			50
-		);
+		expect(eventsubSyncMaxChannelsFromEnv({} as Env)).toBe(DEFAULT_EVENTSUB_SYNC_MAX_CHANNELS_PER_RUN);
+		expect(eventsubSyncMaxChannelsFromEnv({ EVENTSUB_SYNC_MAX_CHANNELS_PER_RUN: '50' } as Env)).toBe(50);
 		expect(eventsubSyncMaxChannelsFromEnv({ EVENTSUB_SYNC_MAX_CHANNELS_PER_RUN: '0' } as Env)).toBe(
-			DEFAULT_EVENTSUB_SYNC_MAX_CHANNELS_PER_RUN
+			DEFAULT_EVENTSUB_SYNC_MAX_CHANNELS_PER_RUN,
 		);
 	});
 });

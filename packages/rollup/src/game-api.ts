@@ -1,10 +1,4 @@
-import {
-	isPlatformId,
-	PLATFORM_TWITCH,
-	parseRankingPeriod,
-	periodToDays,
-	type RankingPeriod
-} from '@omnicharts/domain';
+import { isPlatformId, PLATFORM_TWITCH, parseRankingPeriod, periodToDays, type RankingPeriod } from '@omnicharts/domain';
 import { MIN_RANKING_AIRTIME_MINUTES } from './eligibility';
 import type { D1Database } from './d1';
 
@@ -95,7 +89,7 @@ export async function buildGameTopChannels(
 		minAirtimeMinutes?: number;
 		minAverageViewers?: number;
 		limit?: number;
-	}
+	},
 ): Promise<GameTopChannelItem[]> {
 	if (!opts.gameSlug) return [];
 
@@ -123,7 +117,7 @@ export async function buildGameTopChannels(
        ORDER BY hours_watched DESC,
                 (SUM(r.hours_watched) * 60.0 / NULLIF(SUM(r.airtime_minutes), 0)) DESC,
                 c.slug ASC
-       LIMIT ?`
+       LIMIT ?`,
 		)
 		.bind(opts.platform, opts.gameSlug, String(days), String(days), minAirtime, minAv, limit)
 		.all<TopChannelQueryRow>();
@@ -133,14 +127,14 @@ export async function buildGameTopChannels(
 		slug: row.slug,
 		display_name: row.display_name,
 		avatar_url: row.avatar_url,
-		hours_watched: Math.round(row.hours_watched)
+		hours_watched: Math.round(row.hours_watched),
 	}));
 }
 
 export async function buildGameDetailResponse(
 	db: D1Database,
 	opts: { platform: string; slug: string; period: RankingPeriod },
-	detailOpts?: GameDetailBuildOpts
+	detailOpts?: GameDetailBuildOpts,
 ): Promise<GameDetailResponse | null> {
 	if (!opts.slug) return null;
 
@@ -148,7 +142,7 @@ export async function buildGameDetailResponse(
 		.prepare(
 			`SELECT id, slug, name
        FROM game_categories
-       WHERE platform_id = ? AND lower(slug) = lower(?)`
+       WHERE platform_id = ? AND lower(slug) = lower(?)`,
 		)
 		.bind(opts.platform, opts.slug)
 		.first<GameRow>();
@@ -156,9 +150,7 @@ export async function buildGameDetailResponse(
 	if (!game) return null;
 
 	const days = periodToDays(opts.period);
-	const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
-		.toISOString()
-		.slice(0, 10);
+	const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
 	const { results } = await db
 		.prepare(
@@ -166,7 +158,7 @@ export async function buildGameDetailResponse(
               airtime_minutes, live_channels
        FROM game_daily_rollups
        WHERE game_category_id = ? AND date >= ?
-       ORDER BY date ASC`
+       ORDER BY date ASC`,
 		)
 		.bind(game.id, since)
 		.all<RollupRow>();
@@ -178,7 +170,7 @@ export async function buildGameDetailResponse(
 		average_viewers: Math.round(r.average_viewers),
 		peak_viewers: r.peak_viewers,
 		airtime_hours: Math.round((r.airtime_minutes / 60) * 10) / 10,
-		live_channels: r.live_channels
+		live_channels: r.live_channels,
 	}));
 
 	const sumHw = dailyRows.reduce((a, r) => a + r.hours_watched, 0);
@@ -192,7 +184,7 @@ export async function buildGameDetailResponse(
 		period: opts.period,
 		minAirtimeMinutes: detailOpts?.minAirtimeMinutes,
 		minAverageViewers: detailOpts?.minAverageViewers,
-		limit: detailOpts?.topChannelsLimit
+		limit: detailOpts?.topChannelsLimit,
 	});
 
 	return {
@@ -202,15 +194,12 @@ export async function buildGameDetailResponse(
 		period: opts.period,
 		totals: {
 			hours_watched: Math.round(sumHw),
-			average_viewers:
-				sumAirtimeMin > 0
-					? Math.round((sumHw / (sumAirtimeMin / 60)) * 10) / 10
-					: 0,
+			average_viewers: sumAirtimeMin > 0 ? Math.round((sumHw / (sumAirtimeMin / 60)) * 10) / 10 : 0,
 			peak_viewers: peak,
 			airtime_hours: Math.round((sumAirtimeMin / 60) * 10) / 10,
-			live_channels: liveChannels
+			live_channels: liveChannels,
 		},
 		daily,
-		top_channels
+		top_channels,
 	};
 }

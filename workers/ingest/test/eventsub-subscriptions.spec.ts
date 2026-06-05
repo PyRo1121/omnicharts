@@ -1,15 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import {
-	listTrackedBroadcasterIds,
-	markEventSubRevoked,
-	upsertEventSubSubscription
-} from '../src/twitch/eventsub/subscriptions-db';
+import { listTrackedBroadcasterIds, markEventSubRevoked, upsertEventSubSubscription } from '../src/twitch/eventsub/subscriptions-db';
 import { TwitchEventSubApi } from '../src/twitch/eventsub/subscriptions-api';
 import { syncTwitchEventSubSubscriptions } from '../src/twitch/eventsub/sync';
 import { deleteEventSubForRetiredChannels } from '../src/twitch/eventsub/retire-cleanup';
 
 vi.mock('../src/twitch/auth', () => ({
-	getAppAccessToken: vi.fn().mockResolvedValue('test-token')
+	getAppAccessToken: vi.fn().mockResolvedValue('test-token'),
 }));
 
 describe('EventSub subscriptions db', () => {
@@ -19,14 +15,14 @@ describe('EventSub subscriptions db', () => {
 			prepare(q: string) {
 				sql.push(q);
 				return { bind: () => ({ run: async () => ({}) }) };
-			}
+			},
 		} as unknown as D1Database;
 
 		await upsertEventSubSubscription(db, {
 			id: 'sub-1',
 			eventType: 'stream.online',
 			broadcasterUserId: '123',
-			status: 'enabled'
+			status: 'enabled',
 		});
 		await markEventSubRevoked(db, 'sub-1', 'user_removed');
 		expect(sql.some((s) => s.includes('INSERT INTO twitch_eventsub_subscriptions'))).toBe(true);
@@ -38,10 +34,10 @@ describe('EventSub subscriptions db', () => {
 			prepare() {
 				return {
 					bind: () => ({
-						all: async () => ({ results: [{ platform_channel_id: '42' }] })
-					})
+						all: async () => ({ results: [{ platform_channel_id: '42' }] }),
+					}),
 				};
-			}
+			},
 		} as unknown as D1Database;
 		expect(await listTrackedBroadcasterIds(db, 10)).toEqual(['42']);
 	});
@@ -52,7 +48,7 @@ describe('TwitchEventSubApi', () => {
 		TWITCH_CLIENT_ID: 'id',
 		TWITCH_CLIENT_SECRET: 'sec',
 		TWITCH_EVENTSUB_SECRET: 's3cre77890ab',
-		TWITCH_EVENTSUB_CALLBACK_URL: 'https://example.com/hook'
+		TWITCH_EVENTSUB_CALLBACK_URL: 'https://example.com/hook',
 	} as Env;
 
 	beforeEach(() => {
@@ -67,10 +63,10 @@ describe('TwitchEventSubApi', () => {
 								data: [{ id: 'new-sub', type: 'stream.online', status: 'enabled' }],
 								total: 1,
 								total_cost: 1,
-								max_total_cost: 10000
+								max_total_cost: 10000,
 							}),
-							{ status: 200 }
-						)
+							{ status: 200 },
+						),
 					);
 				}
 				if (url.includes('/eventsub/subscriptions')) {
@@ -80,14 +76,14 @@ describe('TwitchEventSubApi', () => {
 								data: [],
 								total: 0,
 								total_cost: 0,
-								max_total_cost: 10000
+								max_total_cost: 10000,
 							}),
-							{ status: 200 }
-						)
+							{ status: 200 },
+						),
 					);
 				}
 				return Promise.resolve(new Response('bad', { status: 500 }));
-			})
+			}),
 		);
 	});
 
@@ -102,16 +98,13 @@ describe('TwitchEventSubApi', () => {
 	});
 
 	it('createSubscription handles already_exists', async () => {
-		vi.stubGlobal(
-			'fetch',
-			vi.fn().mockResolvedValue(new Response('exists', { status: 409 }))
-		);
+		vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('exists', { status: 409 })));
 		const api = new TwitchEventSubApi(env);
 		const created = await api.createSubscription({
 			type: 'stream.online',
 			broadcasterUserId: '123',
 			callbackUrl: env.TWITCH_EVENTSUB_CALLBACK_URL!,
-			secret: env.TWITCH_EVENTSUB_SECRET!
+			secret: env.TWITCH_EVENTSUB_SECRET!,
 		});
 		expect(created.status).toBe('already_exists');
 		vi.unstubAllGlobals();
@@ -123,7 +116,7 @@ describe('TwitchEventSubApi', () => {
 			type: 'stream.online',
 			broadcasterUserId: '123',
 			callbackUrl: env.TWITCH_EVENTSUB_CALLBACK_URL!,
-			secret: env.TWITCH_EVENTSUB_SECRET!
+			secret: env.TWITCH_EVENTSUB_SECRET!,
 		});
 		expect(created.subscriptionId).toBe('new-sub');
 	});
@@ -148,15 +141,15 @@ describe('syncTwitchEventSubSubscriptions', () => {
 							return { first: async () => null, run: async () => ({}) };
 						}
 						return { run: async () => ({}) };
-					}
+					},
 				};
-			}
+			},
 		} as unknown as D1Database;
 
 		vi.spyOn(TwitchEventSubApi.prototype, 'listAllEnabled').mockResolvedValue([]);
 		vi.spyOn(TwitchEventSubApi.prototype, 'createSubscription').mockResolvedValue({
 			subscriptionId: 'sub-new',
-			status: 'enabled'
+			status: 'enabled',
 		});
 
 		const stats = await syncTwitchEventSubSubscriptions({
@@ -165,7 +158,7 @@ describe('syncTwitchEventSubSubscriptions', () => {
 			TWITCH_CLIENT_SECRET: 'sec',
 			TWITCH_EVENTSUB_SECRET: 's3cre77890ab',
 			TWITCH_EVENTSUB_CALLBACK_URL: 'https://example.com/hook',
-			TWITCH_MAX_TRACKED: '10'
+			TWITCH_MAX_TRACKED: '10',
 		} as Env);
 
 		expect(stats.trackedChannels).toBe(1);
@@ -184,14 +177,12 @@ describe('syncTwitchEventSubSubscriptions', () => {
 							return { first: async () => null, run: async () => ({}) };
 						}
 						return { run: async () => ({}) };
-					}
+					},
 				};
-			}
+			},
 		} as unknown as D1Database;
 
-		vi.spyOn(TwitchEventSubApi.prototype, 'listAllEnabled').mockRejectedValue(
-			new Error('EventSub list 503: upstream')
-		);
+		vi.spyOn(TwitchEventSubApi.prototype, 'listAllEnabled').mockRejectedValue(new Error('EventSub list 503: upstream'));
 		const createSpy = vi.spyOn(TwitchEventSubApi.prototype, 'createSubscription');
 
 		const stats = await syncTwitchEventSubSubscriptions({
@@ -200,7 +191,7 @@ describe('syncTwitchEventSubSubscriptions', () => {
 			TWITCH_CLIENT_SECRET: 'sec',
 			TWITCH_EVENTSUB_SECRET: 's3cre77890ab',
 			TWITCH_EVENTSUB_CALLBACK_URL: 'https://example.com/hook',
-			TWITCH_MAX_TRACKED: '10'
+			TWITCH_MAX_TRACKED: '10',
 		} as Env);
 
 		expect(stats.errors).toBe(1);
@@ -219,8 +210,8 @@ describe('syncTwitchEventSubSubscriptions', () => {
 						if (q.includes('SELECT platform_channel_id')) {
 							return {
 								all: async () => ({
-									results: ids.map((id) => ({ platform_channel_id: id }))
-								})
+									results: ids.map((id) => ({ platform_channel_id: id })),
+								}),
 							};
 						}
 						if (q.includes('SELECT value FROM ingest_metadata')) {
@@ -231,13 +222,13 @@ describe('syncTwitchEventSubSubscriptions', () => {
 								run: async () => {
 									savedCursor = String(args[1]);
 									return {};
-								}
+								},
 							};
 						}
 						return { run: async () => ({}) };
-					}
+					},
 				};
-			}
+			},
 		} as unknown as D1Database;
 
 		vi.spyOn(TwitchEventSubApi.prototype, 'listAllEnabled').mockResolvedValue([]);
@@ -252,7 +243,7 @@ describe('syncTwitchEventSubSubscriptions', () => {
 			TWITCH_EVENTSUB_SECRET: 's3cre77890ab',
 			TWITCH_EVENTSUB_CALLBACK_URL: 'https://example.com/hook',
 			TWITCH_MAX_TRACKED: '10',
-			EVENTSUB_SYNC_MAX_CHANNELS_PER_RUN: '1'
+			EVENTSUB_SYNC_MAX_CHANNELS_PER_RUN: '1',
 		} as Env);
 
 		expect(createSpy).toHaveBeenCalledTimes(2);
@@ -276,28 +267,26 @@ describe('syncTwitchEventSubSubscriptions', () => {
 							return { first: async () => null, run: async () => ({}) };
 						}
 						return { run: async () => ({}) };
-					}
+					},
 				};
-			}
+			},
 		} as unknown as D1Database;
 
 		vi.spyOn(TwitchEventSubApi.prototype, 'listAllEnabled').mockResolvedValue([]);
 		vi.spyOn(TwitchEventSubApi.prototype, 'createSubscription').mockResolvedValue({
 			subscriptionId: null,
-			status: 'already_exists'
+			status: 'already_exists',
 		});
-		vi.spyOn(TwitchEventSubApi.prototype, 'findEnabledSubscription').mockImplementation(
-			async (type, broadcasterUserId) => ({
-				id: `existing-${type}`,
-				type,
-				version: '1',
-				status: 'enabled',
-				cost: 1,
-				condition: { broadcaster_user_id: broadcasterUserId },
-				transport: { method: 'webhook', callback: 'https://example.com/hook' },
-				created_at: '2026-01-01T00:00:00Z'
-			})
-		);
+		vi.spyOn(TwitchEventSubApi.prototype, 'findEnabledSubscription').mockImplementation(async (type, broadcasterUserId) => ({
+			id: `existing-${type}`,
+			type,
+			version: '1',
+			status: 'enabled',
+			cost: 1,
+			condition: { broadcaster_user_id: broadcasterUserId },
+			transport: { method: 'webhook', callback: 'https://example.com/hook' },
+			created_at: '2026-01-01T00:00:00Z',
+		}));
 
 		const stats = await syncTwitchEventSubSubscriptions({
 			DB: db,
@@ -305,7 +294,7 @@ describe('syncTwitchEventSubSubscriptions', () => {
 			TWITCH_CLIENT_SECRET: 'sec',
 			TWITCH_EVENTSUB_SECRET: 's3cre77890ab',
 			TWITCH_EVENTSUB_CALLBACK_URL: 'https://example.com/hook',
-			TWITCH_MAX_TRACKED: '10'
+			TWITCH_MAX_TRACKED: '10',
 		} as Env);
 
 		expect(stats.skippedExisting).toBeGreaterThan(0);
@@ -330,9 +319,9 @@ describe('syncTwitchEventSubSubscriptions', () => {
 							return { first: async () => null, run: async () => ({}) };
 						}
 						return { run: async () => ({}) };
-					}
+					},
 				};
-			}
+			},
 		} as unknown as D1Database;
 
 		vi.spyOn(TwitchEventSubApi.prototype, 'listAllEnabled').mockResolvedValue([
@@ -344,7 +333,7 @@ describe('syncTwitchEventSubSubscriptions', () => {
 				cost: 1,
 				condition: { broadcaster_user_id: '123' },
 				transport: { method: 'webhook', callback: 'https://example.com/hook' },
-				created_at: '2026-01-01T00:00:00Z'
+				created_at: '2026-01-01T00:00:00Z',
 			},
 			{
 				id: 'remote-off',
@@ -354,8 +343,8 @@ describe('syncTwitchEventSubSubscriptions', () => {
 				cost: 1,
 				condition: { broadcaster_user_id: '123' },
 				transport: { method: 'webhook', callback: 'https://example.com/hook' },
-				created_at: '2026-01-01T00:00:00Z'
-			}
+				created_at: '2026-01-01T00:00:00Z',
+			},
 		]);
 		const createSpy = vi.spyOn(TwitchEventSubApi.prototype, 'createSubscription');
 
@@ -365,7 +354,7 @@ describe('syncTwitchEventSubSubscriptions', () => {
 			TWITCH_CLIENT_SECRET: 'sec',
 			TWITCH_EVENTSUB_SECRET: 's3cre77890ab',
 			TWITCH_EVENTSUB_CALLBACK_URL: 'https://example.com/hook',
-			TWITCH_MAX_TRACKED: '10'
+			TWITCH_MAX_TRACKED: '10',
 		} as Env);
 
 		expect(stats.created).toBe(0);
@@ -388,19 +377,17 @@ describe('deleteEventSubForRetiredChannels', () => {
 								? {
 										results: [
 											{ id: 'sub-on', event_type: 'stream.online' },
-											{ id: 'sub-off', event_type: 'stream.offline' }
-										]
+											{ id: 'sub-off', event_type: 'stream.offline' },
+										],
 									}
 								: { results: [] },
-						run: async () => ({})
-					})
+						run: async () => ({}),
+					}),
 				};
-			}
+			},
 		} as unknown as D1Database;
 
-		const deleteSpy = vi
-			.spyOn(TwitchEventSubApi.prototype, 'deleteSubscription')
-			.mockResolvedValue(undefined);
+		const deleteSpy = vi.spyOn(TwitchEventSubApi.prototype, 'deleteSubscription').mockResolvedValue(undefined);
 
 		const deleted = await deleteEventSubForRetiredChannels(
 			{
@@ -408,9 +395,9 @@ describe('deleteEventSubForRetiredChannels', () => {
 				TWITCH_CLIENT_ID: 'id',
 				TWITCH_CLIENT_SECRET: 'sec',
 				TWITCH_EVENTSUB_SECRET: 's3cre77890ab',
-				TWITCH_EVENTSUB_CALLBACK_URL: 'https://example.com/hook'
+				TWITCH_EVENTSUB_CALLBACK_URL: 'https://example.com/hook',
 			} as Env,
-			['999']
+			['999'],
 		);
 
 		expect(deleted).toBe(2);

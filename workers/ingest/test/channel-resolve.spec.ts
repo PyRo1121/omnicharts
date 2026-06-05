@@ -3,7 +3,7 @@ import { resolveChannelSlug } from '../src/ranking/channel-api';
 
 describe('resolveChannelSlug', () => {
 	const db = {
-		prepare: vi.fn()
+		prepare: vi.fn(),
 	} as unknown as D1Database;
 
 	beforeEach(() => {
@@ -13,8 +13,8 @@ describe('resolveChannelSlug', () => {
 	it('returns current slug when channel exists', async () => {
 		const first = vi.fn().mockReturnValue({
 			bind: vi.fn().mockReturnValue({
-				first: vi.fn().mockResolvedValue({ slug: 'ninja' })
-			})
+				first: vi.fn().mockResolvedValue({ slug: 'ninja' }),
+			}),
 		});
 		(db.prepare as ReturnType<typeof vi.fn>).mockImplementation(first);
 
@@ -31,8 +31,8 @@ describe('resolveChannelSlug', () => {
 					first: vi.fn().mockImplementation(async () => {
 						if (call === 1) return null;
 						return { new_slug: 'newname' };
-					})
-				})
+					}),
+				}),
 			} as ReturnType<D1Database['prepare']>;
 		});
 

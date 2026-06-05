@@ -1,11 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { resolveRollupDate } from '../src/rollup/daily-job';
-import {
-	utcDayEndExclusiveIso,
-	utcDayStartIso,
-	yesterdayUtcDateString,
-	toUtcDateString
-} from '../src/rollup/dates';
+import { utcDayEndExclusiveIso, utcDayStartIso, yesterdayUtcDateString, toUtcDateString } from '../src/rollup/dates';
 
 describe('rollup dates', () => {
 	it('resolveRollupDate accepts explicit YYYY-MM-DD', () => {

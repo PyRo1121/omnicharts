@@ -13,9 +13,9 @@ describe('queryTopGamesByAverageViewers SQL eligibility', () => {
 					bind(...args: unknown[]) {
 						binds = args;
 						return { all: async () => ({ results: [] }) };
-					}
+					},
 				};
-			}
+			},
 		} as unknown as D1Database;
 
 		await queryTopGamesByAverageViewers(db, {
@@ -23,7 +23,7 @@ describe('queryTopGamesByAverageViewers SQL eligibility', () => {
 			days: 7,
 			limit: 10,
 			minAirtimeMinutes: 60,
-			minAverageViewers: 20
+			minAverageViewers: 20,
 		});
 
 		expect(capturedSql).toContain('SUM(cr.hours_watched) * 60.0 / NULLIF(SUM(cr.airtime_minutes), 0)');
@@ -41,16 +41,16 @@ describe('queryTopGamesByAverageViewers SQL eligibility', () => {
 					bind(...args: unknown[]) {
 						binds = args;
 						return { all: async () => ({ results: [] }) };
-					}
+					},
 				};
-			}
+			},
 		} as unknown as D1Database;
 
 		const { queryTopChannelsByHoursWatched: queryTop } = await import('../src/ranking-queries');
 		await queryTop(db, {
 			platformId: 'kick',
 			days: 90,
-			limit: 20
+			limit: 20,
 		});
 
 		expect(binds[0]).toBe('kick');
@@ -67,16 +67,16 @@ describe('queryTopGamesByAverageViewers SQL eligibility', () => {
 					bind(...args: unknown[]) {
 						binds = args;
 						return { all: async () => ({ results: [] }) };
-					}
+					},
 				};
-			}
+			},
 		} as unknown as D1Database;
 
 		await queryTopChannelsByHoursWatched(db, {
 			platformId: 'twitch',
 			days: 7,
 			limit: 10,
-			language: 'en'
+			language: 'en',
 		});
 
 		expect(capturedSql).toContain('lower(c.language) = ?');

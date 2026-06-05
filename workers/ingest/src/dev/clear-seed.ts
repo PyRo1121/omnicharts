@@ -3,7 +3,7 @@ export async function clearDevSeedChannels(db: D1Database): Promise<{ channelsDe
 	const { results } = await db
 		.prepare(
 			`SELECT id FROM channels
-       WHERE id LIKE 'dev-seed-ch-%' OR platform_channel_id LIKE 'dev-%'`
+       WHERE id LIKE 'dev-seed-ch-%' OR platform_channel_id LIKE 'dev-%'`,
 		)
 		.all<{ id: string }>();
 
@@ -17,14 +17,8 @@ export async function clearDevSeedChannels(db: D1Database): Promise<{ channelsDe
 			.bind(channelId)
 			.run();
 		await db.prepare(`DELETE FROM stream_sessions WHERE channel_id = ?`).bind(channelId).run();
-		await db
-			.prepare(`DELETE FROM channel_live_sightings WHERE channel_id = ?`)
-			.bind(channelId)
-			.run();
-		await db
-			.prepare(`DELETE FROM channel_daily_rollups WHERE channel_id = ?`)
-			.bind(channelId)
-			.run();
+		await db.prepare(`DELETE FROM channel_live_sightings WHERE channel_id = ?`).bind(channelId).run();
+		await db.prepare(`DELETE FROM channel_daily_rollups WHERE channel_id = ?`).bind(channelId).run();
 		await db.prepare(`DELETE FROM slug_history WHERE channel_id = ?`).bind(channelId).run();
 		await db.prepare(`DELETE FROM channels WHERE id = ?`).bind(channelId).run();
 	}

@@ -23,20 +23,18 @@ describe('kick poll', () => {
 				stream_title: 'T',
 				started_at: '2026-06-01T00:00:00Z',
 				viewer_count: 50,
-				category: { id: 7, name: 'IRL' }
-			}
+				category: { id: 7, name: 'IRL' },
+			},
 		]);
 		vi.spyOn(kickDb, 'batchUpsertKickGameCategories').mockResolvedValue(new Map([['7', 'game-1']]));
-		vi.spyOn(kickDb, 'batchUpsertKickChannelsFromLivestreams').mockResolvedValue(
-			new Map([['10', 'ch-1']])
-		);
+		vi.spyOn(kickDb, 'batchUpsertKickChannelsFromLivestreams').mockResolvedValue(new Map([['10', 'ch-1']]));
 		vi.spyOn(kickDb, 'batchRecordKickLiveSamples').mockResolvedValue([
 			{
 				stream_session_id: 'sess',
 				sampled_at: '2026-06-01T00:00:00Z',
 				viewer_count: 50,
-				platform: 'kick'
-			}
+				platform: 'kick',
+			},
 		]);
 
 		const runs: string[] = [];
@@ -47,8 +45,8 @@ describe('kick poll', () => {
 						run: async () => {
 							runs.push(sql);
 							return {};
-						}
-					})
+						},
+					}),
 				};
 			},
 			batch: async (statements: { run: () => Promise<unknown> }[]) => {
@@ -56,7 +54,7 @@ describe('kick poll', () => {
 					await stmt.run();
 				}
 				return [];
-			}
+			},
 		} as unknown as D1Database;
 
 		const result = await runKickPollBatch(
@@ -64,9 +62,9 @@ describe('kick poll', () => {
 				KICK_CLIENT_ID: 'id',
 				KICK_CLIENT_SECRET: 'secret',
 				KICK_MIN_VIEWERS: '5',
-				DB: db
+				DB: db,
 			} as Env,
-			['10', '11']
+			['10', '11'],
 		);
 
 		expect(result.liveStreams).toBe(1);
@@ -82,27 +80,25 @@ describe('kick poll', () => {
 				slug: 'ten',
 				stream_title: 'T',
 				started_at: '2026-06-01T00:00:00Z',
-				viewer_count: null
-			}
+				viewer_count: null,
+			},
 		]);
 		vi.spyOn(kickDb, 'batchUpsertKickGameCategories').mockResolvedValue(new Map());
-		vi.spyOn(kickDb, 'batchUpsertKickChannelsFromLivestreams').mockResolvedValue(
-			new Map([['10', 'ch-1']])
-		);
+		vi.spyOn(kickDb, 'batchUpsertKickChannelsFromLivestreams').mockResolvedValue(new Map([['10', 'ch-1']]));
 		const recordSpy = vi.spyOn(kickDb, 'batchRecordKickLiveSamples').mockResolvedValue([]);
 
 		const db = {
 			prepare: () => ({ bind: () => ({ run: async () => ({}) }) }),
-			batch: async () => []
+			batch: async () => [],
 		} as unknown as D1Database;
 
 		const result = await runKickPollBatch(
 			{
 				KICK_CLIENT_ID: 'id',
 				KICK_CLIENT_SECRET: 'secret',
-				DB: db
+				DB: db,
 			} as Env,
-			['10']
+			['10'],
 		);
 
 		expect(result.liveStreams).toBe(1);
@@ -118,18 +114,16 @@ describe('kick poll', () => {
 				slug: 'ten',
 				stream_title: 'T',
 				started_at: '2026-06-01T00:00:00Z',
-				viewer_count: 3
-			}
+				viewer_count: 3,
+			},
 		]);
 		vi.spyOn(kickDb, 'batchUpsertKickGameCategories').mockResolvedValue(new Map());
-		vi.spyOn(kickDb, 'batchUpsertKickChannelsFromLivestreams').mockResolvedValue(
-			new Map([['10', 'ch-1']])
-		);
+		vi.spyOn(kickDb, 'batchUpsertKickChannelsFromLivestreams').mockResolvedValue(new Map([['10', 'ch-1']]));
 		const recordSpy = vi.spyOn(kickDb, 'batchRecordKickLiveSamples').mockResolvedValue([]);
 
 		const db = {
 			prepare: () => ({ bind: () => ({ run: async () => ({}) }) }),
-			batch: async () => []
+			batch: async () => [],
 		} as unknown as D1Database;
 
 		const result = await runKickPollBatch(
@@ -137,9 +131,9 @@ describe('kick poll', () => {
 				KICK_CLIENT_ID: 'id',
 				KICK_CLIENT_SECRET: 'secret',
 				KICK_MIN_VIEWERS: '5',
-				DB: db
+				DB: db,
 			} as Env,
-			['10']
+			['10'],
 		);
 
 		expect(result.liveStreams).toBe(1);

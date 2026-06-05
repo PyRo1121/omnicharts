@@ -19,7 +19,7 @@ const MIGRATION_FILES = [
 	'0007_viewer_samples_sampled_at_index.sql',
 	'0008_ingest_hot_path_indexes.sql',
 	'0009_youtube_live_video_id.sql',
-	'0010_twitch_vod_metadata.sql'
+	'0010_twitch_vod_metadata.sql',
 ] as const;
 
 /** Tables that must exist after migrations 0001–0010 (0001–0006 create/alter; 0007–0008 indexes; 0009–0010 columns). */
@@ -34,7 +34,7 @@ const EXPECTED_TABLES = [
 	'slug_history',
 	'twitch_eventsub_subscriptions',
 	'ingest_metadata',
-	'channel_live_sightings'
+	'channel_live_sightings',
 ] as const;
 
 /** Columns added or created in 0004–0006 (table → column names). */
@@ -49,18 +49,10 @@ const EXPECTED_COLUMNS: Record<string, string[]> = {
 		'follower_count',
 		'followers_enriched_at',
 		'youtube_live_video_id',
-		'vod_backfilled_at'
+		'vod_backfilled_at',
 	],
-	stream_sessions: [
-		'language',
-		'tags_json',
-		'thumbnail_url',
-		'stream_type',
-		'backfill_source',
-		'duration',
-		'view_count'
-	],
-	channel_daily_rollups: ['followers_delta']
+	stream_sessions: ['language', 'tags_json', 'thumbnail_url', 'stream_type', 'backfill_source', 'duration', 'view_count'],
+	channel_daily_rollups: ['followers_delta'],
 };
 
 /** Indexes from migrations 0007–0008 (ingest hot-path / prune). */
@@ -68,7 +60,7 @@ const EXPECTED_INDEXES = [
 	'idx_viewer_samples_sampled_at',
 	'idx_channels_platform_state_seen',
 	'idx_stream_sessions_channel_open',
-	'idx_channels_vod_backfill'
+	'idx_channels_vod_backfill',
 ] as const;
 
 function usage(): never {
@@ -81,24 +73,14 @@ Runs wrangler from workers/ingest (canonical migrate cwd).
 }
 
 function wranglerExecute(sql: string, remote: boolean): string {
-	const args = [
-		'd1',
-		'execute',
-		DB,
-		'--command',
-		sql,
-		'--json',
-		...(remote ? ['--remote'] : ['--local'])
-	];
+	const args = ['d1', 'execute', DB, '--command', sql, '--json', ...(remote ? ['--remote'] : ['--local'])];
 	const r = spawnSync('npx', ['wrangler', ...args], {
 		cwd: INGEST_CWD,
 		encoding: 'utf8',
-		maxBuffer: 4 * 1024 * 1024
+		maxBuffer: 4 * 1024 * 1024,
 	});
 	if (r.status !== 0) {
-		throw new Error(
-			`wrangler d1 execute failed (${remote ? 'remote' : 'local'}): ${r.stderr || r.stdout}`
-		);
+		throw new Error(`wrangler d1 execute failed (${remote ? 'remote' : 'local'}): ${r.stderr || r.stdout}`);
 	}
 	return r.stdout;
 }
@@ -113,9 +95,7 @@ function parseJsonRows(stdout: string): Record<string, unknown>[] {
 			| Record<string, unknown>[];
 		if (Array.isArray(parsed)) {
 			if (parsed.length && parsed[0] && 'results' in parsed[0]) {
-				return (parsed as { results?: Record<string, unknown>[] }[]).flatMap(
-					(batch) => batch.results ?? []
-				);
+				return (parsed as { results?: Record<string, unknown>[] }[]).flatMap((batch) => batch.results ?? []);
 			}
 			return parsed as Record<string, unknown>[];
 		}
@@ -129,7 +109,7 @@ function parseJsonRows(stdout: string): Record<string, unknown>[] {
 function listTables(remote: boolean): Set<string> {
 	const out = wranglerExecute(
 		`SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%' ORDER BY name`,
-		remote
+		remote,
 	);
 	const rows = parseJsonRows(out);
 	return new Set(rows.map((r) => String(r.name ?? r.NAME ?? '')));
@@ -142,10 +122,7 @@ function tableColumns(table: string, remote: boolean): Set<string> {
 }
 
 function listIndexes(remote: boolean): Set<string> {
-	const out = wranglerExecute(
-		`SELECT name FROM sqlite_master WHERE type='index' AND name NOT LIKE 'sqlite_%' ORDER BY name`,
-		remote
-	);
+	const out = wranglerExecute(`SELECT name FROM sqlite_master WHERE type='index' AND name NOT LIKE 'sqlite_%' ORDER BY name`, remote);
 	const rows = parseJsonRows(out);
 	return new Set(rows.map((r) => String(r.name ?? r.NAME ?? '')));
 }
@@ -181,16 +158,12 @@ function main() {
 		console.error('FAIL\n');
 		for (const e of errors) console.error(`  - ${e}`);
 		console.error(`\nApply migrations from workers/ingest:`);
-		console.error(
-			remote
-				? '  bun run d1:migrate:remote'
-				: '  bun run d1:migrate:local'
-		);
+		console.error(remote ? '  bun run d1:migrate:remote' : '  bun run d1:migrate:local');
 		process.exit(1);
 	}
 
 	console.log(
-		`PASS — ${EXPECTED_TABLES.length} tables, key columns through 0010, ${EXPECTED_INDEXES.length} indexes through 0010 (${target})`
+		`PASS — ${EXPECTED_TABLES.length} tables, key columns through 0010, ${EXPECTED_INDEXES.length} indexes through 0010 (${target})`,
 	);
 }
 

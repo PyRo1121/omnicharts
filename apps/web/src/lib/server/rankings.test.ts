@@ -3,7 +3,7 @@ import { loadChannelRankings } from './rankings';
 import { testLoadContext, testLoadContextWithDb } from './test-helpers';
 
 vi.mock('$env/dynamic/private', () => ({
-	env: { INGEST_URL: 'http://ingest.test' }
+	env: { INGEST_URL: 'http://ingest.test' },
 }));
 
 describe('loadChannelRankings (twitch)', () => {
@@ -22,19 +22,14 @@ describe('loadChannelRankings (twitch)', () => {
 							hours_watched: 12_000,
 							average_viewers: 500,
 							airtime_minutes: 1440,
-							peak_viewers: 800
-						}
-					]
-				})
-			})
+							peak_viewers: 800,
+						},
+					],
+				}),
+			}),
 		} as unknown as D1Database;
 
-		const load = await loadChannelRankings(
-			testLoadContextWithDb(fetchFn as typeof fetch, db),
-			'twitch',
-			'7d',
-			20
-		);
+		const load = await loadChannelRankings(testLoadContextWithDb(fetchFn as typeof fetch, db), 'twitch', '7d', 20);
 		expect(load.source).toBe('live');
 		expect(load.rows[0]?.slug).toBe('ninja');
 		expect(fetchFn).not.toHaveBeenCalled();
@@ -54,10 +49,10 @@ describe('loadChannelRankings (twitch)', () => {
 						display_name: 'Ninja',
 						avatar_url: 'https://cdn.example/a.png',
 						hours_watched: 12_000,
-						average_viewers: 500
-					}
-				]
-			})
+						average_viewers: 500,
+					},
+				],
+			}),
 		});
 
 		const load = await loadChannelRankings(testLoadContext(fetchFn as typeof fetch), 'twitch', '7d', 20);
@@ -65,7 +60,7 @@ describe('loadChannelRankings (twitch)', () => {
 		expect(load.rows[0]).toMatchObject({
 			slug: 'ninja',
 			displayName: 'Ninja',
-			metricLabel: 'Hours watched'
+			metricLabel: 'Hours watched',
 		});
 		expect(String(fetchFn.mock.calls[0]?.[0])).toContain('/v1/rankings/channels');
 	});
@@ -75,8 +70,8 @@ describe('loadChannelRankings (twitch)', () => {
 			ok: true,
 			json: async () => ({
 				updated_at: '2026-06-01T00:00:00Z',
-				items: []
-			})
+				items: [],
+			}),
 		});
 		const load = await loadChannelRankings(testLoadContext(fetchFn as typeof fetch), 'twitch', '30d');
 		expect(load.source).toBe('live');
@@ -111,10 +106,10 @@ describe('loadChannelRankings (twitch)', () => {
 						display_name: 'xQc',
 						avatar_url: null,
 						hours_watched: 1000,
-						average_viewers: 50
-					}
-				]
-			})
+						average_viewers: 50,
+					},
+				],
+			}),
 		});
 
 		const load = await loadChannelRankings(testLoadContext(fetchFn as typeof fetch), 'kick', '7d', 20);
@@ -129,16 +124,11 @@ describe('loadChannelRankings (twitch)', () => {
 				platform: 'youtube',
 				period: '7d',
 				updated_at: '2026-06-01T00:00:00Z',
-				items: []
-			})
+				items: [],
+			}),
 		});
 
-		const load = await loadChannelRankings(
-			testLoadContext(fetchFn as typeof fetch),
-			'youtube',
-			'7d',
-			20
-		);
+		const load = await loadChannelRankings(testLoadContext(fetchFn as typeof fetch), 'youtube', '7d', 20);
 		expect(load.source).toBe('live');
 		expect(load.rows).toHaveLength(0);
 		expect(String(fetchFn.mock.calls[0]?.[0])).toContain('platform=youtube');
@@ -152,8 +142,8 @@ describe('loadChannelRankings (twitch)', () => {
 				period: '7d',
 				language: 'en',
 				updated_at: '2026-06-01T00:00:00Z',
-				items: []
-			})
+				items: [],
+			}),
 		});
 
 		await loadChannelRankings(testLoadContext(fetchFn as typeof fetch), 'twitch', '7d', 20, false, 'en');

@@ -3,7 +3,7 @@ import { load } from '../../routes/overview/+page.server';
 import type { PageData } from '../../routes/overview/$types';
 
 vi.mock('$env/dynamic/private', () => ({
-	env: { INGEST_URL: 'http://ingest.test' }
+	env: { INGEST_URL: 'http://ingest.test' },
 }));
 
 type OverviewLoad = (event: Parameters<typeof load>[0]) => Promise<PageData>;
@@ -20,7 +20,7 @@ function overviewLoadArgs(platform: string | null) {
 		fetch: fetchFn,
 		url,
 		setHeaders,
-		platform: undefined
+		platform: undefined,
 	} as unknown as Parameters<typeof load>[0];
 }
 
@@ -35,8 +35,8 @@ describe('overview load — platform query (docs/09 Phase 3)', () => {
 						platform: 'kick',
 						period: '7d',
 						updated_at: '2026-06-01T00:00:00Z',
-						items: []
-					})
+						items: [],
+					}),
 				});
 			}
 			if (url.includes('/rankings/channels')) {
@@ -53,10 +53,10 @@ describe('overview load — platform query (docs/09 Phase 3)', () => {
 								display_name: 'xQc',
 								avatar_url: null,
 								hours_watched: 5000,
-								average_viewers: 200
-							}
-						]
-					})
+								average_viewers: 200,
+							},
+						],
+					}),
 				});
 			}
 			return Promise.resolve({ ok: false, status: 503 });
@@ -69,23 +69,21 @@ describe('overview load — platform query (docs/09 Phase 3)', () => {
 		expect(result.platform).toBe('kick');
 		expect(result.topChannelName).toBe('xQc');
 		expect(result.stats).toHaveLength(3);
-		expect(
-			fetchFn.mock.calls.some(
-				(c) => String(c[0]).includes('/rankings/channels') && String(c[0]).includes('platform=kick')
-			)
-		).toBe(true);
+		expect(fetchFn.mock.calls.some((c) => String(c[0]).includes('/rankings/channels') && String(c[0]).includes('platform=kick'))).toBe(
+			true,
+		);
 	});
 
 	it('loads youtube overview when ingest has no items', async () => {
-		const fetchFn = vi.fn().mockImplementation((input: RequestInfo | URL) => {
+		const fetchFn = vi.fn().mockImplementation((_input: RequestInfo | URL) => {
 			return Promise.resolve({
 				ok: true,
 				json: async () => ({
 					platform: 'youtube',
 					period: '7d',
 					updated_at: '2026-06-01T00:00:00Z',
-					items: []
-				})
+					items: [],
+				}),
 			});
 		});
 		const args = overviewLoadArgs('youtube');
@@ -95,11 +93,9 @@ describe('overview load — platform query (docs/09 Phase 3)', () => {
 
 		expect(result.platform).toBe('youtube');
 		expect(result.stats).toHaveLength(3);
-		expect(
-			fetchFn.mock.calls.some(
-				(c) => String(c[0]).includes('/rankings/channels') && String(c[0]).includes('platform=youtube')
-			)
-		).toBe(true);
+		expect(fetchFn.mock.calls.some((c) => String(c[0]).includes('/rankings/channels') && String(c[0]).includes('platform=youtube'))).toBe(
+			true,
+		);
 	});
 
 	it('defaults to twitch and does not mark platform unsupported', async () => {

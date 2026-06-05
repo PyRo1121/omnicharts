@@ -1,13 +1,8 @@
 import type { D1Database } from './d1';
 
 /** Inclusive UTC days from oldest channel rollup date through today. */
-export async function getRollupCoverageDays(
-	db: D1Database,
-	now = new Date()
-): Promise<number | null> {
-	const row = await db
-		.prepare(`SELECT MIN(date) AS oldest FROM channel_daily_rollups`)
-		.first<{ oldest: string | null }>();
+export async function getRollupCoverageDays(db: D1Database, now = new Date()): Promise<number | null> {
+	const row = await db.prepare(`SELECT MIN(date) AS oldest FROM channel_daily_rollups`).first<{ oldest: string | null }>();
 
 	if (!row?.oldest) return null;
 

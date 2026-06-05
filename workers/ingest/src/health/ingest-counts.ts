@@ -16,14 +16,14 @@ export async function fetchIngestStateCounts(db: D1Database): Promise<PlatformIn
 		discovered: 0,
 		tracked: 0,
 		dormant: 0,
-		retired: 0
+		retired: 0,
 	};
 
 	const { results } = await db
 		.prepare(
 			`SELECT ingest_state, COUNT(*) AS n FROM channels
        WHERE platform_id = ?
-       GROUP BY ingest_state`
+       GROUP BY ingest_state`,
 		)
 		.bind(PLATFORM_TWITCH)
 		.all<{ ingest_state: string; n: number }>();
