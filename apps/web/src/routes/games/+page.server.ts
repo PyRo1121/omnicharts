@@ -13,13 +13,13 @@ export const load: PageServerLoad = async ({ fetch, url, setHeaders, platform: c
 	const platform = parseUiPlatform(url.searchParams.get('platform'));
 	const mockEnabled = isDevMockEnabled(url.searchParams.get('demo'));
 
-	if (platform === 'youtube' || platform === 'all') {
+	if (platform === 'all') {
 		return {
 			source: 'live' as const,
 			period,
 			periodNote,
 			platform,
-			platformUnsupported: platform !== 'all',
+			platformUnsupported: true,
 			updatedAt: null,
 			rows: []
 		};

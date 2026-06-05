@@ -51,6 +51,42 @@ export function platformQueryParam(platform: PlatformId): string {
 	return '';
 }
 
+/** Append `?platform=` when non-default; optional extra query params. */
+export function routeWithPlatform(
+	path: string,
+	platform: PlatformId,
+	extra?: Record<string, string>
+): string {
+	const q = new URLSearchParams(extra);
+	if (platform === 'kick' || platform === 'youtube' || platform === 'all') {
+		q.set('platform', platform);
+	}
+	const qs = q.toString();
+	return qs ? `${path}?${qs}` : path;
+}
+
+type RankingsSource = 'live' | 'mock' | 'unavailable';
+
+/** Copy for `/channels` hero — scoped to active platform tab. */
+export function channelsPageSubtitle(platform: PlatformId, source: RankingsSource): string {
+	if (source === 'live') {
+		if (platform === 'kick') {
+			return 'Top Kick channels by hours watched (ingest rollups).';
+		}
+		if (platform === 'youtube') {
+			return 'Top YouTube channels by hours watched (ingest rollups).';
+		}
+		return 'Top Twitch channels by hours watched (ingest rollups).';
+	}
+	if (source === 'mock') {
+		return 'Design preview — sample leaderboard (?demo=1).';
+	}
+	if (source === 'unavailable') {
+		return 'Ingest unavailable — start dev:ingest and run twitch:checkpoint for live rankings.';
+	}
+	return 'No rollups for this period yet.';
+}
+
 export const platforms: { id: PlatformId; label: string }[] = [
 	{ id: 'all', label: 'All platforms' },
 	{ id: 'twitch', label: 'Twitch' },

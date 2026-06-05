@@ -68,18 +68,18 @@ function unavailableOverviewStats(): OverviewStat[] {
 	];
 }
 
-function kickHealthUnavailableStats(): OverviewStat[] {
+function rollupPlatformHealthUnavailableStats(): OverviewStat[] {
 	return [
 		{
 			label: 'Channels tracked',
 			value: '—',
-			hint: 'Kick directory metrics ship with ingest health',
+			hint: 'Directory metrics ship with ingest health',
 			source: 'unavailable'
 		},
 		{
 			label: 'Live now',
 			value: '—',
-			hint: 'Requires Kick ingest health',
+			hint: 'Requires platform ingest health',
 			source: 'unavailable'
 		}
 	];
@@ -122,8 +122,9 @@ function overviewFromD1Snapshot(
 	};
 }
 
-export async function loadKickOverview(
+async function loadRollupPlatformOverview(
 	ctx: ServerLoadContext,
+	platform: 'kick' | 'youtube',
 	mockEnabled = false,
 	opts: OverviewLoadOptions = {}
 ): Promise<OverviewLoad> {
@@ -132,8 +133,8 @@ export async function loadKickOverview(
 	const gameLimit = opts.gameLimit ?? 1;
 
 	const [channels, games] = await Promise.all([
-		loadChannelRankings(ctx, 'kick', period, channelLimit, mockEnabled),
-		loadGameRankings(ctx, 'kick', period, gameLimit, mockEnabled)
+		loadChannelRankings(ctx, platform, period, channelLimit, mockEnabled),
+		loadGameRankings(ctx, platform, period, gameLimit, mockEnabled)
 	]);
 
 	const rankingsLive = channels.source === 'live' || games.source === 'live';
@@ -154,7 +155,7 @@ export async function loadKickOverview(
 				source: channels.source
 			};
 
-	const stats: OverviewStat[] = [...kickHealthUnavailableStats(), rankedStat];
+	const stats: OverviewStat[] = [...rollupPlatformHealthUnavailableStats(), rankedStat];
 
 	return {
 		source: rankingsMock ? 'mock' : rankingsLive ? 'live' : 'unavailable',
@@ -166,6 +167,22 @@ export async function loadKickOverview(
 		channelRankings: channels,
 		gameRankings: games
 	};
+}
+
+export async function loadKickOverview(
+	ctx: ServerLoadContext,
+	mockEnabled = false,
+	opts: OverviewLoadOptions = {}
+): Promise<OverviewLoad> {
+	return loadRollupPlatformOverview(ctx, 'kick', mockEnabled, opts);
+}
+
+export async function loadYoutubeOverview(
+	ctx: ServerLoadContext,
+	mockEnabled = false,
+	opts: OverviewLoadOptions = {}
+): Promise<OverviewLoad> {
+	return loadRollupPlatformOverview(ctx, 'youtube', mockEnabled, opts);
 }
 
 export async function loadOverview(

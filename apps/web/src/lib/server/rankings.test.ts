@@ -120,4 +120,26 @@ describe('loadTwitchChannelRankings', () => {
 		expect(load.rows[0]).toMatchObject({ slug: 'xqc', platform: 'kick' });
 		expect(String(fetchFn.mock.calls[0]?.[0])).toContain('platform=kick');
 	});
+
+	it('passes platform=youtube to ingest rankings URL', async () => {
+		const fetchFn = vi.fn().mockResolvedValue({
+			ok: true,
+			json: async () => ({
+				platform: 'youtube',
+				period: '7d',
+				updated_at: '2026-06-01T00:00:00Z',
+				items: []
+			})
+		});
+
+		const load = await loadChannelRankings(
+			testLoadContext(fetchFn as typeof fetch),
+			'youtube',
+			'7d',
+			20
+		);
+		expect(load.source).toBe('live');
+		expect(load.rows).toHaveLength(0);
+		expect(String(fetchFn.mock.calls[0]?.[0])).toContain('platform=youtube');
+	});
 });

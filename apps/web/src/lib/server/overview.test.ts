@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { loadKickOverview, loadOverview } from './overview';
+import { loadKickOverview, loadOverview, loadYoutubeOverview } from './overview';
 import { mockD1Batch, testLoadContext, testLoadContextWithDb } from './test-helpers';
 
 vi.mock('$env/dynamic/private', () => ({
@@ -54,7 +54,9 @@ describe('loadOverview', () => {
 					ok: true,
 					json: async () => ({
 						status: 'ok',
-						tracked_channels: { twitch: 1200 },
+						tracked_channels: { twitch: 1200, kick: 0, youtube: 0 },
+						kick: 'missing_credentials',
+						youtube: 'missing_credentials',
 						channels_live: 300,
 						discovery_new_24h: 5
 					})
@@ -174,5 +176,47 @@ describe('loadKickOverview', () => {
 		expect(load.stats[2]?.value).toBe('1');
 		expect(fetchFn.mock.calls.some((c) => String(c[0]).includes('platform=kick'))).toBe(true);
 		expect(fetchFn.mock.calls.some((c) => String(c[0]).includes('/health'))).toBe(false);
+	});
+});
+
+describe('loadYoutubeOverview', () => {
+	it('builds stats from youtube rankings without ingest health', async () => {
+		const fetchFn = vi.fn().mockImplementation((url: string | URL) => {
+			const u = String(url);
+			if (u.includes('/v1/rankings/channels')) {
+				return Promise.resolve({
+					ok: true,
+					json: async () => ({
+						updated_at: '2026-06-01T00:00:00Z',
+						items: [
+							{
+								rank: 1,
+								slug: 'mrbeast',
+								display_name: 'MrBeast',
+								avatar_url: null,
+								hours_watched: 100,
+								average_viewers: 10
+							}
+						]
+					})
+				});
+			}
+			if (u.includes('/v1/rankings/games')) {
+				return Promise.resolve({
+					ok: true,
+					json: async () => ({
+						updated_at: '2026-06-01T00:00:00Z',
+						items: []
+					})
+				});
+			}
+			return Promise.resolve({ ok: false, status: 404 });
+		});
+
+		const load = await loadYoutubeOverview(testLoadContext(fetchFn as typeof fetch));
+		expect(load.source).toBe('live');
+		expect(load.topChannelName).toBe('MrBeast');
+		expect(load.stats[2]?.value).toBe('1');
+		expect(fetchFn.mock.calls.some((c) => String(c[0]).includes('platform=youtube'))).toBe(true);
 	});
 });

@@ -77,12 +77,31 @@ describe('overview load — platform query (docs/09 Phase 3)', () => {
 		).toBe(true);
 	});
 
-	it('returns platformUnsupported for platform=youtube', async () => {
-		const result = await overviewLoad(overviewLoadArgs('youtube'));
+	it('loads youtube overview without platformUnsupported when ingest has no items', async () => {
+		const fetchFn = vi.fn().mockImplementation((input: RequestInfo | URL) => {
+			return Promise.resolve({
+				ok: true,
+				json: async () => ({
+					platform: 'youtube',
+					period: '7d',
+					updated_at: '2026-06-01T00:00:00Z',
+					items: []
+				})
+			});
+		});
+		const args = overviewLoadArgs('youtube');
+		args.fetch = fetchFn as typeof fetch;
+
+		const result = await overviewLoad(args);
 
 		expect(result.platform).toBe('youtube');
-		expect(result.platformUnsupported).toBe(true);
-		expect(result.stats).toHaveLength(0);
+		expect(result.platformUnsupported).toBe(false);
+		expect(result.stats).toHaveLength(3);
+		expect(
+			fetchFn.mock.calls.some(
+				(c) => String(c[0]).includes('/rankings/channels') && String(c[0]).includes('platform=youtube')
+			)
+		).toBe(true);
 	});
 
 	it('defaults to twitch and does not mark platform unsupported', async () => {

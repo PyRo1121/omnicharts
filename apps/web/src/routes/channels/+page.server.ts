@@ -13,25 +13,13 @@ export const load: PageServerLoad = async ({ fetch, url, setHeaders, platform: c
 	const platform = parseUiPlatform(url.searchParams.get('platform'));
 	const mockEnabled = isDevMockEnabled(url.searchParams.get('demo'));
 
-	if (platform === 'youtube') {
-		return {
-			source: 'live' as const,
-			period,
-			periodNote,
-			platform,
-			platformUnsupported: true,
-			updatedAt: null,
-			rows: []
-		};
-	}
-
 	const rankingsPlatform: PlatformId = platform === 'all' ? 'twitch' : platform;
 	const rankings = await loadChannelRankings(ctx, rankingsPlatform, period, 20, mockEnabled);
 	return {
 		...rankings,
 		period,
 		periodNote,
-		platform: rankingsPlatform,
+		platform,
 		platformUnsupported: false
 	};
 };

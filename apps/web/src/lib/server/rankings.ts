@@ -48,7 +48,7 @@ function mapChannelRankingsBody(
 	};
 }
 
-const ROLLUP_CHANNEL_PLATFORMS = new Set<PlatformId>(['twitch', 'kick']);
+const ROLLUP_CHANNEL_PLATFORMS = new Set<PlatformId>(['twitch', 'kick', 'youtube']);
 
 function supportsRollupChannelRankings(platform: PlatformId): boolean {
 	return ROLLUP_CHANNEL_PLATFORMS.has(platform);

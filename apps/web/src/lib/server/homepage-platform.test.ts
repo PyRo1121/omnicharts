@@ -82,13 +82,76 @@ describe('homepage load — non-Twitch platforms (docs/09 Phase 3)', () => {
 		).toBe(true);
 	});
 
-	it('returns empty rankings and platformUnsupported for platform=youtube', async () => {
-		const result = await homepageLoad(homepageLoadArgs('youtube'));
+	it('loads youtube rankings without platformUnsupported when ingest has no items', async () => {
+		const fetchFn = vi.fn().mockImplementation((input: RequestInfo | URL) => {
+			const url = String(input);
+			return Promise.resolve({
+				ok: true,
+				json: async () => ({
+					platform: url.includes('games') ? 'youtube' : 'youtube',
+					period: '7d',
+					updated_at: '2026-06-01T00:00:00Z',
+					items: []
+				})
+			});
+		});
+		const args = homepageLoadArgs('youtube');
+		args.fetch = fetchFn as typeof fetch;
+
+		const result = await homepageLoad(args);
 
 		expect(result.platform).toBe('youtube');
-		expect(result.platformUnsupported).toBe(true);
+		expect(result.platformUnsupported).toBe(false);
 		expect(result.channelRankings.rows).toHaveLength(0);
 		expect(result.gameRankings.rows).toHaveLength(0);
+		expect(
+			fetchFn.mock.calls.some(
+				(c) => String(c[0]).includes('/rankings/channels') && String(c[0]).includes('platform=youtube')
+			)
+		).toBe(true);
+	});
+
+	it('loads youtube channel rankings when ingest returns items', async () => {
+		const fetchFn = vi.fn().mockImplementation((input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes('/rankings/games')) {
+				return Promise.resolve({
+					ok: true,
+					json: async () => ({
+						platform: 'youtube',
+						period: '7d',
+						updated_at: '2026-06-01T00:00:00Z',
+						items: []
+					})
+				});
+			}
+			return Promise.resolve({
+				ok: true,
+				json: async () => ({
+					platform: 'youtube',
+					period: '7d',
+					updated_at: '2026-06-01T00:00:00Z',
+					items: [
+						{
+							rank: 1,
+							slug: 'mrbeast',
+							display_name: 'MrBeast',
+							avatar_url: null,
+							hours_watched: 9000,
+							average_viewers: 120
+						}
+					]
+				})
+			});
+		});
+		const args = homepageLoadArgs('youtube');
+		args.fetch = fetchFn as typeof fetch;
+
+		const result = await homepageLoad(args);
+
+		expect(result.platformUnsupported).toBe(false);
+		expect(result.channelRankings.rows[0]?.slug).toBe('mrbeast');
+		expect(result.overview.topChannelName).toBe('MrBeast');
 	});
 
 	it('defaults to twitch and does not mark platform unsupported', async () => {

@@ -48,7 +48,7 @@ function mapGameRankingsBody(
 	};
 }
 
-const ROLLUP_GAME_PLATFORMS = new Set<PlatformId>(['twitch', 'kick']);
+const ROLLUP_GAME_PLATFORMS = new Set<PlatformId>(['twitch', 'kick', 'youtube']);
 
 function supportsRollupGameRankings(platform: PlatformId): boolean {
 	return ROLLUP_GAME_PLATFORMS.has(platform);

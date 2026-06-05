@@ -3,7 +3,8 @@
 	import SectionHeader from '$lib/components/ui/SectionHeader.svelte';
 	import LeaderboardTable from '$lib/components/ui/LeaderboardTable.svelte';
 	import PeriodSelector from '$lib/components/ui/PeriodSelector.svelte';
-	import { uiPeriods, platformQueryParam, type Period } from '$lib/mock/home';
+	import PlatformFilter from '$lib/components/ui/PlatformFilter.svelte';
+	import { uiPeriods, platforms, routeWithPlatform, type Period, type PlatformId } from '$lib/mock/home';
 
 	let { data } = $props();
 
@@ -20,8 +21,15 @@
 		}))
 	);
 
+	function onPlatformChange(id: PlatformId) {
+		goto(routeWithPlatform('/games', id, { period: data.period }), {
+			keepFocus: true,
+			noScroll: true
+		});
+	}
+
 	function onPeriodChange(p: Period) {
-		goto(`/games?period=${p}${platformQueryParam(data.platform)}`, {
+		goto(routeWithPlatform('/games', data.platform, { period: p }), {
 			keepFocus: true,
 			noScroll: true
 		});
@@ -37,13 +45,19 @@
 	subtitle={data.source === 'live'
 		? data.platform === 'kick'
 			? 'Top Kick categories by average viewers (ingest rollups).'
-			: 'Top Twitch categories by average viewers (ingest rollups).'
+			: data.platform === 'youtube'
+				? 'Top YouTube categories by average viewers (ingest rollups).'
+				: 'Top Twitch categories by average viewers (ingest rollups).'
 		: data.source === 'mock'
 			? 'Design preview — sample leaderboard (?demo=1).'
 			: data.source === 'unavailable'
 				? 'Ingest unavailable — start dev:ingest and run twitch:checkpoint.'
 				: 'No game rollups for this period yet.'}
 />
+
+<div class="mt-4">
+	<PlatformFilter {platforms} value={data.platform} onchange={onPlatformChange} />
+</div>
 
 {#if data.platformUnsupported}
 	<p class="mt-4 text-sm text-[var(--color-oc-text-muted)]">
