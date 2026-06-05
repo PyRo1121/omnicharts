@@ -120,7 +120,7 @@ Channel summary for one platform.
 | Param | Required |
 |-------|----------|
 | `platform` | yes |
-| `period` | no (`7d`, `30d`) |
+| `period` | no (`7d`, `30d`, `90d`) |
 
 **Response:** totals + daily series array for charts.
 

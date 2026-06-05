@@ -18,7 +18,7 @@
 | # | Slice | ROADMAP item | Depends |
 |---|-------|--------------|---------|
 | **4.1** | **CSV export** on rankings + channel detail | CSV export (moved from Phase 6) | Phase 3 rollups |
-| 4.2 | 90-day rollups + UI `90d` toggle | 90-day retention | D1 rollup job |
+| **4.2** | **90-day rollups + UI `90d` toggle** | 90-day retention | D1 rollup job |
 | 4.3 | R2 Parquet sample archive export | R2 cold path | 4.2 |
 | 4.4 | 2-channel compare (7d/30d) | Compare Streamers | Browse MVP |
 | 4.5 | Agency CSV watchlist import | Agency CSV import | Admin auth |
@@ -58,6 +58,12 @@ Same query params as JSON. Error `invalid_format` when not `json` or `csv`. See 
 
 ---
 
-## Next after 4.1
+## Slice 4.2 — 90-day rollups (shipped 2026-06-05)
 
-**4.2 — 90-day rollups:** extend `rollup_daily` window, expose `90d` in UI (currently hidden per REM-022), verify query performance on D1.
+- `rollup_daily` prunes `channel_daily_rollups` / `game_daily_rollups` older than **90 days** (`workers/ingest/src/db/prune-rollups.ts`)
+- Rankings + channel/game detail APIs already accept `period=90d`; web `PeriodSelector` exposes `90d`
+- Honest `periodNote` when rollup coverage is shorter than the selected window (`periodCoverageNote` + `getRollupCoverageDays`)
+
+## Next after 4.2
+
+**4.3 — R2 Parquet sample archive:** cold path for pruned samples/rollups per [06-storage](./06-storage-and-rollup-design.md).

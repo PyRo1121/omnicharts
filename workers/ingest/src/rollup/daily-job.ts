@@ -10,6 +10,7 @@ import {
 	fetchPriorFollowerSnapshots,
 	storeFollowerSnapshots
 } from '../db/follower-snapshots';
+import { pruneDailyRollupsOlderThanRetention } from '../db/prune-rollups';
 import { pruneViewerSamplesOlderThanRetention } from '../db/prune-samples';
 import { D1_BATCH_MAX_STATEMENTS } from '../db/d1-batch';
 import { logD1BatchScope, logD1Meta } from '../db/d1-meta';
@@ -255,6 +256,7 @@ export async function runDailyRollup(env: Env, dateOverride?: string): Promise<R
 
 	await markChannelsDormantWithoutRecentActivity(db, DORMANT_INACTIVE_DAYS);
 
+	await pruneDailyRollupsOlderThanRetention(db);
 	const viewerSamplesPruned = await pruneViewerSamplesOlderThanRetention(db);
 
 	return {

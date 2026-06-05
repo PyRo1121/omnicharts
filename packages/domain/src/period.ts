@@ -3,8 +3,8 @@ export type RankingPeriod = '24h' | '7d' | '30d' | '90d';
 
 export const rankingPeriods = ['24h', '7d', '30d', '90d'] as const satisfies readonly RankingPeriod[];
 
-/** Shown in UI period selectors until Phase 4 retention (REM-022). */
-export const uiRankingPeriods = ['24h', '7d', '30d'] as const satisfies readonly RankingPeriod[];
+/** Shown in UI period selectors — Phase 4 adds `90d`. */
+export const uiRankingPeriods = ['24h', '7d', '30d', '90d'] as const satisfies readonly RankingPeriod[];
 
 export const DEFAULT_RANKING_PERIOD: RankingPeriod = '7d';
 
@@ -30,4 +30,16 @@ export function periodToDays(period: RankingPeriod): number {
 		case '90d':
 			return 90;
 	}
+}
+
+/** Honest UI note when rollup history is shorter than the selected ranking window. */
+export function periodCoverageNote(
+	period: RankingPeriod,
+	availableRollupDays: number | null
+): string | null {
+	if (availableRollupDays == null || availableRollupDays <= 0) return null;
+	const requested = periodToDays(period);
+	if (availableRollupDays >= requested) return null;
+	const label = availableRollupDays === 1 ? 'day' : 'days';
+	return `Only ${availableRollupDays} ${label} of rollup history available — metrics cover tracked days in the selected window.`;
 }

@@ -3,9 +3,9 @@ import { applyRollupPageCache } from '$lib/server/cache';
 import {
 	findChannelOnOtherPlatforms,
 	loadChannelDetail,
-	parseChannelPeriod,
 	resolveChannelSlugFromHistory
 } from '$lib/server/channel';
+import { resolvePeriodContext } from '$lib/server/period-context';
 import { parseUiPlatform, searchPlatformId } from '$lib/ui/platform.svelte';
 import { serverLoadContext } from '$lib/server/load-context';
 import type { PageServerLoad } from './$types';
@@ -15,7 +15,10 @@ export const load: PageServerLoad = async ({ fetch, params, url, setHeaders, pla
 
 	const ctx = serverLoadContext(fetch, cfPlatform);
 	const platformId = searchPlatformId(parseUiPlatform(url.searchParams.get('platform')));
-	const { period, periodNote } = parseChannelPeriod(url.searchParams.get('period'));
+	const { period, periodNote } = await resolvePeriodContext(
+		url.searchParams.get('period'),
+		ctx.db
+	);
 	let channel = await loadChannelDetail(ctx, params.slug, platformId, period);
 
 	if (channel.source === 'not_found') {

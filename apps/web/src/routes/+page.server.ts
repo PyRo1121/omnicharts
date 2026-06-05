@@ -3,7 +3,8 @@ import { isDevMockEnabled } from '$lib/server/dev-mock';
 import { serverLoadContext } from '$lib/server/load-context';
 import { loadKickOverview, loadOverview, loadYoutubeOverview } from '$lib/server/overview';
 import { trendingFromRankings } from '$lib/server/trending';
-import { parseUiPeriod, parseUiPlatform, type PlatformId } from '$lib/ui/platform.svelte';
+import { resolvePeriodContext } from '$lib/server/period-context';
+import { parseUiPlatform, type PlatformId } from '$lib/ui/platform.svelte';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ fetch, url, setHeaders, platform: cfPlatform }) => {
@@ -11,7 +12,10 @@ export const load: PageServerLoad = async ({ fetch, url, setHeaders, platform: c
 
 	const ctx = serverLoadContext(fetch, cfPlatform);
 
-	const { period, periodNote } = parseUiPeriod(url.searchParams.get('period'));
+	const { period, periodNote } = await resolvePeriodContext(
+		url.searchParams.get('period'),
+		ctx.db
+	);
 	const platform = parseUiPlatform(url.searchParams.get('platform'));
 	const mockEnabled = isDevMockEnabled(url.searchParams.get('demo'));
 

@@ -96,3 +96,4 @@ export {
 	type ResponseFormat,
 	type ResponseFormatError
 } from './response-format';
+export { getRollupCoverageDays } from './rollup-coverage';

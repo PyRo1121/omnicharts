@@ -105,7 +105,7 @@ Update the **Status** column as phases complete. Pre–Kick freeze gate: [23](./
 | Homepage MVP (Twitch) | **Shipped** — H1–H5, H7a, H8a/b, 7d+30d; H7b partial (count + link, top-5 deferred Phase 4) |
 | Kick + YouTube | **Shipped** — Phase 3 sign-off 2026-06-05 ([phase3-signoff](./audits/phase3-signoff.md)) |
 | CSV export | **Partial** — channel rankings + channel detail API/UI (Phase 4 slice 4.1) |
-| 90-day retention | Not started — UI hides `90d` until Phase 4 ([REM-022](./23-audit-remediation-plan.md)) |
+| 90-day retention | **Shipped** — Phase 4 slice 4.2 (`90d` UI + 90d rollup prune) |
 | Cloudflare prod | Not started — ingest requires Workers Paid ([ADR-004](./adr/0004-cloudflare-free-vs-paid.md)) |
 
 ### Phase 2 Twitch parity (shipped)

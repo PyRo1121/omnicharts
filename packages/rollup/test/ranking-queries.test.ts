@@ -32,4 +32,28 @@ describe('queryTopGamesByAverageViewers SQL eligibility', () => {
 		expect(capturedSql).toContain('eligible.game_category_id = gc.id');
 		expect(binds).toEqual(['twitch', '7', '7', 60, 20, 'twitch', '7', 60, 10]);
 	});
+
+	test('binds 90-day window for 90d rankings', async () => {
+		let binds: unknown[] = [];
+		const db = {
+			prepare() {
+				return {
+					bind(...args: unknown[]) {
+						binds = args;
+						return { all: async () => ({ results: [] }) };
+					}
+				};
+			}
+		} as unknown as D1Database;
+
+		const { queryTopChannelsByHoursWatched } = await import('../src/ranking-queries');
+		await queryTopChannelsByHoursWatched(db, {
+			platformId: 'kick',
+			days: 90,
+			limit: 20
+		});
+
+		expect(binds[0]).toBe('kick');
+		expect(binds[1]).toBe('90');
+	});
 });

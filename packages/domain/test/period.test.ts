@@ -2,8 +2,10 @@ import { describe, expect, test } from 'bun:test';
 import {
 	isRankingPeriod,
 	parseRankingPeriod,
+	periodCoverageNote,
 	periodToDays,
-	rankingPeriods
+	rankingPeriods,
+	uiRankingPeriods
 } from '../src/period';
 
 describe('ranking periods', () => {
@@ -27,5 +29,15 @@ describe('ranking periods', () => {
 		expect(periodToDays('7d')).toBe(7);
 		expect(periodToDays('30d')).toBe(30);
 		expect(periodToDays('90d')).toBe(90);
+	});
+
+	test('uiRankingPeriods exposes 90d in Phase 4', () => {
+		expect(uiRankingPeriods).toEqual(['24h', '7d', '30d', '90d']);
+	});
+
+	test('periodCoverageNote when history shorter than requested window', () => {
+		expect(periodCoverageNote('90d', 45)).toContain('45 days');
+		expect(periodCoverageNote('90d', 90)).toBeNull();
+		expect(periodCoverageNote('7d', null)).toBeNull();
 	});
 });

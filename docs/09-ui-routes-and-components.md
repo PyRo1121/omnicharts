@@ -55,7 +55,7 @@ HomePage
 | Prop | Type |
 |------|------|
 | `platform` | PlatformSlug |
-| `period` | `7d` \| `30d` |
+| `period` | `7d` \| `30d` \| `90d` |
 | `rows` | `{ rank, slug, displayName, avatarUrl, hoursWatched }[]` |
 
 ### TopCategoriesTable props
@@ -63,7 +63,7 @@ HomePage
 | Prop | Type |
 |------|------|
 | `platform` | PlatformSlug |
-| `period` | `7d` \| `30d` |
+| `period` | `7d` \| `30d` \| `90d` |
 | `rows` | `{ rank, slug, name, boxArtUrl, averageViewers }[]` |
 
 ---
@@ -73,7 +73,7 @@ HomePage
 ```
 ChannelPage
 ├── ChannelHeader             # avatar, name, platform badge, tracked_since
-├── PeriodSelector            # 7d | 30d
+├── PeriodSelector            # 24h | 7d | 30d | 90d
 ├── MetricCards               # HW, AV, PV, airtime, streams, follower Δ
 ├── ViewershipChart           # daily HW or AV (uPlot / Layer Cake)
 ├── RecentStreamsTable

@@ -12,8 +12,8 @@ export const platforms: { id: PlatformId; label: string }[] = [
 export const periods = ['24h', '7d', '30d', '90d'] as const;
 export type Period = (typeof periods)[number];
 
-/** Shown in period selectors until Phase 4 retention (REM-022). */
-export const uiPeriods = ['24h', '7d', '30d'] as const satisfies readonly Period[];
+/** Shown in period selectors — Phase 4 adds `90d`. */
+export const uiPeriods = ['24h', '7d', '30d', '90d'] as const satisfies readonly Period[];
 
 /** Active platform filter → ingest search `platform` param (Phase 2: `all` → Twitch data). */
 export function searchPlatformId(platform: PlatformId): Exclude<PlatformId, 'all'> {
@@ -53,13 +53,7 @@ export function routeWithPlatform(
 }
 
 export function parseUiPeriod(raw: string | null): { period: Period; periodNote: string | null } {
-	if (raw === '90d') {
-		return {
-			period: '30d',
-			periodNote: '90-day retention is not available yet — showing 30 days.'
-		};
-	}
-	if (raw && (uiPeriods as readonly string[]).includes(raw)) {
+	if (raw && (periods as readonly string[]).includes(raw)) {
 		return { period: raw as Period, periodNote: null };
 	}
 	return { period: '7d', periodNote: null };
@@ -131,11 +125,15 @@ export function channelRankingsEmptyMessage(
 	platformUnsupported: boolean,
 	platform: PlatformId,
 	hasRows: boolean,
-	source: DataSource
+	source: DataSource,
+	period?: Period
 ): string | null {
 	if (platformUnsupported) return phase3UnsupportedMessage(platform);
 	if (hasRows) return null;
 	if (source === 'unavailable') return 'Channel rankings unavailable — ingest not reachable.';
+	if (period === '90d') {
+		return 'No channel rollups yet for the 90-day window — rankings fill in as daily ingest accumulates history.';
+	}
 	return 'No channel rollups yet for this period.';
 }
 
@@ -143,11 +141,15 @@ export function gameRankingsEmptyMessage(
 	platformUnsupported: boolean,
 	platform: PlatformId,
 	hasRows: boolean,
-	source: DataSource
+	source: DataSource,
+	period?: Period
 ): string | null {
 	if (platformUnsupported) return phase3UnsupportedMessage(platform);
 	if (hasRows) return null;
 	if (source === 'unavailable') return 'Game rankings unavailable — ingest not reachable.';
+	if (period === '90d') {
+		return 'No game rollups yet for the 90-day window — rankings fill in as daily ingest accumulates history.';
+	}
 	return 'No game rollups yet for this period.';
 }
 

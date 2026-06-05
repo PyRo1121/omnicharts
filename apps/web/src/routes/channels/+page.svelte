@@ -58,7 +58,9 @@
 	<p class="mt-4 text-sm text-[var(--color-oc-text-muted)]">
 		{data.source === 'unavailable'
 			? 'Could not load rankings from ingest.'
-			: 'No channels ranked for this period yet.'}
+			: data.period === '90d'
+				? 'No channels ranked for the 90-day window yet — check back as daily rollups accumulate.'
+				: 'No channels ranked for this period yet.'}
 	</p>
 {/if}
 
@@ -87,7 +89,9 @@
 			: data.rows.length === 0
 				? data.source === 'unavailable'
 					? 'Could not load rankings from ingest.'
-					: 'No channels ranked for this period yet.'
+					: data.period === '90d'
+						? 'No channels ranked for the 90-day window yet — check back as daily rollups accumulate.'
+						: 'No channels ranked for this period yet.'
 				: null}
 	/>
 </div>

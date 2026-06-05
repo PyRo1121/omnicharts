@@ -19,6 +19,7 @@ export default defineConfig({
 			'test/public-http-edge.spec.ts',
 			'test/follower-snapshots.spec.ts',
 			'test/prune-samples.spec.ts',
+			'test/prune-rollups.spec.ts',
 			'test/search-channels.spec.ts',
 			'test/search-db.spec.ts',
 			'test/health-status.spec.ts',

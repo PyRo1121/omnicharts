@@ -9,8 +9,7 @@ vi.mock('$env/dynamic/private', () => ({
 describe('loadGameDetail', () => {
 	it('parseGamePeriod defaults to 7d', () => {
 		expect(parseGamePeriod('invalid')).toEqual({ period: '7d', periodNote: null });
-		expect(parseGamePeriod('90d').period).toBe('30d');
-		expect(parseGamePeriod('90d').periodNote).toContain('90-day');
+		expect(parseGamePeriod('90d')).toEqual({ period: '90d', periodNote: null });
 	});
 
 	it('maps live game payload', async () => {

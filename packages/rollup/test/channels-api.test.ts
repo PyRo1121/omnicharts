@@ -109,6 +109,21 @@ describe('buildRankingsChannelsResponse', () => {
 		});
 	});
 
+	it('queries 90-day rollups when period is 90d', async () => {
+		const spy = vi.spyOn(topChannels, 'getTopChannelsByHoursWatched').mockResolvedValue([]);
+
+		await buildRankingsChannelsResponse({} as D1Database, {
+			platform: 'youtube',
+			period: '90d',
+			limit: 20
+		});
+
+		expect(spy).toHaveBeenCalledWith(
+			{},
+			expect.objectContaining({ platformId: 'youtube', days: 90, limit: 20 })
+		);
+	});
+
 	it('uses platform-specific min viewers from env', async () => {
 		const spy = vi.spyOn(topChannels, 'getTopChannelsByHoursWatched').mockResolvedValue([]);
 

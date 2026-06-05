@@ -8,6 +8,7 @@ describe('parseRankingPeriod', () => {
 
 	it('accepts 24h, 7d, 30d, 90d', () => {
 		expect(parseRankingPeriod('30d')).toBe('30d');
+		expect(parseRankingPeriod('90d')).toBe('90d');
 	});
 
 	it('falls back unknown to 7d', () => {
@@ -19,6 +20,7 @@ describe('periodToDays', () => {
 	it('maps period tokens to day counts', () => {
 		expect(periodToDays('7d')).toBe(7);
 		expect(periodToDays('30d')).toBe(30);
+		expect(periodToDays('90d')).toBe(90);
 		expect(periodToDays('24h')).toBe(1);
 	});
 });

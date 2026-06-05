@@ -18,9 +18,8 @@ describe('loadChannelDetail', () => {
 		expect(parseChannelPeriod('30d')).toEqual({ period: '30d', periodNote: null });
 	});
 
-	it('parseChannelPeriod maps 90d to 30d with note', () => {
-		expect(parseChannelPeriod('90d').period).toBe('30d');
-		expect(parseChannelPeriod('90d').periodNote).toContain('90-day');
+	it('parseChannelPeriod passes through 90d', () => {
+		expect(parseChannelPeriod('90d')).toEqual({ period: '90d', periodNote: null });
 	});
 
 	it('resolveChannelSlugFromHistory returns canonical slug', async () => {

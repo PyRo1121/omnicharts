@@ -46,7 +46,8 @@
 			data.platformUnsupported,
 			data.platform,
 			channelRows.length > 0,
-			data.channelRankings.source
+			data.channelRankings.source,
+			data.period
 		)
 	);
 
@@ -55,7 +56,8 @@
 			data.platformUnsupported,
 			data.platform,
 			gameRows.length > 0,
-			data.gameRankings.source
+			data.gameRankings.source,
+			data.period
 		)
 	);
 

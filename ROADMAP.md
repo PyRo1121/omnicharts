@@ -93,7 +93,8 @@ Phase 2 = Twitch-only slice of the same loop. See [02-user-personas](./docs/02-u
 Plan: [28-phase4-plan](./docs/28-phase4-plan.md)
 
 - [x] **CSV export** on channel rankings + channel detail (`format=csv` API + UI links) — slice 4.1 shipped 2026-06-05
-- [ ] 90-day rollups; R2 Parquet cold path
+- [x] 90-day rollups (Phase 4 slice 4.2)
+- [ ] R2 Parquet cold path (Phase 4 slice 4.3)
 - [ ] Twitch VOD metadata backfill (tier-limited)
 - [ ] **2-channel compare** (7d/30d) — thin Compare Streamers
 - [ ] Agency CSV import for watchlists
