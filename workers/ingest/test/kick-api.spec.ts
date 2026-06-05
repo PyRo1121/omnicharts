@@ -136,4 +136,25 @@ describe('KickPublicApiClient', () => {
 		expect(streams).toHaveLength(1);
 		expect(streams[0]?.slug).toBe('seven');
 	});
+
+	it('throws when livestreams API returns non-OK', async () => {
+		const fetchMock = vi.fn().mockImplementation((url: string) => {
+			if (url.includes('id.kick.com')) {
+				return Promise.resolve(
+					new Response(JSON.stringify({ access_token: 'tok', expires_in: 3600 }), {
+						status: 200
+					})
+				);
+			}
+			return Promise.resolve(new Response('upstream error', { status: 503 }));
+		});
+		vi.stubGlobal('fetch', fetchMock);
+
+		const client = new KickPublicApiClient({
+			KICK_CLIENT_ID: 'id',
+			KICK_CLIENT_SECRET: 'secret'
+		} as Env);
+
+		await expect(client.getLivestreamsByCategoryId(1)).rejects.toThrow(/503/);
+	});
 });

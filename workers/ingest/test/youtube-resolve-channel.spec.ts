@@ -49,4 +49,11 @@ describe('fetchYoutubeChannelByQuery', () => {
 		const client = new YoutubeDataApiClient({ YOUTUBE_API_KEY: 'key' } as Env);
 		await expect(fetchYoutubeChannelByQuery(client, 'unknown-channel-xyz')).resolves.toBeNull();
 	});
+
+	it('returns null for empty query without API call', async () => {
+		const client = new YoutubeDataApiClient({ YOUTUBE_API_KEY: 'key' } as Env);
+		const byId = vi.spyOn(YoutubeDataApiClient.prototype, 'getChannelsByIds');
+		await expect(fetchYoutubeChannelByQuery(client, '   ')).resolves.toBeNull();
+		expect(byId).not.toHaveBeenCalled();
+	});
 });

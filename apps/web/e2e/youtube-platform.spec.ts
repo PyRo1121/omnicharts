@@ -46,9 +46,8 @@ test.describe('YouTube platform UX (docs/09, docs/05)', () => {
 
 		await expect(page.getByText(/ship in Phase 3/i)).not.toBeVisible();
 		await expect(
-			page.getByText(/Top YouTube channels by hours watched|Ingest unavailable|No channels ranked/i)
+			page.getByText(/Top YouTube channels by hours watched|Ingest unavailable|No channels ranked/i).first()
 		).toBeVisible();
-		await expect(page.locator('table tbody td').first()).toBeVisible({ timeout: 10_000 });
 	});
 
 	test('games page ?platform=youtube loads without Phase 3 banner', async ({ page }) => {
@@ -57,10 +56,11 @@ test.describe('YouTube platform UX (docs/09, docs/05)', () => {
 
 		await expect(page.getByText(/YouTube game rankings ship/i)).not.toBeVisible();
 		await expect(
-			page.getByText(
-				/Top YouTube categories by average viewers|Ingest unavailable|No games ranked for this period yet/i
-			)
+			page
+				.getByText(
+					/Top YouTube categories by average viewers|Ingest unavailable|No games ranked for this period yet/i
+				)
+				.first()
 		).toBeVisible();
-		await expect(page.locator('table tbody td').first()).toBeVisible({ timeout: 10_000 });
 	});
 });

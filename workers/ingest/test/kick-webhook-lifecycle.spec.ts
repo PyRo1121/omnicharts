@@ -6,7 +6,10 @@ import {
 	kickSessionRowId,
 	kickSessionRowIdFromChannelId
 } from '../src/kick/stream-fields';
-import { applyKickLivestreamStatusUpdated } from '../src/kick/webhook/lifecycle';
+import {
+	applyKickLivestreamStatusUpdated,
+	parseLivestreamStatusUpdated
+} from '../src/kick/webhook/lifecycle';
 import type { KickLivestreamStatusUpdatedEvent } from '../src/kick/webhook/types';
 
 const sampleStream = {
@@ -104,5 +107,48 @@ describe('kick webhook lifecycle vs poll session keys', () => {
 			expect.any(String)
 		);
 		closeStale.mockRestore();
+	});
+
+	it('applyKickLivestreamStatusUpdated closes sessions when stream goes offline', async () => {
+		const updates: string[] = [];
+		const db = {
+			prepare(sql: string) {
+				return {
+					bind: (...args: unknown[]) => ({
+						run: async () => {
+							if (sql.includes('UPDATE stream_sessions SET ended_at')) {
+								updates.push(String(args[0]));
+							}
+						},
+						first: async () => ({ id: 'kick-ch-42' })
+					})
+				};
+			}
+		} as unknown as D1Database;
+
+		await applyKickLivestreamStatusUpdated(
+			{ DB: db } as Env,
+			{
+				broadcaster: { user_id: 42, channel_slug: 'caster', channel_id: 99 },
+				channel_id: 99,
+				is_live: false,
+				ended_at: '2026-06-01T14:00:00Z'
+			}
+		);
+
+		expect(updates).toContain('2026-06-01T14:00:00Z');
+	});
+});
+
+describe('parseLivestreamStatusUpdated', () => {
+	it('returns null for malformed payloads', () => {
+		expect(parseLivestreamStatusUpdated(null)).toBeNull();
+		expect(parseLivestreamStatusUpdated({ broadcaster: {} })).toBeNull();
+		expect(
+			parseLivestreamStatusUpdated({
+				broadcaster: { user_id: 1, channel_slug: 'x' },
+				is_live: 'yes'
+			})
+		).toBeNull();
 	});
 });

@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import type { HelixStream } from '../src/twitch/helix';
 import { runTwitchPollBatch } from '../src/twitch/poll';
 import { D1_BATCH_MAX_STATEMENTS } from '../src/db/d1-batch';
-import { batchRecordLiveSamples, batchUpsertGameCategories } from '../src/db/twitch-live-batch';
+import { batchRecordLiveSamples, batchUpsertChannelsFromStreams, batchUpsertGameCategories } from '../src/db/twitch-live-batch';
 
 vi.mock('../src/twitch/helix', () => ({
 	TwitchHelixClient: class {
@@ -45,6 +45,122 @@ describe('batchUpsertGameCategories', () => {
 		expect(map.get('1')).toBe('twitch-game-1');
 		expect(prepare).toHaveBeenCalledTimes(1);
 		expect(prepare.mock.calls[0][0]).toContain('VALUES (?, ?, ?, ?, ?), (?, ?, ?, ?, ?)');
+	});
+
+	it('skips games with empty id and slugifies fallback name', async () => {
+		const run = vi.fn().mockResolvedValue({ success: true });
+		const prepare = vi.fn(() => ({ bind: vi.fn().mockReturnValue({ run }) }));
+		const db = { prepare, batch: vi.fn() } as unknown as D1Database;
+
+		const map = await batchUpsertGameCategories(db, [
+			{ id: '', name: 'Bad' },
+			{ id: '99', name: '!!!' }
+		]);
+
+		expect(map.get('99')).toBe('twitch-game-99');
+		expect(prepare).toHaveBeenCalledTimes(1);
+	});
+});
+
+describe('batchUpsertChannelsFromStreams', () => {
+	const stream: HelixStream = {
+		id: 's1',
+		user_id: '42',
+		user_login: 'streamer',
+		user_name: 'Streamer',
+		game_id: '10',
+		game_name: 'G',
+		title: 'T',
+		viewer_count: 100,
+		started_at: '2026-06-01T00:00:00Z',
+		type: 'live'
+	};
+
+	it('returns empty map for no streams', async () => {
+		expect(await batchUpsertChannelsFromStreams({} as D1Database, [], { minViewers: 5, promoteToTracked: true })).toEqual(
+			new Map()
+		);
+	});
+
+	it('inserts discovered channel and records sighting', async () => {
+		const batch = vi.fn(async () => []);
+		const prepare = vi.fn((sql: string) => ({
+			bind: () => ({
+				run: async () => ({ meta: { changes: 1 } }),
+				all: async () => ({ results: [] })
+			})
+		}));
+		const db = { prepare, batch } as unknown as D1Database;
+
+		const map = await batchUpsertChannelsFromStreams(db, [stream], {
+			minViewers: 5,
+			promoteToTracked: true
+		});
+		expect(map.get('42')).toBe('twitch-ch-42');
+		expect(batch).toHaveBeenCalled();
+	});
+
+	it('promotes dormant channel when viewer threshold met', async () => {
+		const prepare = vi.fn((sql: string) => ({
+			bind: () => ({
+				run: async () => ({ meta: { changes: 1 } }),
+				all: async () => {
+					if (sql.includes('platform_channel_id IN')) {
+						return {
+							results: [
+								{
+									id: 'twitch-ch-42',
+									slug: 'streamer',
+									ingest_state: 'dormant',
+									first_observed_at: '2026-01-01T00:00:00Z',
+									platform_channel_id: '42'
+								}
+							]
+						};
+					}
+					return { results: [] };
+				}
+			})
+		}));
+		const db = { prepare, batch: vi.fn(async () => []) } as unknown as D1Database;
+
+		await batchUpsertChannelsFromStreams(db, [stream], { minViewers: 5, promoteToTracked: true });
+		expect(prepare.mock.calls.some(([sql]) => String(sql).includes('INSERT INTO channels'))).toBe(true);
+	});
+
+	it('writes slug_history when existing twitch channel slug changes', async () => {
+		const prepare = vi.fn((sql: string) => ({
+			bind: () => ({
+				run: async () => ({ meta: { changes: 1 } }),
+				all: async () => {
+					if (sql.includes('platform_channel_id IN')) {
+						return {
+							results: [
+								{
+									id: 'twitch-ch-42',
+									slug: 'old-login',
+									ingest_state: 'tracked',
+									first_observed_at: '2026-01-01T00:00:00Z',
+									platform_channel_id: '42'
+								}
+							]
+						};
+					}
+					return { results: [] };
+				}
+			})
+		}));
+		const batch = vi.fn(async () => []);
+		const db = { prepare, batch } as unknown as D1Database;
+
+		await batchUpsertChannelsFromStreams(
+			db,
+			[{ ...stream, user_login: 'new-login' }],
+			{ minViewers: 5, promoteToTracked: false }
+		);
+
+		expect(batch).toHaveBeenCalled();
+		expect(prepare.mock.calls.some(([sql]) => String(sql).includes('slug_history'))).toBe(true);
 	});
 });
 

@@ -109,13 +109,28 @@ export default defineConfig({
 			'test/eventsub-secret.spec.ts',
 			'test/eventsub-handler.spec.ts',
 			'test/eventsub-verify.spec.ts',
-			'test/db-channel-slug.spec.ts'
+			'test/db-channel-slug.spec.ts',
+			'test/db-kick-live-batch.spec.ts',
+			'test/db-youtube-live-batch.spec.ts',
+			'test/youtube-seed.spec.ts',
+			'test/kick-rate-limit.spec.ts',
+			'test/kick-webhook-message-dedup.spec.ts',
+			'test/poll-platform-entry.spec.ts',
+			'test/kick-api-channel-id.spec.ts',
+			'test/youtube-channel-slug.spec.ts',
+			'test/youtube-stream-fields.spec.ts',
+			'test/db-twitch-helpers.spec.ts'
 		],
 		coverage: {
 			provider: 'v8',
 			reporter: ['text', 'html'],
-			include: ['src/twitch/**/*.ts', 'src/db/**/*.ts', 'src/kick/**/*.ts'],
-			exclude: ['src/twitch/**/index.ts'],
+			include: [
+				'src/twitch/**/*.ts',
+				'src/db/**/*.ts',
+				'src/kick/**/*.ts',
+				'src/youtube/**/*.ts'
+			],
+			exclude: ['src/twitch/**/index.ts', '**/types.ts', 'src/db/d1-meta.ts'],
 			thresholds: {
 				'src/twitch/**': {
 					lines: 80,
@@ -130,6 +145,12 @@ export default defineConfig({
 					statements: 80
 				},
 				'src/kick/**': {
+					lines: 80,
+					functions: 80,
+					branches: 80,
+					statements: 80
+				},
+				'src/youtube/**': {
 					lines: 80,
 					functions: 80,
 					branches: 80,

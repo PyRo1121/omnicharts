@@ -1,11 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
+import * as rollup from '@omnicharts/rollup';
 import {
 	findChannelOnOtherPlatforms,
 	loadChannelDetail,
 	parseChannelPeriod,
 	resolveChannelSlugFromHistory
 } from './channel';
-import { testLoadContext } from './test-helpers';
+import { testLoadContext, testLoadContextWithDb } from './test-helpers';
 
 vi.mock('$env/dynamic/private', () => ({
 	env: { INGEST_URL: 'http://ingest.test' }
@@ -29,6 +30,24 @@ describe('loadChannelDetail', () => {
 		});
 		const slug = await resolveChannelSlugFromHistory(testLoadContext(fetchFn as typeof fetch), 'oldname', 'twitch');
 		expect(slug).toBe('newname');
+	});
+
+	it('resolveChannelSlugFromHistory falls back to ingest when D1 throws', async () => {
+		vi.spyOn(rollup, 'resolveChannelSlug').mockRejectedValueOnce(
+			new Error('D1_ERROR: no such table: channels')
+		);
+		const db = {} as D1Database;
+		const fetchFn = vi.fn().mockResolvedValue({
+			ok: true,
+			json: async () => ({ slug: 'canonical', from_history: true })
+		});
+		const slug = await resolveChannelSlugFromHistory(
+			testLoadContextWithDb(fetchFn as typeof fetch, db),
+			'oldname',
+			'twitch'
+		);
+		expect(slug).toBe('canonical');
+		vi.restoreAllMocks();
 	});
 
 	it('maps live channel payload', async () => {

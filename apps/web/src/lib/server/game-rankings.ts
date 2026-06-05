@@ -97,7 +97,11 @@ export async function loadGameRankings(
 
 	if (ctx.db) {
 		try {
-			return await loadFromD1(ctx.db, platform, period, limit, ctx.cfEnv);
+			const load = await loadFromD1(ctx.db, platform, period, limit, ctx.cfEnv);
+			if (mockEnabled && load.rows.length === 0) {
+				return { source: 'mock', period, updatedAt: null, rows: topGames.slice(0, limit) };
+			}
+			return load;
 		} catch {
 			if (mockEnabled) {
 				return { source: 'mock', period, updatedAt: null, rows: topGames.slice(0, limit) };

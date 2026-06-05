@@ -7,7 +7,7 @@
 		"dev": "bun ../../scripts/dev/wrangler-decline-skills.ts && wrangler dev --test-scheduled --show-interactive-dev-session false",
 		"test": "node ../../scripts/dev/strip-test-noise.mjs",
 		"test:watch": "vitest",
-		"test:coverage": "vitest run --project unit --coverage",
+		"test:coverage": "vitest run --project unit --coverage && bun ../../scripts/verify/check-ingest-coverage-thresholds.ts",
 		"check": "tsc -p tsconfig.json",
 		"cf-typegen": "wrangler types"
 	},

@@ -13,7 +13,7 @@ export const load: PageServerLoad = async ({ fetch, params, url, setHeaders, pla
 	const game = await loadGameDetail(ctx, params.slug, platformId, period);
 
 	if (game.source === 'not_found') {
-		error(404, `Game not found on ${platformId}`);
+		error(404, { message: `Game not found on ${platformId}` });
 	}
 
 	return { game, periodNote };

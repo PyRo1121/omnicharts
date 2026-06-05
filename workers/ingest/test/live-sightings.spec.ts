@@ -44,4 +44,15 @@ describe('live-sightings promotion', () => {
 
 		expect(await countChannelLiveSightings14d(db, 'ch-1')).toBe(2);
 	});
+
+	it('countChannelLiveSightings14d returns 0 when row missing', async () => {
+		const db = {
+			prepare: () => ({
+				bind: () => ({
+					first: async () => null
+				})
+			})
+		} as unknown as D1Database;
+		expect(await countChannelLiveSightings14d(db, 'ch-1')).toBe(0);
+	});
 });

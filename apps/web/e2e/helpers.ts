@@ -28,6 +28,20 @@ export async function ingestReachable(): Promise<boolean> {
 	}
 }
 
+/** Health + rankings API — gates ingest-dependent 404/detail e2e. */
+export async function ingestRankingsReady(): Promise<boolean> {
+	if (!(await ingestReachable())) return false;
+	try {
+		const res = await fetch(
+			`${INGEST_URL}/v1/rankings/channels?platform=twitch&period=7d&limit=1`,
+			{ signal: AbortSignal.timeout(5000) }
+		);
+		return res.ok;
+	} catch {
+		return false;
+	}
+}
+
 type RankedItem = { slug?: string };
 
 export async function firstRankedSlug(

@@ -16,7 +16,8 @@ export default defineConfig({
 	},
 	projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 	webServer: {
-		command: 'bun run dev -- --port 4173 --host 127.0.0.1',
+		command:
+			'bun run wrangler d1 migrations apply omnicharts --local && bun run dev -- --port 4173 --host 127.0.0.1',
 		url: baseURL,
 		reuseExistingServer: false,
 		timeout: 120_000,

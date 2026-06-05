@@ -52,6 +52,16 @@ describe('resolveYoutubeLiveVideoId', () => {
 		expect(client.getUploadsPlaylistId).toHaveBeenCalledWith('UC-channel');
 		expect(client.getPlaylistItems).toHaveBeenCalledWith('UU-uploads', 15);
 	});
+
+	it('returns null when channel has no uploads playlist', async () => {
+		const client = {
+			getUploadsPlaylistId: vi.fn().mockResolvedValue(null),
+			getPlaylistItems: vi.fn()
+		} as unknown as YoutubeDataApiClient;
+
+		await expect(resolveYoutubeLiveVideoId(client, 'UC-channel')).resolves.toBeNull();
+		expect(client.getPlaylistItems).not.toHaveBeenCalled();
+	});
 });
 
 describe('setYoutubeLiveVideoId', () => {

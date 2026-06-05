@@ -66,4 +66,37 @@ describe('kick discover', () => {
 			expect.objectContaining({ scope: 'kick:discover:channels' })
 		);
 	});
+
+	it('runKickDiscovery paginates category list via next_cursor', async () => {
+		let categoriesCall = 0;
+		vi.spyOn(KickPublicApiClient.prototype, 'getCategoriesV2').mockImplementation(async () => {
+			categoriesCall += 1;
+			if (categoriesCall === 1) {
+				return {
+					data: [{ id: 1, name: 'A' }],
+					pagination: { next_cursor: 'page2' }
+				};
+			}
+			return {
+				data: [{ id: 2, name: 'B' }],
+				pagination: {}
+			};
+		});
+		vi.spyOn(KickPublicApiClient.prototype, 'getLivestreamsByCategoryId').mockResolvedValue([]);
+		vi.spyOn(kickDb, 'batchUpsertKickGameCategories').mockResolvedValue(new Map());
+		vi.spyOn(kickDb, 'batchUpsertKickChannelsFromLivestreams').mockResolvedValue(new Map());
+
+		const result = await runKickDiscovery(
+			{
+				KICK_CLIENT_ID: 'id',
+				KICK_CLIENT_SECRET: 'secret',
+				KICK_MIN_VIEWERS: '2',
+				DB: {} as D1Database
+			} as Env,
+			{ quick: true }
+		);
+
+		expect(result.categoryListPagesFetched).toBe(2);
+		expect(categoriesCall).toBe(2);
+	});
 });

@@ -100,7 +100,11 @@ export async function loadChannelRankings(
 
 	if (ctx.db) {
 		try {
-			return await loadFromD1(ctx.db, platform, period, limit, ctx.cfEnv);
+			const load = await loadFromD1(ctx.db, platform, period, limit, ctx.cfEnv);
+			if (mockEnabled && load.rows.length === 0) {
+				return { source: 'mock', period, updatedAt: null, rows: topChannels.slice(0, limit) };
+			}
+			return load;
 		} catch {
 			if (mockEnabled) {
 				return { source: 'mock', period, updatedAt: null, rows: topChannels.slice(0, limit) };

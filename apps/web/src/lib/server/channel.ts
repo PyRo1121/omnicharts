@@ -205,9 +205,13 @@ export async function resolveChannelSlugFromHistory(
 	platform: string
 ): Promise<string | null> {
 	if (ctx.db && (platform === 'twitch' || platform === 'kick' || platform === 'youtube')) {
-		const resolved = await resolveChannelSlug(ctx.db, { platform, slug });
-		if (resolved?.from_history && resolved.slug !== slug) return resolved.slug;
-		return null;
+		try {
+			const resolved = await resolveChannelSlug(ctx.db, { platform, slug });
+			if (resolved?.from_history && resolved.slug !== slug) return resolved.slug;
+			return null;
+		} catch {
+			/* platformProxy D1 may be empty — fall through to ingest HTTP */
+		}
 	}
 
 	const params = new URLSearchParams({ slug, platform });

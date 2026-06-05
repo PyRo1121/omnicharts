@@ -36,4 +36,16 @@ describe('pruneViewerSamplesOlderThanRetention', () => {
 		expect(pruned).toBe(VIEWER_SAMPLE_DELETE_BATCH_SIZE + 12);
 		expect(deleteCalls).toBe(2);
 	});
+
+	it('stops when first batch deletes zero rows', async () => {
+		const db = {
+			prepare: () => ({
+				bind: () => ({
+					run: async () => ({ meta: { changes: 0 } })
+				})
+			})
+		} as unknown as D1Database;
+
+		await expect(pruneViewerSamplesOlderThanRetention(db)).resolves.toBe(0);
+	});
 });
