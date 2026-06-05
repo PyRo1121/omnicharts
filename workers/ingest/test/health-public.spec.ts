@@ -15,10 +15,13 @@ function mockEnv(): Env {
 			};
 			return stmt;
 		},
-		async batch() {
+		async batch(stmts: unknown[]) {
+			expect(stmts).toHaveLength(6);
 			return [
 				{ results: [{ ok: 1 }] },
 				{ results: [{ n: 10 }] },
+				{ results: [{ n: 4 }] },
+				{ results: [{ n: 2 }] },
 				{ results: [{ n: 2 }] },
 				{ results: [{ max_sampled_at: new Date().toISOString() }] }
 			];
@@ -35,7 +38,9 @@ function mockEnv(): Env {
 describe('public health', () => {
 	it('buildPublicHealth omits detailed ingest fields', async () => {
 		const payload = await buildPublicHealth(mockEnv());
-		expect(payload.tracked_channels.twitch).toBe(10);
+		expect(payload.tracked_channels).toEqual({ twitch: 10, kick: 4, youtube: 2 });
+		expect(payload.kick).toBe('missing_credentials');
+		expect(payload.youtube).toBe('missing_credentials');
 		expect(payload.eventsub).toBe('not_configured');
 		expect(payload).not.toHaveProperty('ingest_state_counts');
 		expect(payload).not.toHaveProperty('ingest_lag_seconds');
@@ -46,6 +51,8 @@ describe('public health', () => {
 		expect(res.status).toBe(200);
 		const body = (await res.json()) as Record<string, unknown>;
 		expect(body).toHaveProperty('eventsub');
+		expect(body).toHaveProperty('kick');
+		expect(body).toHaveProperty('youtube');
 		expect(body).toHaveProperty('tracked_channels');
 		expect(body).not.toHaveProperty('ingest_state_counts');
 	});

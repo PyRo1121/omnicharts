@@ -3,7 +3,6 @@ import { buildIngestHealth, ingestHealthHttpStatus } from '../src/health/status'
 import { healthStatusFromLag } from '../src/health/operational-metrics';
 
 function mockEnv(overrides: Partial<Env> = {}): Env {
-	let batchCalls = 0;
 	const db = {
 		prepare(_sql: string) {
 			const stmt = {
@@ -16,15 +15,17 @@ function mockEnv(overrides: Partial<Env> = {}): Env {
 			};
 			return stmt;
 		},
-		async batch() {
-			batchCalls += 1;
-			if (batchCalls === 1) {
+		async batch(stmts: unknown[]) {
+			if (stmts.length === 4) {
 				return [
 					{ results: [{ ok: 1 }] },
 					{ results: [{ value: '2026-05-31T00:15:00.000Z' }] },
 					{ results: [{ ingest_state: 'tracked', n: 42 }] },
 					{ results: [{ value: '{"at":"2026-06-01T00:00:00.000Z"}' }] }
 				];
+			}
+			if (stmts.length === 2) {
+				return [{ results: [{ n: 5 }] }, { results: [{ n: 2 }] }];
 			}
 			return [
 				{ results: [{ n: 5 }] },
@@ -47,7 +48,9 @@ describe('buildIngestHealth', () => {
 		const payload = await buildIngestHealth(mockEnv());
 		expect(payload.status).toBe('ok');
 		expect(payload.last_rollup_at).toBe('2026-05-31T00:15:00.000Z');
-		expect(payload.tracked_channels.twitch).toBe(42);
+		expect(payload.tracked_channels).toEqual({ twitch: 42, kick: 5, youtube: 2 });
+		expect(payload.kick).toBe('missing_credentials');
+		expect(payload.youtube).toBe('missing_credentials');
 		expect(payload.ingest_state_counts.twitch.tracked).toBe(42);
 		expect(payload.channels_live).toBe(5);
 		expect(payload.discovery_new_24h).toBe(2);
