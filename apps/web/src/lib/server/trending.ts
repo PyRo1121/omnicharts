@@ -1,8 +1,5 @@
-import {
-	trendingSearches as fallbackTrendingSearches,
-	type ChannelRow,
-	type PlatformId
-} from '$lib/mock/home';
+import { trendingSearches as fallbackTrendingSearches, type ChannelRow } from '$lib/mock/home';
+import type { PlatformId } from '$lib/ui/platform.svelte';
 
 export type TrendingSearch = {
 	slug: string;

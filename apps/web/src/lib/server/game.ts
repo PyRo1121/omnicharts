@@ -8,7 +8,7 @@ import { getIngestBaseUrl } from '$lib/server/ingest';
 import type { ChannelDailyPoint } from '$lib/server/channel';
 import type { ServerLoadContext } from '$lib/server/load-context';
 import { webRankingEligibility } from '$lib/server/ranking-env';
-import { parseUiPeriod, type Period } from '$lib/mock/home';
+import { parseUiPeriod, type Period } from '$lib/ui/platform.svelte';
 
 export type GameTopChannelRow = {
 	rank: number;

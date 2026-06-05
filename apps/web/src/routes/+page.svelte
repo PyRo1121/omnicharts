@@ -4,7 +4,10 @@
 	import PeriodSelector from '$lib/components/ui/PeriodSelector.svelte';
 	import SearchChannels from '$lib/components/ui/SearchChannels.svelte';
 	import SectionHeader from '$lib/components/ui/SectionHeader.svelte';
-	import LeaderboardTable from '$lib/components/ui/LeaderboardTable.svelte';
+	import LeaderboardTable, {
+		channelLeaderboardRows,
+		gameLeaderboardRows
+	} from '$lib/components/ui/LeaderboardTable.svelte';
 	import LiveNowStrip from '$lib/components/ui/LiveNowStrip.svelte';
 	import DonationBanner from '$lib/components/ui/DonationBanner.svelte';
 	import {
@@ -12,48 +15,48 @@
 		platforms,
 		searchPlatformId,
 		platformQueryParam,
+		phase3UnsupportedMessage,
+		homeRankingsFootnote,
+		channelRankingsEmptyMessage,
+		gameRankingsEmptyMessage,
 		type Period,
 		type PlatformId
-	} from '$lib/mock/home';
+	} from '$lib/ui/platform.svelte';
 
 	let { data } = $props();
-
-	const isDemo = $derived(
-		data.channelRankings.source === 'mock' || data.gameRankings.source === 'mock'
-	);
 
 	const liveRollupPlatformName = $derived(
 		platforms.find((p) => p.id === searchPlatformId(data.platform))?.label ?? 'Twitch'
 	);
 
 	const channelRows = $derived(
-		data.platformUnsupported
-			? []
-			: data.channelRankings.rows.map((c) => ({
-					rank: c.rank,
-					href: `/channels/${c.slug}?platform=${c.platform}`,
-					primary: c.displayName,
-					imageUrl: c.avatarUrl,
-					imageAlt: c.displayName,
-					metric: c.metric,
-					metricLabel: c.metricLabel,
-					platform: c.platform
-				}))
+		data.platformUnsupported ? [] : channelLeaderboardRows(data.channelRankings.rows)
 	);
 
 	const gameRows = $derived(
-		data.platformUnsupported
-			? []
-			: data.gameRankings.rows.map((g) => ({
-					rank: g.rank,
-					href: `/games/${g.slug}?platform=${g.platform}`,
-					primary: g.name,
-					imageUrl: g.boxArtUrl,
-					imageAlt: g.name,
-					metric: g.metric,
-					metricLabel: g.metricLabel,
-					platform: g.platform
-				}))
+		data.platformUnsupported ? [] : gameLeaderboardRows(data.gameRankings.rows)
+	);
+
+	const footnoteMode = $derived(
+		homeRankingsFootnote(data.channelRankings.source, data.gameRankings.source)
+	);
+
+	const channelEmpty = $derived(
+		channelRankingsEmptyMessage(
+			data.platformUnsupported,
+			data.platform,
+			channelRows.length > 0,
+			data.channelRankings.source
+		)
+	);
+
+	const gameEmpty = $derived(
+		gameRankingsEmptyMessage(
+			data.platformUnsupported,
+			data.platform,
+			gameRows.length > 0,
+			data.gameRankings.source
+		)
 	);
 
 	function homeQuery(platform: PlatformId, period: Period): string {
@@ -106,8 +109,8 @@
 			</div>
 		</div>
 
-		<ul class="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-			{#if !data.platformUnsupported}
+		{#if !data.platformUnsupported}
+			<ul class="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
 				{#each data.overview.stats as stat (stat.label)}
 					<li
 						class="rounded-xl border border-[var(--color-oc-border-subtle)] bg-[var(--color-oc-bg-elevated)] px-4 py-3 oc-glow-accent"
@@ -115,7 +118,9 @@
 						<p class="text-[10px] uppercase tracking-wider text-[var(--color-oc-text-faint)]">
 							{stat.label}
 							{#if stat.source === 'mock'}
-								<span class="ml-1 rounded bg-[var(--color-oc-bg-card)] px-1 py-0.5 text-[9px] font-semibold uppercase text-[var(--color-oc-text-muted)]">
+								<span
+									class="ml-1 rounded bg-[var(--color-oc-bg-card)] px-1 py-0.5 text-[9px] font-semibold uppercase text-[var(--color-oc-text-muted)]"
+								>
 									demo
 								</span>
 							{/if}
@@ -126,8 +131,8 @@
 						<p class="mt-0.5 text-xs text-[var(--color-oc-text-muted)]">{stat.hint}</p>
 					</li>
 				{/each}
-			{/if}
-		</ul>
+			</ul>
+		{/if}
 	</div>
 </section>
 
@@ -140,28 +145,32 @@
 	{#if data.periodNote}
 		<p class="text-xs text-[var(--color-oc-text-faint)]">{data.periodNote}</p>
 	{/if}
-	<p class="text-xs text-[var(--color-oc-text-faint)]">
-		{#if isDemo}
-			<span
-				class="rounded border border-[var(--color-oc-border)] bg-[var(--color-oc-bg-elevated)] px-1.5 py-0.5 font-medium uppercase tracking-wide text-[var(--color-oc-text-muted)]"
-			>
-				demo
-			</span>
-			<span class="ml-1">design preview — add <code class="text-[10px]">?demo=1</code> or start ingest</span>
-		{:else if data.channelRankings.source === 'unavailable' || data.gameRankings.source === 'unavailable'}
-			Ingest unavailable — start <code class="text-[10px]">bun run dev:ingest</code> and run checkpoint for rollups
-		{:else if data.channelRankings.source === 'live' || data.gameRankings.source === 'live'}
-			Live {liveRollupPlatformName} rollups · {data.period}
-		{/if}
-	</p>
+	{#if footnoteMode}
+		<p class="text-xs text-[var(--color-oc-text-faint)]">
+			{#if footnoteMode === 'demo'}
+				<span
+					class="rounded border border-[var(--color-oc-border)] bg-[var(--color-oc-bg-elevated)] px-1.5 py-0.5 font-medium uppercase tracking-wide text-[var(--color-oc-text-muted)]"
+				>
+					demo
+				</span>
+				<span class="ml-1">
+					design preview — add <code class="text-[10px]">?demo=1</code> or start ingest
+				</span>
+			{:else if footnoteMode === 'unavailable'}
+				Ingest unavailable — start <code class="text-[10px]">bun run dev:ingest</code> and run checkpoint for
+				rollups
+			{:else}
+				Live {liveRollupPlatformName} rollups · {data.period}
+			{/if}
+		</p>
+	{/if}
 </div>
 
 {#if data.platformUnsupported}
 	<p
 		class="mt-4 rounded-lg border border-[var(--color-oc-border)] bg-[var(--color-oc-bg-elevated)] px-4 py-3 text-sm text-[var(--color-oc-text-muted)]"
 	>
-		{data.platform === 'kick' ? 'Kick' : 'YouTube'} rankings ship in Phase 3. Switch to Twitch for live
-		leaderboards.
+		{phase3UnsupportedMessage(data.platform)}
 	</p>
 {/if}
 
@@ -173,23 +182,12 @@
 					href="/channels?period={data.period}{platformQueryParam(data.platform)}"
 					class="text-xs font-medium text-[var(--color-oc-accent)] hover:underline"
 				>
-				>
 					View all →
 				</a>
 			{/snippet}
 		</SectionHeader>
 		<div class="mt-4">
-			<LeaderboardTable
-				rows={channelRows}
-				metricHeader="Hours watched"
-				emptyMessage={data.platformUnsupported
-					? `${data.platform === 'kick' ? 'Kick' : 'YouTube'} rankings ship in Phase 3. Switch to Twitch for live leaderboards.`
-					: channelRows.length === 0
-						? data.channelRankings.source === 'unavailable'
-							? 'Channel rankings unavailable — ingest not reachable.'
-							: 'No channel rollups yet for this period.'
-						: null}
-			/>
+			<LeaderboardTable rows={channelRows} metricHeader="Hours watched" emptyMessage={channelEmpty} />
 		</div>
 	</section>
 
@@ -200,23 +198,12 @@
 					href="/games?period={data.period}{platformQueryParam(data.platform)}"
 					class="text-xs font-medium text-[var(--color-oc-accent)] hover:underline"
 				>
-				>
 					View all →
 				</a>
 			{/snippet}
 		</SectionHeader>
 		<div class="mt-4">
-			<LeaderboardTable
-				rows={gameRows}
-				metricHeader="Avg viewers"
-				emptyMessage={data.platformUnsupported
-					? `${data.platform === 'kick' ? 'Kick' : 'YouTube'} rankings ship in Phase 3. Switch to Twitch for live leaderboards.`
-					: gameRows.length === 0
-						? data.gameRankings.source === 'unavailable'
-							? 'Game rankings unavailable — ingest not reachable.'
-							: 'No game rollups yet for this period.'
-						: null}
-			/>
+			<LeaderboardTable rows={gameRows} metricHeader="Avg viewers" emptyMessage={gameEmpty} />
 		</div>
 	</section>
 </div>

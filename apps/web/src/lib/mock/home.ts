@@ -1,4 +1,7 @@
-export type PlatformId = 'all' | 'twitch' | 'kick' | 'youtube';
+import type { PlatformId } from '$lib/ui/platform.svelte';
+
+export type { PlatformId };
+export type { Period } from '$lib/ui/platform.svelte';
 
 export type ChannelRow = {
 	rank: number;
@@ -19,99 +22,6 @@ export type GameRow = {
 	metric: string;
 	metricLabel: string;
 };
-
-/** Active platform filter → ingest search `platform` param (Phase 2: `all` → Twitch data). */
-export function searchPlatformId(platform: PlatformId): Exclude<PlatformId, 'all'> {
-	if (platform === 'kick' || platform === 'youtube') return platform;
-	return 'twitch';
-}
-
-export function parseUiPlatform(raw: string | null): PlatformId {
-	const normalized = raw?.trim().toLowerCase() ?? '';
-	if (normalized && platforms.some((p) => p.id === normalized)) return normalized as PlatformId;
-	return 'twitch';
-}
-
-export function platformLabel(platform: PlatformId): string {
-	return platforms.find((p) => p.id === platform)?.label ?? 'Twitch';
-}
-
-/** Copy for `/search` hero — scoped to active platform tab. */
-export function searchPageSubtitle(platform: PlatformId): string {
-	if (platform === 'all') {
-		return 'Find streamers by name or slug across Twitch, Kick, and YouTube.';
-	}
-	return `Find streamers by name or slug on ${platformLabel(platform)}.`;
-}
-
-export function platformQueryParam(platform: PlatformId): string {
-	if (platform === 'kick' || platform === 'youtube' || platform === 'all') {
-		return `&platform=${platform}`;
-	}
-	return '';
-}
-
-/** Append `?platform=` when non-default; optional extra query params. */
-export function routeWithPlatform(
-	path: string,
-	platform: PlatformId,
-	extra?: Record<string, string>
-): string {
-	const q = new URLSearchParams(extra);
-	if (platform === 'kick' || platform === 'youtube' || platform === 'all') {
-		q.set('platform', platform);
-	}
-	const qs = q.toString();
-	return qs ? `${path}?${qs}` : path;
-}
-
-type RankingsSource = 'live' | 'mock' | 'unavailable';
-
-/** Copy for `/channels` hero — scoped to active platform tab. */
-export function channelsPageSubtitle(platform: PlatformId, source: RankingsSource): string {
-	if (source === 'live') {
-		if (platform === 'kick') {
-			return 'Top Kick channels by hours watched (ingest rollups).';
-		}
-		if (platform === 'youtube') {
-			return 'Top YouTube channels by hours watched (ingest rollups).';
-		}
-		return 'Top Twitch channels by hours watched (ingest rollups).';
-	}
-	if (source === 'mock') {
-		return 'Design preview — sample leaderboard (?demo=1).';
-	}
-	if (source === 'unavailable') {
-		return 'Ingest unavailable — start dev:ingest and run twitch:checkpoint for live rankings.';
-	}
-	return 'No rollups for this period yet.';
-}
-
-export const platforms: { id: PlatformId; label: string }[] = [
-	{ id: 'all', label: 'All (Twitch default)' },
-	{ id: 'twitch', label: 'Twitch' },
-	{ id: 'kick', label: 'Kick' },
-	{ id: 'youtube', label: 'YouTube' }
-];
-
-export const periods = ['24h', '7d', '30d', '90d'] as const;
-export type Period = (typeof periods)[number];
-
-/** Shown in period selectors until Phase 4 retention (REM-022). */
-export const uiPeriods = ['24h', '7d', '30d'] as const satisfies readonly Period[];
-
-export function parseUiPeriod(raw: string | null): { period: Period; periodNote: string | null } {
-	if (raw === '90d') {
-		return {
-			period: '30d',
-			periodNote: '90-day retention is not available yet — showing 30 days.'
-		};
-	}
-	if (raw && (uiPeriods as readonly string[]).includes(raw)) {
-		return { period: raw as Period, periodNote: null };
-	}
-	return { period: '7d', periodNote: null };
-}
 
 export const heroStats = [
 	{ label: 'Channels tracked', value: '2.4M+', hint: 'Growing with ingest' },

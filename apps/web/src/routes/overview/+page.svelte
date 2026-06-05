@@ -1,30 +1,23 @@
 <script lang="ts">
 	import SectionHeader from '$lib/components/ui/SectionHeader.svelte';
 	import PlatformFilter from '$lib/components/ui/PlatformFilter.svelte';
-	import { platforms, type PlatformId } from '$lib/mock/home';
+	import {
+		platforms,
+		routeWithPlatform,
+		overviewPageSubtitle,
+		overviewTopGameLabel,
+		type PlatformId
+	} from '$lib/ui/platform.svelte';
 
 	let { data } = $props();
 
-	function overviewQuery(platform: PlatformId): string {
-		if (platform === 'twitch') return '/overview';
-		return `/overview?platform=${platform}`;
+	function overviewHref(platform: PlatformId): string {
+		return routeWithPlatform('/overview', platform);
 	}
 
+	const subtitle = $derived(overviewPageSubtitle(data.platform, data.source));
 	const rollupPlatformName = $derived(data.platform === 'kick' ? 'Kick' : 'YouTube');
-
-	const subtitle = $derived(
-		data.platform === 'kick' || data.platform === 'youtube'
-			? data.source === 'live'
-				? `${rollupPlatformName} rollup-backed counts when ingest has data.`
-				: data.source === 'mock'
-					? 'Design preview stats (?demo=1).'
-					: `${rollupPlatformName} ingest unavailable — start dev:ingest for rollup-backed overview.`
-			: data.source === 'live'
-				? 'Twitch ingest health and rollup-backed counts.'
-				: data.source === 'mock'
-					? 'Design preview stats (?demo=1).'
-					: 'Ingest unavailable — start dev:ingest for live overview.'
-	);
+	const topGameLabel = $derived(overviewTopGameLabel(data.platform));
 </script>
 
 <svelte:head>
@@ -34,7 +27,7 @@
 <SectionHeader title="Platform overview" {subtitle} />
 
 <div class="mt-4">
-	<PlatformFilter {platforms} value={data.platform} hrefFor={overviewQuery} />
+	<PlatformFilter {platforms} value={data.platform} hrefFor={overviewHref} />
 </div>
 
 {#if data.ingestStatus}
@@ -52,7 +45,9 @@
 				<p class="text-xs uppercase tracking-wider text-[var(--color-oc-text-faint)]">
 					{stat.label}
 					{#if stat.source === 'mock'}
-						<span class="ml-1 rounded bg-[var(--color-oc-bg-elevated)] px-1 py-0.5 text-[9px] font-semibold uppercase">
+						<span
+							class="ml-1 rounded bg-[var(--color-oc-bg-elevated)] px-1 py-0.5 text-[9px] font-semibold uppercase"
+						>
 							demo
 						</span>
 					{/if}
@@ -75,7 +70,7 @@
 		{/if}
 		{#if data.topGameName}
 			<p class="text-sm text-[var(--color-oc-text-muted)]">
-				Top {data.platform === 'kick' ? 'category' : 'game'} (7d):
+				Top {topGameLabel} (7d):
 				<span class="font-medium text-[var(--color-oc-text)]">{data.topGameName}</span>
 			</p>
 		{/if}

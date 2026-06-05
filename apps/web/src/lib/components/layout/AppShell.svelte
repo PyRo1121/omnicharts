@@ -5,7 +5,7 @@
 	import Sidebar from './Sidebar.svelte';
 	import TopBar from './TopBar.svelte';
 	import Logo from '$lib/components/brand/Logo.svelte';
-	import { parseUiPlatform, routeWithPlatform } from '$lib/mock/home';
+	import { parseUiPlatform, routeWithPlatform } from '$lib/ui/platform.svelte';
 
 	interface Props {
 		children: Snippet;

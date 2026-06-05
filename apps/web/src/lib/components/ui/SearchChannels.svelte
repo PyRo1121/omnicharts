@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import type { PlatformId } from '$lib/mock/home';
+	import type { PlatformId } from '$lib/ui/platform.svelte';
 	import { debounce } from '$lib/utils/debounce';
 
 	interface Trending {

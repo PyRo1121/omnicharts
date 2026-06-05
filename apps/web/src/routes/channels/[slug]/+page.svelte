@@ -4,7 +4,7 @@
 	import SectionHeader from '$lib/components/ui/SectionHeader.svelte';
 	import PeriodSelector from '$lib/components/ui/PeriodSelector.svelte';
 	import { ingestStateLabel } from '$lib/ingest-state-label';
-	import { uiPeriods, type Period } from '$lib/mock/home';
+	import { uiPeriods, type Period } from '$lib/ui/platform.svelte';
 
 	let { data } = $props();
 	const ch = $derived(data.channel);

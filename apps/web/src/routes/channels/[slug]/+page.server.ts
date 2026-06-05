@@ -6,7 +6,7 @@ import {
 	parseChannelPeriod,
 	resolveChannelSlugFromHistory
 } from '$lib/server/channel';
-import { parseUiPlatform, searchPlatformId } from '$lib/mock/home';
+import { parseUiPlatform, searchPlatformId } from '$lib/ui/platform.svelte';
 import { serverLoadContext } from '$lib/server/load-context';
 import type { PageServerLoad } from './$types';
 

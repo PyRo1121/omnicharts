@@ -4,30 +4,19 @@
 	import LeaderboardTable from '$lib/components/ui/LeaderboardTable.svelte';
 	import PeriodSelector from '$lib/components/ui/PeriodSelector.svelte';
 	import PlatformFilter from '$lib/components/ui/PlatformFilter.svelte';
+	import { channelLeaderboardRows } from '$lib/components/ui/LeaderboardTable.svelte';
 	import {
+		channelsPageSubtitle,
 		uiPeriods,
 		platforms,
 		routeWithPlatform,
-		channelsPageSubtitle,
 		type Period,
 		type PlatformId
-	} from '$lib/mock/home';
+	} from '$lib/ui/platform.svelte';
 
 	let { data } = $props();
 
-	const rows = $derived(
-		data.rows.map((c) => ({
-			rank: c.rank,
-			href: `/channels/${c.slug}?platform=${c.platform}`,
-			primary: c.displayName,
-			imageUrl: c.avatarUrl,
-			imageAlt: c.displayName,
-			metric: c.metric,
-			metricLabel: c.metricLabel,
-			platform: c.platform
-		}))
-	);
-
+	const rows = $derived(channelLeaderboardRows(data.rows));
 	const subtitle = $derived(channelsPageSubtitle(data.platform, data.source));
 
 	function platformHref(id: PlatformId): string {

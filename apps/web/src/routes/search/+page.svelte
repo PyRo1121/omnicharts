@@ -9,7 +9,7 @@
 		searchPageSubtitle,
 		searchPlatformId,
 		type PlatformId
-	} from '$lib/mock/home';
+	} from '$lib/ui/platform.svelte';
 
 	let { data } = $props();
 

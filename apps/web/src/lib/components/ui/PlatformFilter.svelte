@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { cn } from '$lib/utils/cn';
-	import type { PlatformId } from '$lib/mock/home';
+	import type { PlatformId } from '$lib/ui/platform.svelte';
 
 	interface Props {
 		platforms: { id: PlatformId; label: string }[];
@@ -18,16 +18,11 @@
 	};
 </script>
 
-<div
-	class="flex flex-wrap gap-2"
-	role="tablist"
-	aria-label="Platform"
->
+<nav class="flex flex-wrap gap-2" aria-label="Platform">
 	{#each platforms as p (p.id)}
 		<a
 			href={hrefFor(p.id)}
-			role="tab"
-			aria-selected={value === p.id}
+			aria-current={value === p.id ? 'page' : undefined}
 			class={cn(
 				'inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors',
 				value === p.id
@@ -39,4 +34,4 @@
 			{p.label}
 		</a>
 	{/each}
-</div>
+</nav>

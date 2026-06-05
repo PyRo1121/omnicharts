@@ -6,7 +6,7 @@ import {
 	routeWithPlatform,
 	searchPageSubtitle,
 	searchPlatformId
-} from '$lib/mock/home';
+} from '$lib/ui/platform.svelte';
 
 describe('parseUiPlatform', () => {
 	it.each([

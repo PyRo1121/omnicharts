@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import Logo from '$lib/components/brand/Logo.svelte';
-	import { parseUiPlatform, routeWithPlatform } from '$lib/mock/home';
+	import { parseUiPlatform, routeWithPlatform } from '$lib/ui/platform.svelte';
 	import { cn } from '$lib/utils/cn';
 
 	const nav = [

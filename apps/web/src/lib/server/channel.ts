@@ -5,7 +5,7 @@ import {
 } from '@omnicharts/rollup';
 import { getIngestBaseUrl } from '$lib/server/ingest';
 import type { ServerLoadContext } from '$lib/server/load-context';
-import { parseUiPeriod, type Period } from '$lib/mock/home';
+import { parseUiPeriod, type Period } from '$lib/ui/platform.svelte';
 
 export type ChannelDailyPoint = {
 	date: string;

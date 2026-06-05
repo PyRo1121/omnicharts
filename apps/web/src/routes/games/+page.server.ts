@@ -2,7 +2,7 @@ import { applyRollupPageCache } from '$lib/server/cache';
 import { isDevMockEnabled } from '$lib/server/dev-mock';
 import { serverLoadContext } from '$lib/server/load-context';
 import { loadGameRankings } from '$lib/server/game-rankings';
-import { parseUiPeriod, parseUiPlatform, type PlatformId } from '$lib/mock/home';
+import { parseUiPeriod, parseUiPlatform, type PlatformId } from '$lib/ui/platform.svelte';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ fetch, url, setHeaders, platform: cfPlatform }) => {

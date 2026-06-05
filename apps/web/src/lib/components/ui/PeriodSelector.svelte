@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { cn } from '$lib/utils/cn';
-	import type { Period } from '$lib/mock/home';
+	import type { Period } from '$lib/ui/platform.svelte';
 
 	interface Props {
 		periods: readonly Period[];
@@ -18,7 +18,11 @@
 	};
 </script>
 
-<div class="inline-flex rounded-lg border border-[var(--color-oc-border)] bg-[var(--color-oc-bg-elevated)] p-0.5">
+<div
+	class="inline-flex rounded-lg border border-[var(--color-oc-border)] bg-[var(--color-oc-bg-elevated)] p-0.5"
+	role="group"
+	aria-label="Time period"
+>
 	{#each periods as p (p)}
 		<button
 			type="button"

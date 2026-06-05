@@ -4,7 +4,7 @@ import { serverLoadContext } from '$lib/server/load-context';
 import { loadChannelRankings } from '$lib/server/rankings';
 import { trendingFromRankings } from '$lib/server/trending';
 import { isDevMockEnabled } from '$lib/server/dev-mock';
-import { parseUiPlatform, searchPlatformId } from '$lib/mock/home';
+import { parseUiPlatform, searchPlatformId } from '$lib/ui/platform.svelte';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ url, fetch, setHeaders, platform: cfPlatform }) => {
