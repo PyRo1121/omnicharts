@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import SectionHeader from '$lib/components/ui/SectionHeader.svelte';
 	import PlatformFilter from '$lib/components/ui/PlatformFilter.svelte';
 	import { platforms, type PlatformId } from '$lib/mock/home';
@@ -9,10 +8,6 @@
 	function overviewQuery(platform: PlatformId): string {
 		if (platform === 'twitch') return '/overview';
 		return `/overview?platform=${platform}`;
-	}
-
-	function onPlatformChange(id: PlatformId) {
-		goto(overviewQuery(id), { keepFocus: true, noScroll: true });
 	}
 
 	const rollupPlatformName = $derived(data.platform === 'kick' ? 'Kick' : 'YouTube');
@@ -39,7 +34,7 @@
 <SectionHeader title="Platform overview" {subtitle} />
 
 <div class="mt-4">
-	<PlatformFilter {platforms} value={data.platform} onchange={onPlatformChange} />
+	<PlatformFilter {platforms} value={data.platform} hrefFor={overviewQuery} />
 </div>
 
 {#if data.ingestStatus}

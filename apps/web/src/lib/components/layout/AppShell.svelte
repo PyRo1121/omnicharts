@@ -1,9 +1,11 @@
 <script lang="ts">
+	import { page } from '$app/stores';
 	import type { Snippet } from 'svelte';
 	import Footer from './Footer.svelte';
 	import Sidebar from './Sidebar.svelte';
 	import TopBar from './TopBar.svelte';
 	import Logo from '$lib/components/brand/Logo.svelte';
+	import { parseUiPlatform, routeWithPlatform } from '$lib/mock/home';
 
 	interface Props {
 		children: Snippet;
@@ -11,6 +13,8 @@
 	}
 
 	let { children, topbar }: Props = $props();
+
+	const activePlatform = $derived(parseUiPlatform($page.url.searchParams.get('platform')));
 </script>
 
 <div class="flex min-h-dvh bg-[var(--color-oc-bg)]">
@@ -24,8 +28,12 @@
 		>
 			<Logo compact />
 			<nav class="flex gap-3 text-xs font-medium text-[var(--color-oc-text-muted)]" aria-label="Mobile">
-				<a href="/channels" class="hover:text-[var(--color-oc-text)]">Channels</a>
-				<a href="/games" class="hover:text-[var(--color-oc-text)]">Games</a>
+				<a href={routeWithPlatform('/channels', activePlatform)} class="hover:text-[var(--color-oc-text)]"
+					>Channels</a
+				>
+				<a href={routeWithPlatform('/games', activePlatform)} class="hover:text-[var(--color-oc-text)]"
+					>Games</a
+				>
 			</nav>
 		</div>
 

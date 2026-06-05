@@ -21,11 +21,8 @@
 		}))
 	);
 
-	function onPlatformChange(id: PlatformId) {
-		goto(routeWithPlatform('/games', id, { period: data.period }), {
-			keepFocus: true,
-			noScroll: true
-		});
+	function platformHref(id: PlatformId): string {
+		return routeWithPlatform('/games', id, { period: data.period });
 	}
 
 	function onPeriodChange(p: Period) {
@@ -56,7 +53,7 @@
 />
 
 <div class="mt-4">
-	<PlatformFilter {platforms} value={data.platform} onchange={onPlatformChange} />
+	<PlatformFilter {platforms} value={data.platform} hrefFor={platformHref} />
 </div>
 
 {#if data.platformUnsupported}

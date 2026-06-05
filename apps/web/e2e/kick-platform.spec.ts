@@ -52,14 +52,36 @@ test.describe('Kick platform UX (docs/09, docs/16)', () => {
 		await expect(page.getByText(/Channels tracked/i)).toBeVisible();
 	});
 
-	test('overview ?platform=youtube shows YouTube banner', async ({ page }) => {
+	test('overview ?platform=youtube selects YouTube tab with platform copy', async ({ page }) => {
 		const res = await page.goto('/overview?platform=youtube');
 		expect(res?.status()).toBe(200);
 		await expect(page.getByRole('heading', { name: 'Platform overview' })).toBeVisible();
-		await expect(
-			page.getByText(/YouTube overview cards ship when YouTube ingest is live/i).first()
-		).toBeVisible();
 		await expect(page.getByRole('tab', { name: 'YouTube' })).toHaveAttribute('aria-selected', 'true');
+		await expect(
+			page.getByText(/YouTube (rollup-backed counts|ingest unavailable)/i).first()
+		).toBeVisible();
+	});
+
+	test('homepage ?platform=youtube selects YouTube tab and leaderboard shell', async ({ page }) => {
+		const res = await page.goto('/?platform=youtube');
+		expect(res?.status()).toBe(200);
+		await expect(page.getByRole('tab', { name: 'YouTube' })).toHaveAttribute('aria-selected', 'true');
+		await expect(page.getByRole('heading', { name: 'Top streamers' })).toBeVisible();
+	});
+
+	test('channels page ?platform=youtube selects YouTube tab', async ({ page }) => {
+		const res = await page.goto('/channels?platform=youtube');
+		expect(res?.status()).toBe(200);
+		await expect(page.getByRole('tab', { name: 'YouTube' })).toHaveAttribute('aria-selected', 'true');
+	});
+
+	test('games page ?platform=youtube shows YouTube copy', async ({ page }) => {
+		const res = await page.goto('/games?platform=youtube');
+		expect(res?.status()).toBe(200);
+		await expect(page.getByRole('tab', { name: 'YouTube' })).toHaveAttribute('aria-selected', 'true');
+		await expect(
+			page.getByText(/Top YouTube categories|Ingest unavailable/i).first()
+		).toBeVisible();
 	});
 
 	test('search page accepts platform=kick query param', async ({ page }) => {
@@ -69,31 +91,44 @@ test.describe('Kick platform UX (docs/09, docs/16)', () => {
 		await expect(page.locator('#channel-search')).toBeVisible();
 	});
 
-	test('homepage ?platform=youtube shows Phase 3 banner and empty leaderboard shell', async ({
-		page
-	}) => {
-		const res = await page.goto('/?platform=youtube');
-		expect(res?.status()).toBe(200);
-		await expect(page.getByText(/YouTube rankings ship in Phase 3/i).first()).toBeVisible();
-		await expect(page.locator('table tbody td').filter({ hasText: /Phase 3/i }).first()).toBeVisible();
-	});
-
-	test('channels page ?platform=youtube shows empty table shell', async ({ page }) => {
-		const res = await page.goto('/channels?platform=youtube');
-		expect(res?.status()).toBe(200);
-		await expect(page.locator('table tbody td').filter({ hasText: /Phase 3/i }).first()).toBeVisible();
-	});
-
-	test('games page ?platform=youtube shows unsupported message', async ({ page }) => {
-		const res = await page.goto('/games?platform=youtube');
-		expect(res?.status()).toBe(200);
-		await expect(page.getByText(/YouTube game rankings ship/i).first()).toBeVisible();
-	});
-
 	test('search page subtitle reflects platform=kick', async ({ page }) => {
 		const res = await page.goto('/search?platform=kick');
 		expect(res?.status()).toBe(200);
 		await expect(page.getByText(/Find streamers by name or slug on Kick/i)).toBeVisible();
+	});
+
+	test('sidebar nav preserves ?platform=kick across directory pages', async ({ page }) => {
+		await page.setViewportSize({ width: 1280, height: 720 });
+		await page.goto('/channels?platform=kick');
+		await expect(page.getByRole('tab', { name: 'Kick' })).toHaveAttribute('aria-selected', 'true');
+		await expect(
+			page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Games' })
+		).toHaveAttribute('href', /platform=kick/);
+
+		await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Games' }).click();
+		await expect(page).toHaveURL(/\/games\?.*platform=kick/);
+		await expect(page.getByRole('tab', { name: 'Kick' })).toHaveAttribute('aria-selected', 'true');
+
+		await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Overview' }).click();
+		await expect(page).toHaveURL(/\/overview\?.*platform=kick/);
+		await expect(page.getByRole('tab', { name: 'Kick' })).toHaveAttribute('aria-selected', 'true');
+	});
+
+	test('platform filter on channels updates URL and tab', async ({ page }) => {
+		await page.goto('/channels');
+		await expect(page.getByRole('tab', { name: 'Twitch' })).toHaveAttribute('aria-selected', 'true');
+
+		await page.getByRole('tablist', { name: 'Platform' }).getByRole('tab', { name: 'Kick' }).click();
+		await expect(page).toHaveURL(/\/channels\?.*platform=kick/);
+		await expect(page.getByRole('tab', { name: 'Kick' })).toHaveAttribute('aria-selected', 'true');
+	});
+
+	test('search page shows PlatformFilter synced with URL', async ({ page }) => {
+		await page.goto('/search?platform=kick');
+		await expect(page.getByRole('tab', { name: 'Kick' })).toHaveAttribute('aria-selected', 'true');
+		await page.getByRole('tablist', { name: 'Platform' }).getByRole('tab', { name: 'Twitch' }).click();
+		await expect(page).not.toHaveURL(/platform=kick/);
+		await expect(page.getByRole('tab', { name: 'Twitch' })).toHaveAttribute('aria-selected', 'true');
 	});
 
 	test('kick search returns results when ingest has kick channels', async ({ page }) => {

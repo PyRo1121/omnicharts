@@ -65,8 +65,8 @@
 		return `/?${q}`;
 	}
 
-	function onPlatformChange(id: PlatformId) {
-		goto(homeQuery(id, data.period), { keepFocus: true, noScroll: true });
+	function platformHref(id: PlatformId): string {
+		return homeQuery(id, data.period);
 	}
 
 	function onPeriodChange(p: Period) {
@@ -101,7 +101,7 @@
 			</p>
 
 			<div class="mt-6 flex flex-col gap-4">
-				<PlatformFilter {platforms} value={data.platform} onchange={onPlatformChange} />
+				<PlatformFilter {platforms} value={data.platform} hrefFor={platformHref} />
 				<SearchChannels trending={data.trending} platform={searchPlatformId(data.platform)} />
 			</div>
 		</div>

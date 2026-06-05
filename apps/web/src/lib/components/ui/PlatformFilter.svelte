@@ -5,10 +5,10 @@
 	interface Props {
 		platforms: { id: PlatformId; label: string }[];
 		value: PlatformId;
-		onchange?: (id: PlatformId) => void;
+		hrefFor: (id: PlatformId) => string;
 	}
 
-	let { platforms, value, onchange }: Props = $props();
+	let { platforms, value, hrefFor }: Props = $props();
 
 	const dotClass: Record<PlatformId, string> = {
 		all: 'bg-[var(--color-oc-accent)]',
@@ -24,8 +24,8 @@
 	aria-label="Platform"
 >
 	{#each platforms as p (p.id)}
-		<button
-			type="button"
+		<a
+			href={hrefFor(p.id)}
 			role="tab"
 			aria-selected={value === p.id}
 			class={cn(
@@ -34,10 +34,9 @@
 					? 'border-[var(--color-oc-accent)] bg-[color-mix(in_oklab,var(--color-oc-accent)_12%,transparent)] text-[var(--color-oc-text)]'
 					: 'border-[var(--color-oc-border)] bg-[var(--color-oc-bg-card)] text-[var(--color-oc-text-muted)] hover:border-[var(--color-oc-border)] hover:bg-[var(--color-oc-bg-hover)] hover:text-[var(--color-oc-text)]'
 			)}
-			onclick={() => onchange?.(p.id)}
 		>
 			<span class={cn('size-2 rounded-full', dotClass[p.id])} aria-hidden="true"></span>
 			{p.label}
-		</button>
+		</a>
 	{/each}
 </div>

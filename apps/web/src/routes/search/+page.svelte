@@ -2,7 +2,14 @@
 	import AvatarImage from '$lib/components/ui/AvatarImage.svelte';
 	import SectionHeader from '$lib/components/ui/SectionHeader.svelte';
 	import SearchChannels from '$lib/components/ui/SearchChannels.svelte';
-	import { searchPageSubtitle, searchPlatformId } from '$lib/mock/home';
+	import PlatformFilter from '$lib/components/ui/PlatformFilter.svelte';
+	import {
+		platforms,
+		routeWithPlatform,
+		searchPageSubtitle,
+		searchPlatformId,
+		type PlatformId
+	} from '$lib/mock/home';
 
 	let { data } = $props();
 
@@ -11,6 +18,12 @@
 		kick: 'Kick',
 		youtube: 'YouTube'
 	};
+
+	function platformHref(id: PlatformId): string {
+		const extra: Record<string, string> = {};
+		if (data.q.trim()) extra.q = data.q.trim();
+		return routeWithPlatform('/search', id, extra);
+	}
 </script>
 
 <svelte:head>
@@ -19,8 +32,12 @@
 
 <SectionHeader title="Search channels" subtitle={searchPageSubtitle(data.platform)} />
 
+<div class="mt-4">
+	<PlatformFilter {platforms} value={data.platform} hrefFor={platformHref} />
+</div>
+
 <div class="mt-6 max-w-xl">
-	{#key data.q}
+	{#key `${data.q}-${data.platform}`}
 		<SearchChannels
 			trending={data.trending}
 			platform={searchPlatformId(

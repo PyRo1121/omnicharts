@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import Logo from '$lib/components/brand/Logo.svelte';
+	import { parseUiPlatform, routeWithPlatform } from '$lib/mock/home';
 	import { cn } from '$lib/utils/cn';
 
 	const nav = [
@@ -15,6 +16,8 @@
 		if (href === '/') return pathname === '/';
 		return pathname === href || pathname.startsWith(href + '/');
 	}
+
+	const activePlatform = $derived(parseUiPlatform($page.url.searchParams.get('platform')));
 </script>
 
 <aside
@@ -27,7 +30,7 @@
 	<nav class="flex flex-1 flex-col gap-1 p-3" aria-label="Main">
 		{#each nav as item (item.href)}
 			<a
-				href={item.href}
+				href={routeWithPlatform(item.href, activePlatform)}
 				class={cn(
 					'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
 					isActive(item.href, $page.url.pathname)

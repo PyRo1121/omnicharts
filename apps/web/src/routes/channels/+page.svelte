@@ -3,7 +3,15 @@
 	import SectionHeader from '$lib/components/ui/SectionHeader.svelte';
 	import LeaderboardTable from '$lib/components/ui/LeaderboardTable.svelte';
 	import PeriodSelector from '$lib/components/ui/PeriodSelector.svelte';
-	import { uiPeriods, platformQueryParam, type Period } from '$lib/mock/home';
+	import PlatformFilter from '$lib/components/ui/PlatformFilter.svelte';
+	import {
+		uiPeriods,
+		platforms,
+		routeWithPlatform,
+		channelsPageSubtitle,
+		type Period,
+		type PlatformId
+	} from '$lib/mock/home';
 
 	let { data } = $props();
 
@@ -20,8 +28,14 @@
 		}))
 	);
 
+	const subtitle = $derived(channelsPageSubtitle(data.platform, data.source));
+
+	function platformHref(id: PlatformId): string {
+		return routeWithPlatform('/channels', id, { period: data.period });
+	}
+
 	function onPeriodChange(p: Period) {
-		goto(`/channels?period=${p}${platformQueryParam(data.platform)}`, {
+		goto(routeWithPlatform('/channels', data.platform, { period: p }), {
 			keepFocus: true,
 			noScroll: true
 		});
@@ -32,16 +46,11 @@
 	<title>Top Channels · OmniCharts</title>
 </svelte:head>
 
-<SectionHeader
-	title="Channels"
-	subtitle={data.source === 'live'
-		? 'Top Twitch channels by hours watched (ingest rollups).'
-		: data.source === 'mock'
-			? 'Design preview — sample leaderboard (?demo=1).'
-			: data.source === 'unavailable'
-				? 'Ingest unavailable — start dev:ingest and run twitch:checkpoint for live rankings.'
-				: 'No rollups for this period yet.'}
-/>
+<SectionHeader title="Channels" {subtitle} />
+
+<div class="mt-4">
+	<PlatformFilter {platforms} value={data.platform} hrefFor={platformHref} />
+</div>
 
 {#if data.platformUnsupported}
 	<p class="mt-4 text-sm text-[var(--color-oc-text-muted)]">
