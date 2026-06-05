@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { testEnv } from './helpers';
 
 vi.mock('../src/twitch/enrich-profiles', () => ({
 	enrichFollowersBeforeRollup: vi.fn().mockResolvedValue(undefined),
@@ -20,8 +21,8 @@ function mockDbForRollup(
 	}[],
 	opts?: { followerCount?: number; priorSnapshot?: number },
 ) {
-	const channelRollups: unknown[] = [];
-	const gameRollups: unknown[] = [];
+	const channelRollups: unknown[][] = [];
+	const gameRollups: unknown[][] = [];
 	let metadataWritten = false;
 	let pruneCalls = 0;
 
@@ -120,7 +121,7 @@ function mockDbForRollup(
 			}
 			return results;
 		},
-	} as unknown as D1Database;
+	};
 
 	return {
 		db,
@@ -134,7 +135,7 @@ function mockDbForRollup(
 describe('runDailyRollup', () => {
 	it('calls enrichFollowersBeforeRollup for the rollup date', async () => {
 		const { db } = mockDbForRollup([]);
-		await runDailyRollup({ DB: db } as Env, DATE);
+		await runDailyRollup(testEnv({ DB: db }), DATE);
 		expect(enrichFollowersBeforeRollup).toHaveBeenCalledWith({ DB: db }, DATE);
 	});
 
@@ -156,13 +157,13 @@ describe('runDailyRollup', () => {
 			},
 		]);
 
-		const stats = await runDailyRollup({ DB: db } as Env, DATE);
+		const stats = await runDailyRollup(testEnv({ DB: db }), DATE);
 		expect(stats.date).toBe(DATE);
 		expect(stats.channelsProcessed).toBe(1);
 		expect(stats.gameCategoriesProcessed).toBe(1);
 		expect(stats.viewerSamplesPruned).toBe(0);
 		expect(channelRollups).toHaveLength(1);
-		expect((channelRollups[0] as unknown[])[2]).toBeCloseTo(50, 1);
+		expect(channelRollups[0]?.[2]).toBeCloseTo(50, 1);
 		expect(gameRollups).toHaveLength(1);
 		expect(wasMetadataWritten()).toBe(true);
 		expect(pruneCalls()).toBeGreaterThanOrEqual(1);
@@ -182,9 +183,8 @@ describe('runDailyRollup', () => {
 			{ followerCount: 1200, priorSnapshot: 1000 },
 		);
 
-		await runDailyRollup({ DB: db } as Env, DATE);
-		const bound = channelRollups[0] as unknown[];
-		expect(bound[7]).toBe(200);
+		await runDailyRollup(testEnv({ DB: db }), DATE);
+		expect(channelRollups[0]?.[7]).toBe(200);
 	});
 });
 
@@ -200,7 +200,7 @@ describe('upsertChannelDailyRollup', () => {
 					},
 				};
 			},
-		} as unknown as D1Database;
+		};
 
 		await upsertChannelDailyRollup(
 			db,

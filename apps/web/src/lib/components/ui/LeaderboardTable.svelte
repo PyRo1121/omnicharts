@@ -53,7 +53,7 @@
 		emptyMessage?: string | null;
 	}
 
-	let { rows, metricHeader, emptyMessage = null }: Props = $props();
+	const { rows, metricHeader, emptyMessage = null }: Props = $props();
 
 	type RowPlatform = NonNullable<LeaderboardRow['platform']>;
 

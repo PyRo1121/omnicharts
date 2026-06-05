@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { unusedIngestD1 } from './helpers';
 import { getTopTwitchGamesByAverageViewers } from '../src/ranking/top-games';
 import * as rankingQueries from '../../../packages/rollup/src/ranking-queries';
 
@@ -13,7 +14,7 @@ describe('getTopTwitchGamesByAverageViewers', () => {
 			},
 		]);
 
-		const rows = await getTopTwitchGamesByAverageViewers({} as D1Database, {
+		const rows = await getTopTwitchGamesByAverageViewers(unusedIngestD1(), {
 			days: 7,
 			limit: 5,
 		});

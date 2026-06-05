@@ -3,6 +3,13 @@ import { KICK_API_BASE, KICK_LIVESTREAMS_BATCH_SIZE } from './config';
 import { KickRateBudget, kickRetryAfterMs, sleepMs } from './rate-limit';
 import type { KickApiListResponse, KickCategoryWithTags, KickChannel, KickLivestream, KickPaginatedResponse } from './types';
 import { chunkArray } from '../db/d1-batch';
+import {
+	parseKickApiListResponse,
+	parseKickCategoryWithTags,
+	parseKickChannel,
+	parseKickLivestream,
+	parseKickPaginatedResponse,
+} from '../json-guards';
 
 const KICK_429_MAX_RETRIES = 5;
 
@@ -33,7 +40,7 @@ export class KickPublicApiClient {
 		const params = new URLSearchParams();
 		if (opts.cursor) params.set('cursor', opts.cursor);
 		params.set('limit', String(opts.limit ?? 100));
-		return this.get<KickPaginatedResponse<KickCategoryWithTags>>('/public/v2/categories', params);
+		return this.getPaginated('/public/v2/categories', params, parseKickCategoryWithTags);
 	}
 
 	async getLivestreamsByCategoryId(
@@ -45,8 +52,8 @@ export class KickPublicApiClient {
 		params.set('limit', String(opts.limit ?? 100));
 		params.set('sort', opts.sort ?? 'viewer_count');
 
-		const json = await this.get<KickApiListResponse<KickLivestream>>('/public/v1/livestreams', params);
-		return json.data ?? [];
+		const json = await this.getList('/public/v1/livestreams', params, parseKickLivestream);
+		return json.data;
 	}
 
 	async getChannelsBySlug(slug: string): Promise<KickChannel[]> {
@@ -56,8 +63,8 @@ export class KickPublicApiClient {
 		const params = new URLSearchParams();
 		params.set('slug', trimmed);
 
-		const json = await this.get<KickApiListResponse<KickChannel>>('/public/v1/channels', params);
-		return json.data ?? [];
+		const json = await this.getList('/public/v1/channels', params, parseKickChannel);
+		return json.data;
 	}
 
 	async getLivestreamsByBroadcasterIds(broadcasterIds: string[]): Promise<KickLivestream[]> {
@@ -77,11 +84,28 @@ export class KickPublicApiClient {
 		}
 		params.set('sort', 'viewer_count');
 
-		const json = await this.get<KickApiListResponse<KickLivestream>>('/public/v1/livestreams', params);
-		return json.data ?? [];
+		const json = await this.getList('/public/v1/livestreams', params, parseKickLivestream);
+		return json.data;
 	}
 
-	private async get<T>(path: string, params?: URLSearchParams): Promise<T> {
+	private async getList<T>(
+		path: string,
+		params: URLSearchParams | undefined,
+		parseItem: (item: unknown) => T | null,
+	): Promise<KickApiListResponse<T>> {
+		const data = parseKickApiListResponse(await this.fetchKickJson(path, params), parseItem);
+		return data;
+	}
+
+	private async getPaginated<T>(
+		path: string,
+		params: URLSearchParams | undefined,
+		parseItem: (item: unknown) => T | null,
+	): Promise<KickPaginatedResponse<T>> {
+		return parseKickPaginatedResponse(await this.fetchKickJson(path, params), parseItem);
+	}
+
+	private async fetchKickJson(path: string, params?: URLSearchParams): Promise<unknown> {
 		await this.budget.consume(1);
 
 		const url = new URL(path, KICK_API_BASE);
@@ -113,7 +137,7 @@ export class KickPublicApiClient {
 				throw new Error(`Kick API ${path} failed ${res.status}: ${text.slice(0, 200)}`);
 			}
 
-			return (await res.json()) as T;
+			return res.json();
 		}
 
 		throw new Error(`Kick API ${path} rate limited after retries`);

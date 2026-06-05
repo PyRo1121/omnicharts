@@ -4,7 +4,7 @@
 		label?: string;
 	}
 
-	let { href, label = 'Export CSV' }: Props = $props();
+	const { href, label = 'Export CSV' }: Props = $props();
 </script>
 
 <a

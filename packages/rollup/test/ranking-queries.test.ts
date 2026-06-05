@@ -1,22 +1,20 @@
-import { describe, expect, test } from 'bun:test';
-import type { D1Database } from '../src/d1';
+import { describe, expect, test } from 'vitest';
 import { queryTopGamesByAverageViewers, queryTopChannelsByHoursWatched } from '../src/ranking-queries';
+import { mockD1Database } from './mock-d1';
 
 describe('queryTopGamesByAverageViewers SQL eligibility', () => {
 	test('requires contributing tracked channels meet minAverageViewers in EXISTS', async () => {
 		let capturedSql = '';
 		let binds: unknown[] = [];
-		const db = {
-			prepare(sql: string) {
-				capturedSql = sql;
-				return {
-					bind(...args: unknown[]) {
-						binds = args;
-						return { all: async () => ({ results: [] }) };
-					},
-				};
-			},
-		} as unknown as D1Database;
+		const db = mockD1Database((sql: string) => {
+			capturedSql = sql;
+			return {
+				bind(...args: unknown[]) {
+					binds = args;
+					return { all: async () => ({ results: [] }) };
+				},
+			};
+		});
 
 		await queryTopGamesByAverageViewers(db, {
 			platformId: 'twitch',
@@ -35,16 +33,12 @@ describe('queryTopGamesByAverageViewers SQL eligibility', () => {
 
 	test('binds 90-day window for 90d rankings', async () => {
 		let binds: unknown[] = [];
-		const db = {
-			prepare() {
-				return {
-					bind(...args: unknown[]) {
-						binds = args;
-						return { all: async () => ({ results: [] }) };
-					},
-				};
+		const db = mockD1Database(() => ({
+			bind(...args: unknown[]) {
+				binds = args;
+				return { all: async () => ({ results: [] }) };
 			},
-		} as unknown as D1Database;
+		}));
 
 		const { queryTopChannelsByHoursWatched: queryTop } = await import('../src/ranking-queries');
 		await queryTop(db, {
@@ -60,17 +54,15 @@ describe('queryTopGamesByAverageViewers SQL eligibility', () => {
 	test('adds language filter to channel rankings SQL when set', async () => {
 		let capturedSql = '';
 		let binds: unknown[] = [];
-		const db = {
-			prepare(sql: string) {
-				capturedSql = sql;
-				return {
-					bind(...args: unknown[]) {
-						binds = args;
-						return { all: async () => ({ results: [] }) };
-					},
-				};
-			},
-		} as unknown as D1Database;
+		const db = mockD1Database((sql: string) => {
+			capturedSql = sql;
+			return {
+				bind(...args: unknown[]) {
+					binds = args;
+					return { all: async () => ({ results: [] }) };
+				},
+			};
+		});
 
 		await queryTopChannelsByHoursWatched(db, {
 			platformId: 'twitch',

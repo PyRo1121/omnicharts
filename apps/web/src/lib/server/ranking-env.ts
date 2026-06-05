@@ -4,14 +4,18 @@ import { rankingQueryOptionsForPlatform, type RankingEligibilityEnv } from '@omn
 export type WebRankingEnv = RankingEligibilityEnv;
 
 /** Resolved ranking vars — `platform.env` on Pages, else `$env/dynamic/private` (vite dev). */
+function readEnvString(key: keyof RankingEligibilityEnv): string | undefined {
+	const value = env[key];
+	return typeof value === 'string' ? value : undefined;
+}
+
 export function resolveWebRankingEnv(cfEnv?: RankingEligibilityEnv | null): RankingEligibilityEnv {
-	const privateEnv = env as Record<string, string | undefined>;
 	return (
 		cfEnv ?? {
-			TWITCH_RANKING_MIN_AIRTIME_MINUTES: privateEnv.TWITCH_RANKING_MIN_AIRTIME_MINUTES,
-			TWITCH_MIN_VIEWERS: privateEnv.TWITCH_MIN_VIEWERS,
-			KICK_MIN_VIEWERS: privateEnv.KICK_MIN_VIEWERS,
-			YOUTUBE_MIN_VIEWERS: privateEnv.YOUTUBE_MIN_VIEWERS,
+			TWITCH_RANKING_MIN_AIRTIME_MINUTES: readEnvString('TWITCH_RANKING_MIN_AIRTIME_MINUTES'),
+			TWITCH_MIN_VIEWERS: readEnvString('TWITCH_MIN_VIEWERS'),
+			KICK_MIN_VIEWERS: readEnvString('KICK_MIN_VIEWERS'),
+			YOUTUBE_MIN_VIEWERS: readEnvString('YOUTUBE_MIN_VIEWERS'),
 		}
 	);
 }

@@ -1,12 +1,11 @@
 <script lang="ts">
-	import '../app.css';
 	import AppShell from '$lib/components/layout/AppShell.svelte';
 	import favicon from '$lib/assets/favicon.svg';
 
 	const fontsUrl =
 		'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Sora:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap';
 
-	let { children } = $props();
+	const { children } = $props();
 </script>
 
 <svelte:head>
@@ -19,7 +18,8 @@
 		href={fontsUrl}
 		media="print"
 		onload={(e) => {
-			(e.currentTarget as HTMLLinkElement).media = 'all';
+			const link = e.currentTarget;
+			if (link instanceof HTMLLinkElement) link.media = 'all';
 		}}
 	/>
 	<noscript><link rel="stylesheet" href={fontsUrl} /></noscript>
@@ -33,3 +33,7 @@
 <AppShell>
 	{@render children()}
 </AppShell>
+
+<style>
+	@import '../app.css';
+</style>

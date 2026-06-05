@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, test } from 'vitest';
 import { MIN_RANKING_AIRTIME_MINUTES, periodAverageViewers, passesRankingEligibility } from '../src/eligibility';
 
 describe('ranking eligibility (docs/12-channel-discovery-and-tracking.md)', () => {

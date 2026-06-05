@@ -1,11 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { testEnv, mockIngestD1, unusedIngestD1 } from './helpers';
 import * as helixModule from '../src/twitch/helix';
 import * as kickApiModule from '../src/kick/api';
 import * as youtubeSeedModule from '../src/youtube/seed';
 import * as watchlistUpsert from '../src/watchlist/upsert';
 import { importWatchlistCsv, importWatchlistRows } from '../src/watchlist/import';
 
-const dbStub = {} as D1Database;
+const dbStub = unusedIngestD1();
 
 describe('importWatchlistRows', () => {
 	beforeEach(() => {
@@ -13,7 +14,7 @@ describe('importWatchlistRows', () => {
 	});
 
 	it('returns NEEDS_API for twitch rows when credentials missing', async () => {
-		const stats = await importWatchlistRows({ DB: dbStub } as Env, [{ line: 2, platform: 'twitch', slug: 'ninja' }]);
+		const stats = await importWatchlistRows(testEnv({ DB: dbStub }), [{ line: 2, platform: 'twitch', slug: 'ninja' }]);
 
 		expect(stats.needs_api).toMatch(/TWITCH/);
 		expect(stats.results[0]?.status).toBe('needs_api');
@@ -41,11 +42,11 @@ describe('importWatchlistRows', () => {
 		});
 
 		const stats = await importWatchlistRows(
-			{
+			testEnv({
 				TWITCH_CLIENT_ID: 'id',
 				TWITCH_CLIENT_SECRET: 'sec',
 				DB: dbStub,
-			} as Env,
+			}),
 			[{ line: 2, platform: 'twitch', slug: 'ninja' }],
 		);
 
@@ -74,11 +75,11 @@ describe('importWatchlistRows', () => {
 		});
 
 		const stats = await importWatchlistRows(
-			{
+			testEnv({
 				TWITCH_CLIENT_ID: 'id',
 				TWITCH_CLIENT_SECRET: 'sec',
 				DB: dbStub,
-			} as Env,
+			}),
 			[{ line: 2, platform: 'twitch', slug: 'ninja' }],
 		);
 
@@ -107,11 +108,11 @@ describe('importWatchlistRows', () => {
 		});
 
 		const stats = await importWatchlistRows(
-			{
+			testEnv({
 				TWITCH_CLIENT_ID: 'id',
 				TWITCH_CLIENT_SECRET: 'sec',
 				DB: dbStub,
-			} as Env,
+			}),
 			[{ line: 2, platform: 'twitch', slug: 'ninja' }],
 		);
 
@@ -123,11 +124,11 @@ describe('importWatchlistRows', () => {
 		vi.spyOn(helixModule.TwitchHelixClient.prototype, 'getUsersByLogins').mockResolvedValue([]);
 
 		const stats = await importWatchlistRows(
-			{
+			testEnv({
 				TWITCH_CLIENT_ID: 'id',
 				TWITCH_CLIENT_SECRET: 'sec',
 				DB: dbStub,
-			} as Env,
+			}),
 			[{ line: 2, platform: 'twitch', slug: 'missing-user' }],
 		);
 
@@ -136,7 +137,7 @@ describe('importWatchlistRows', () => {
 	});
 
 	it('returns NEEDS_API for youtube when key missing', async () => {
-		const stats = await importWatchlistRows({ DB: dbStub } as Env, [{ line: 2, platform: 'youtube', slug: 'mrbeast' }]);
+		const stats = await importWatchlistRows(testEnv({ DB: dbStub }), [{ line: 2, platform: 'youtube', slug: 'mrbeast' }]);
 
 		expect(stats.results[0]?.status).toBe('needs_api');
 	});
@@ -150,15 +151,13 @@ describe('importWatchlistRows', () => {
 			platform_id: 'youtube',
 		});
 
-		const youtubeDb = {
-			prepare: () => ({
-				bind: () => ({
-					first: async () => null,
-				}),
+		const youtubeDb = mockIngestD1(() => ({
+			bind: () => ({
+				first: async () => null,
 			}),
-		} as unknown as D1Database;
+		}));
 
-		const stats = await importWatchlistRows({ YOUTUBE_API_KEY: 'key', DB: youtubeDb } as Env, [
+		const stats = await importWatchlistRows(testEnv({ YOUTUBE_API_KEY: 'key', DB: youtubeDb }), [
 			{ line: 2, platform: 'youtube', slug: 'mrbeast' },
 		]);
 
@@ -171,15 +170,13 @@ describe('importWatchlistRows', () => {
 	});
 
 	it('skips tracked youtube channel without seeding', async () => {
-		const youtubeDb = {
-			prepare: () => ({
-				bind: () => ({
-					first: async () => ({ id: 'youtube-ch-1', ingest_state: 'tracked' }),
-				}),
+		const youtubeDb = mockIngestD1(() => ({
+			bind: () => ({
+				first: async () => ({ id: 'youtube-ch-1', ingest_state: 'tracked' }),
 			}),
-		} as unknown as D1Database;
+		}));
 
-		const stats = await importWatchlistRows({ YOUTUBE_API_KEY: 'key', DB: youtubeDb } as Env, [
+		const stats = await importWatchlistRows(testEnv({ YOUTUBE_API_KEY: 'key', DB: youtubeDb }), [
 			{ line: 2, platform: 'youtube', slug: 'mrbeast' },
 		]);
 
@@ -196,15 +193,13 @@ describe('importWatchlistRows', () => {
 			platform_id: 'youtube',
 		});
 
-		const youtubeDb = {
-			prepare: () => ({
-				bind: () => ({
-					first: async () => ({ id: 'youtube-ch-UCabc', ingest_state: 'discovered' }),
-				}),
+		const youtubeDb = mockIngestD1(() => ({
+			bind: () => ({
+				first: async () => ({ id: 'youtube-ch-UCabc', ingest_state: 'discovered' }),
 			}),
-		} as unknown as D1Database;
+		}));
 
-		const stats = await importWatchlistRows({ YOUTUBE_API_KEY: 'key', DB: youtubeDb } as Env, [
+		const stats = await importWatchlistRows(testEnv({ YOUTUBE_API_KEY: 'key', DB: youtubeDb }), [
 			{ line: 2, platform: 'youtube', slug: 'mrbeast' },
 		]);
 
@@ -214,15 +209,13 @@ describe('importWatchlistRows', () => {
 	it('returns not_found when youtube seed misses', async () => {
 		vi.spyOn(youtubeSeedModule, 'seedYoutubeChannelByQuery').mockResolvedValue(null);
 
-		const youtubeDb = {
-			prepare: () => ({
-				bind: () => ({
-					first: async () => null,
-				}),
+		const youtubeDb = mockIngestD1(() => ({
+			bind: () => ({
+				first: async () => null,
 			}),
-		} as unknown as D1Database;
+		}));
 
-		const stats = await importWatchlistRows({ YOUTUBE_API_KEY: 'key', DB: youtubeDb } as Env, [
+		const stats = await importWatchlistRows(testEnv({ YOUTUBE_API_KEY: 'key', DB: youtubeDb }), [
 			{ line: 2, platform: 'youtube', slug: 'missing' },
 		]);
 
@@ -232,15 +225,13 @@ describe('importWatchlistRows', () => {
 	it('returns error when youtube import throws', async () => {
 		vi.spyOn(youtubeSeedModule, 'seedYoutubeChannelByQuery').mockRejectedValue(new Error('youtube down'));
 
-		const youtubeDb = {
-			prepare: () => ({
-				bind: () => ({
-					first: async () => null,
-				}),
+		const youtubeDb = mockIngestD1(() => ({
+			bind: () => ({
+				first: async () => null,
 			}),
-		} as unknown as D1Database;
+		}));
 
-		const stats = await importWatchlistRows({ YOUTUBE_API_KEY: 'key', DB: youtubeDb } as Env, [
+		const stats = await importWatchlistRows(testEnv({ YOUTUBE_API_KEY: 'key', DB: youtubeDb }), [
 			{ line: 2, platform: 'youtube', slug: 'mrbeast' },
 		]);
 
@@ -252,11 +243,11 @@ describe('importWatchlistRows', () => {
 		vi.spyOn(kickApiModule.KickPublicApiClient.prototype, 'getChannelsBySlug').mockRejectedValue(new Error('kick down'));
 
 		const stats = await importWatchlistRows(
-			{
+			testEnv({
 				KICK_CLIENT_ID: 'id',
 				KICK_CLIENT_SECRET: 'sec',
 				DB: dbStub,
-			} as Env,
+			}),
 			[{ line: 2, platform: 'kick', slug: 'xqc' }],
 		);
 
@@ -268,11 +259,11 @@ describe('importWatchlistRows', () => {
 		vi.spyOn(kickApiModule.KickPublicApiClient.prototype, 'getChannelsBySlug').mockResolvedValue([]);
 
 		const stats = await importWatchlistRows(
-			{
+			testEnv({
 				KICK_CLIENT_ID: 'id',
 				KICK_CLIENT_SECRET: 'sec',
 				DB: dbStub,
-			} as Env,
+			}),
 			[{ line: 2, platform: 'kick', slug: 'missing' }],
 		);
 
@@ -283,11 +274,11 @@ describe('importWatchlistRows', () => {
 		vi.spyOn(helixModule.TwitchHelixClient.prototype, 'getUsersByLogins').mockRejectedValue(new Error('helix down'));
 
 		const stats = await importWatchlistRows(
-			{
+			testEnv({
 				TWITCH_CLIENT_ID: 'id',
 				TWITCH_CLIENT_SECRET: 'sec',
 				DB: dbStub,
-			} as Env,
+			}),
 			[{ line: 2, platform: 'twitch', slug: 'ninja' }],
 		);
 
@@ -296,7 +287,7 @@ describe('importWatchlistRows', () => {
 	});
 
 	it('importWatchlistCsv returns parse stats for empty valid rows', async () => {
-		const stats = await importWatchlistCsv({ DB: dbStub } as Env, 'platform,slug\nfacebook,foo');
+		const stats = await importWatchlistCsv(testEnv({ DB: dbStub }), 'platform,slug\nfacebook,foo');
 
 		expect(stats.parse.rows).toEqual([]);
 		expect(stats.parse.errors.length).toBeGreaterThan(0);
@@ -320,11 +311,11 @@ describe('importWatchlistRows', () => {
 		});
 
 		const stats = await importWatchlistRows(
-			{
+			testEnv({
 				KICK_CLIENT_ID: 'id',
 				KICK_CLIENT_SECRET: 'sec',
 				DB: dbStub,
-			} as Env,
+			}),
 			[{ line: 2, platform: 'kick', slug: 'xqc' }],
 		);
 

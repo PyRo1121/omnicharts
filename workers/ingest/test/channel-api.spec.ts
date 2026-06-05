@@ -21,7 +21,7 @@ describe('buildChannelDetailResponse', () => {
 					bind: () => ({ first: async () => null }),
 				};
 			},
-		} as unknown as D1Database;
+		};
 
 		const res = await buildChannelDetailResponse(db, {
 			platform: 'twitch',
@@ -81,7 +81,7 @@ describe('buildChannelDetailResponse', () => {
 				}
 				return { bind: () => ({ first: async () => null, all: async () => ({}) }) };
 			},
-		} as unknown as D1Database;
+		};
 
 		const res = await buildChannelDetailResponse(db, {
 			platform: 'twitch',
@@ -147,7 +147,7 @@ describe('buildChannelDetailResponse', () => {
 				}
 				return { bind: () => ({ first: async () => null, all: async () => ({}) }) };
 			},
-		} as unknown as D1Database;
+		};
 
 		const res = await buildChannelDetailResponse(db, {
 			platform: 'twitch',
@@ -195,7 +195,7 @@ describe('buildChannelDetailResponse', () => {
 				}
 				return { bind: () => ({ first: async () => null, all: async () => ({}) }) };
 			},
-		} as unknown as D1Database;
+		};
 
 		const res = await buildChannelDetailResponse(db, {
 			platform: 'twitch',

@@ -1,48 +1,15 @@
 import { describe, it, expect } from 'vitest';
+import { healthStatusD1, testEnv } from './helpers';
 import { buildIngestHealth, ingestHealthHttpStatus } from '../src/health/status';
 import { healthStatusFromLag } from '../src/health/operational-metrics';
 
 function mockEnv(overrides: Partial<Env> = {}): Env {
-	const db = {
-		prepare(_sql: string) {
-			const stmt = {
-				async first<T>(): Promise<T | null> {
-					return {} as T;
-				},
-				bind() {
-					return stmt;
-				},
-			};
-			return stmt;
-		},
-		async batch(stmts: unknown[]) {
-			if (stmts.length === 4) {
-				return [
-					{ results: [{ ok: 1 }] },
-					{ results: [{ value: '2026-05-31T00:15:00.000Z' }] },
-					{ results: [{ ingest_state: 'tracked', n: 42 }] },
-					{ results: [{ value: '{"at":"2026-06-01T00:00:00.000Z"}' }] },
-				];
-			}
-			if (stmts.length === 2) {
-				return [{ results: [{ n: 5 }] }, { results: [{ n: 2 }] }];
-			}
-			return [
-				{ results: [{ n: 3 }] },
-				{ results: [{ n: 1 }] },
-				{ results: [{ n: 1 }] },
-				{ results: [{ n: 2 }] },
-				{ results: [{ max_sampled_at: new Date().toISOString() }] },
-			];
-		},
-	} as unknown as D1Database;
-
-	return {
-		DB: db,
+	return testEnv({
+		DB: healthStatusD1(),
 		TWITCH_CLIENT_ID: 'id',
 		TWITCH_CLIENT_SECRET: 'secret',
 		...overrides,
-	} as Env;
+	});
 }
 
 describe('buildIngestHealth', () => {
@@ -67,7 +34,7 @@ describe('buildIngestHealth', () => {
 	});
 
 	it('returns unavailable without credentials', async () => {
-		const payload = await buildIngestHealth(mockEnv({ TWITCH_CLIENT_ID: undefined, TWITCH_CLIENT_SECRET: undefined }));
+		const payload = await buildIngestHealth(mockEnv({ TWITCH_CLIENT_ID: '', TWITCH_CLIENT_SECRET: '' }));
 		expect(payload.status).toBe('unavailable');
 		expect(ingestHealthHttpStatus(payload)).toBe(503);
 	});

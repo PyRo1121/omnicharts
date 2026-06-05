@@ -30,6 +30,6 @@ if (!cmd || !(cmd in COMMANDS)) {
 const extra =
 	cmd === 'freeze-proof' ? ['--proof-matrix', ...rest] : cmd === 'd1' && rest[0] === '--remote' ? ['--remote', ...rest.slice(1)] : rest;
 
-const script = join(DIR, COMMANDS[cmd]!);
+const script = join(DIR, COMMANDS[cmd]);
 const result = spawnSync('bun', ['run', script, ...extra], { cwd: REPO_ROOT, stdio: 'inherit' });
 process.exit(result.status ?? 1);

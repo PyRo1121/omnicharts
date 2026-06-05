@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { mockIngestD1, unusedIngestD1 } from './helpers';
 import type { HelixStream } from '../src/twitch/helix';
 import {
 	applyChannelProfileEnrichment,
@@ -26,19 +27,19 @@ const stream: HelixStream = {
 describe('db twitch helpers', () => {
 	it('upsertGameCategory falls back when batch map empty', async () => {
 		vi.spyOn(twitchBatch, 'batchUpsertGameCategories').mockResolvedValue(new Map());
-		const id = await upsertGameCategory({} as D1Database, { id: '10', name: 'Game' });
+		const id = await upsertGameCategory(unusedIngestD1(), { id: '10', name: 'Game' });
 		expect(id).toBe('twitch-game-10');
 	});
 
 	it('upsertGameCategory returns mapped id when batch succeeds', async () => {
 		vi.spyOn(twitchBatch, 'batchUpsertGameCategories').mockResolvedValue(new Map([['10', 'twitch-game-10']]));
-		const id = await upsertGameCategory({} as D1Database, { id: '10', name: 'Game' });
+		const id = await upsertGameCategory(unusedIngestD1(), { id: '10', name: 'Game' });
 		expect(id).toBe('twitch-game-10');
 	});
 
 	it('upsertChannelFromStream falls back when batch map empty', async () => {
 		vi.spyOn(twitchBatch, 'batchUpsertChannelsFromStreams').mockResolvedValue(new Map());
-		const id = await upsertChannelFromStream({} as D1Database, stream, {
+		const id = await upsertChannelFromStream(unusedIngestD1(), stream, {
 			minViewers: 5,
 			promoteToTracked: true,
 		});
@@ -55,7 +56,7 @@ describe('db twitch helpers', () => {
 				},
 			}),
 		}));
-		const ids = await listPlatformIdsForProfileEnrichment({ prepare } as unknown as D1Database, 10, 24);
+		const ids = await listPlatformIdsForProfileEnrichment(mockIngestD1((sql) => prepare(sql)), 10, 24);
 		expect(ids).toEqual(['1']);
 	});
 
@@ -69,7 +70,7 @@ describe('db twitch helpers', () => {
 					},
 				}),
 			}),
-		} as unknown as D1Database;
+		};
 
 		await applyChannelProfileEnrichment(db, {
 			platform_channel_id: '42',
@@ -88,7 +89,7 @@ describe('db twitch helpers', () => {
 
 	it('batchApplyChannelProfileEnrichment no-ops for empty rows', async () => {
 		const batch = vi.fn();
-		await batchApplyChannelProfileEnrichment({ batch } as unknown as D1Database, []);
+		await batchApplyChannelProfileEnrichment({ batch }, []);
 		expect(batch).not.toHaveBeenCalled();
 	});
 
@@ -102,7 +103,7 @@ describe('db twitch helpers', () => {
 				for (const s of stmts) await s.run();
 				return [];
 			}),
-		} as unknown as D1Database;
+		};
 
 		await batchApplyChannelProfileEnrichment(db, [
 			{
@@ -129,7 +130,7 @@ describe('db twitch helpers', () => {
 				platform: 'twitch',
 			},
 		]);
-		const row = await recordLiveSample({} as D1Database, 'ch-1', stream, 'game-1');
+		const row = await recordLiveSample(unusedIngestD1(), 'ch-1', stream, 'game-1');
 		expect(row.platform).toBe('twitch');
 	});
 });

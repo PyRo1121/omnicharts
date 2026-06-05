@@ -1,19 +1,26 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { testEnv } from './helpers';
 import { TwitchHelixClient } from '../src/twitch/helix';
 
 vi.mock('../src/twitch/auth', () => ({
 	getAppAccessToken: vi.fn().mockResolvedValue('test-token'),
 }));
 
+function fetchInputHref(input: RequestInfo | URL): string {
+	if (typeof input === 'string') return input;
+	if (input instanceof URL) return input.href;
+	return input.url;
+}
+
 describe('TwitchHelixClient streams pagination', () => {
-	const env = { TWITCH_CLIENT_ID: 'cid', TWITCH_CLIENT_SECRET: 'sec' } as Env;
+	const env = testEnv({ TWITCH_CLIENT_ID: 'cid', TWITCH_CLIENT_SECRET: 'sec' });
 
 	beforeEach(() => {
 		let streamsCall = 0;
 		vi.stubGlobal(
 			'fetch',
 			vi.fn().mockImplementation((input: RequestInfo | URL) => {
-				const url = String(input);
+				const url = fetchInputHref(input);
 				if (url.includes('/helix/streams') && url.includes('game_id=42')) {
 					return Promise.resolve(
 						new Response(
@@ -116,7 +123,9 @@ describe('TwitchHelixClient streams pagination', () => {
 		expect(page2.data).toHaveLength(0);
 
 		const fetchMock = vi.mocked(fetch);
-		const secondUrl = String(fetchMock.mock.calls[1]![0]);
+		const secondCall = fetchMock.mock.calls[1];
+		if (!secondCall) throw new Error('expected second fetch call');
+		const secondUrl = fetchInputHref(secondCall[0]);
 		expect(secondUrl).toContain('after=next-cursor');
 	});
 
@@ -127,7 +136,9 @@ describe('TwitchHelixClient streams pagination', () => {
 		expect(page.pagination?.cursor).toBe('page2');
 
 		const fetchMock = vi.mocked(fetch);
-		const url = String(fetchMock.mock.calls[0]![0]);
+		const gameCall = fetchMock.mock.calls[0];
+		if (!gameCall) throw new Error('expected fetch call');
+		const url = fetchInputHref(gameCall[0]);
 		expect(url).toContain('game_id=42');
 		expect(url).toContain('after=c0');
 		expect(url).toContain('first=50');
@@ -136,6 +147,6 @@ describe('TwitchHelixClient streams pagination', () => {
 	it('getTopGames returns data array', async () => {
 		const client = new TwitchHelixClient(env);
 		const games = await client.getTopGames(10);
-		expect(games[0]!.name).toBe('Game');
+		expect(games[0].name).toBe('Game');
 	});
 });

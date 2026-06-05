@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { mockIngestD1 } from './helpers';
 import type { KickLivestream } from '../src/kick/types';
 import {
 	batchRecordKickLiveSamples,
@@ -9,7 +10,7 @@ import {
 function mockDb() {
 	const runs: string[] = [];
 	const batch = vi.fn(async (statements: { run: () => Promise<unknown> }[]) => {
-		for (const stmt of statements) await stmt.run();
+		await Promise.all(statements.map((stmt) => stmt.run()));
 		return [];
 	});
 	const prepare = vi.fn((sql: string) => ({
@@ -23,7 +24,7 @@ function mockDb() {
 		}),
 	}));
 	return {
-		db: { prepare, batch } as unknown as D1Database,
+		db: mockIngestD1((sql) => prepare(sql), batch),
 		runs,
 		prepare,
 		batch,
@@ -52,7 +53,7 @@ describe('batchUpsertKickGameCategories', () => {
 		expect(map.get('7')).toBe('kick-game-7');
 		expect(map.get('9')).toBe('kick-game-9');
 		expect(prepare).toHaveBeenCalled();
-		expect(String(prepare.mock.calls[0]?.[0])).toContain('ON CONFLICT');
+		expect(prepare.mock.calls[0]?.[0]).toContain('ON CONFLICT');
 	});
 
 	it('returns empty map for no categories', async () => {
@@ -111,14 +112,14 @@ describe('batchUpsertKickChannelsFromLivestreams', () => {
 				first: async () => null,
 			}),
 		}));
-		const db = { prepare, batch: vi.fn(async () => []) } as unknown as D1Database;
+		const db = mockIngestD1((sql) => prepare(sql), vi.fn(async () => []));
 
 		await batchUpsertKickChannelsFromLivestreams(db, [baseStream({ broadcaster_user_id: 42, slug: 'streamer' })], {
 			minViewers: 5,
 			promoteToTracked: false,
 		});
 
-		const channelInsert = prepare.mock.calls.find(([sql]) => String(sql).includes('INSERT INTO channels'));
+		const channelInsert = prepare.mock.calls.find(([sql]) => sql.includes('INSERT INTO channels'));
 		expect(channelInsert).toBeTruthy();
 	});
 
@@ -146,12 +147,12 @@ describe('batchUpsertKickChannelsFromLivestreams', () => {
 			}),
 		}));
 		const batch = vi.fn(async () => []);
-		const db = { prepare, batch } as unknown as D1Database;
+		const db = mockIngestD1((sql) => prepare(sql), batch);
 
 		await batchUpsertKickChannelsFromLivestreams(db, [baseStream({ slug: 'new-slug' })], { minViewers: 5, promoteToTracked: false });
 
 		expect(batch).toHaveBeenCalled();
-		expect(prepare.mock.calls.some(([sql]) => String(sql).includes('INSERT INTO slug_history'))).toBe(true);
+		expect(prepare.mock.calls.some(([sql]) => sql.includes('INSERT INTO slug_history'))).toBe(true);
 	});
 
 	it('promotes discovered channel immediately for directoryListing', async () => {
@@ -187,12 +188,12 @@ describe('batchUpsertKickChannelsFromLivestreams', () => {
 				first: async () => null,
 			}),
 		}));
-		const db = { prepare, batch: vi.fn(async () => []) } as unknown as D1Database;
+		const db = mockIngestD1((sql) => prepare(sql), vi.fn(async () => []));
 
 		await batchUpsertKickChannelsFromLivestreams(db, [baseStream()], { minViewers: 5, promoteToTracked: true, directoryListing: true });
 
-		const insertSql = prepare.mock.calls.find(([sql]) => String(sql).includes('INSERT INTO channels'));
-		expect(String(insertSql?.[0])).toContain("'retired'");
+		const insertSql = prepare.mock.calls.find(([sql]) => sql.includes('INSERT INTO channels'));
+		expect(insertSql?.[0]).toContain("'retired'");
 	});
 });
 
@@ -246,7 +247,7 @@ describe('batchRecordKickLiveSamples', () => {
 			}),
 		}));
 		const batch = vi.fn(async () => []);
-		const db = { prepare, batch } as unknown as D1Database;
+		const db = mockIngestD1((sql) => prepare(sql), batch);
 
 		await batchRecordKickLiveSamples(db, [
 			{
@@ -256,7 +257,7 @@ describe('batchRecordKickLiveSamples', () => {
 			},
 		]);
 
-		expect(prepare.mock.calls.some(([sql]) => String(sql).includes('UPDATE stream_sessions SET'))).toBe(true);
+		expect(prepare.mock.calls.some(([sql]) => sql.includes('UPDATE stream_sessions SET'))).toBe(true);
 	});
 
 	it('closes stale session and inserts new session when platform_stream_id changes', async () => {
@@ -281,7 +282,7 @@ describe('batchRecordKickLiveSamples', () => {
 			}),
 		}));
 		const batch = vi.fn(async () => []);
-		const db = { prepare, batch } as unknown as D1Database;
+		const db = mockIngestD1((sql) => prepare(sql), batch);
 
 		await batchRecordKickLiveSamples(db, [
 			{
@@ -292,7 +293,7 @@ describe('batchRecordKickLiveSamples', () => {
 		]);
 
 		expect(batch).toHaveBeenCalled();
-		expect(prepare.mock.calls.some(([sql]) => String(sql).includes('INSERT INTO stream_sessions'))).toBe(true);
+		expect(prepare.mock.calls.some(([sql]) => sql.includes('INSERT INTO stream_sessions'))).toBe(true);
 	});
 
 	it('upserts game category inline when stream has category and no gameCategoryId', async () => {
@@ -304,7 +305,7 @@ describe('batchRecordKickLiveSamples', () => {
 				gameCategoryId: null,
 			},
 		]);
-		expect(prepare.mock.calls.some(([sql]) => String(sql).includes('INSERT INTO game_categories'))).toBe(true);
+		expect(prepare.mock.calls.some(([sql]) => sql.includes('INSERT INTO game_categories'))).toBe(true);
 	});
 
 	it('promotes discovered channel to tracked after enough sightings', async () => {
@@ -323,11 +324,11 @@ describe('batchRecordKickLiveSamples', () => {
 			}),
 		}));
 		const batch = vi.fn(async () => []);
-		const db = { prepare, batch } as unknown as D1Database;
+		const db = mockIngestD1((sql) => prepare(sql), batch);
 
 		await batchUpsertKickChannelsFromLivestreams(db, [baseStream({ viewer_count: 50 })], { minViewers: 5, promoteToTracked: true });
 
-		expect(prepare.mock.calls.some(([sql]) => String(sql).includes("ingest_state = 'tracked'"))).toBe(true);
+		expect(prepare.mock.calls.some(([sql]) => sql.includes("ingest_state = 'tracked'"))).toBe(true);
 	});
 
 	it('promotes dormant channel to tracked when eligible', async () => {
@@ -353,12 +354,12 @@ describe('batchRecordKickLiveSamples', () => {
 				first: async () => null,
 			}),
 		}));
-		const db = { prepare, batch: vi.fn(async () => []) } as unknown as D1Database;
+		const db = mockIngestD1((sql) => prepare(sql), vi.fn(async () => []));
 
 		await batchUpsertKickChannelsFromLivestreams(db, [baseStream({ viewer_count: 50 })], { minViewers: 5, promoteToTracked: true });
 
-		const channelSql = prepare.mock.calls.find(([sql]) => String(sql).includes('INSERT INTO channels'));
-		expect(String(channelSql?.[0])).toContain("'tracked'");
+		const channelSql = prepare.mock.calls.find(([sql]) => sql.includes('INSERT INTO channels'));
+		expect(channelSql?.[0]).toContain("'tracked'");
 	});
 
 	it('keeps tracked ingest_state for already tracked channel', async () => {
@@ -384,10 +385,10 @@ describe('batchRecordKickLiveSamples', () => {
 				first: async () => null,
 			}),
 		}));
-		const db = { prepare, batch: vi.fn(async () => []) } as unknown as D1Database;
+		const db = mockIngestD1((sql) => prepare(sql), vi.fn(async () => []));
 
 		await batchUpsertKickChannelsFromLivestreams(db, [baseStream()], { minViewers: 5, promoteToTracked: true });
 
-		expect(prepare.mock.calls.some(([sql]) => String(sql).includes('INSERT INTO channels'))).toBe(true);
+		expect(prepare.mock.calls.some(([sql]) => sql.includes('INSERT INTO channels'))).toBe(true);
 	});
 });

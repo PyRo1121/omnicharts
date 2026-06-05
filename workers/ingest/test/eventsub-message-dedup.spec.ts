@@ -7,7 +7,7 @@ describe('EventSub message dedup', () => {
 			prepare() {
 				return { bind: () => ({ first: async () => null }) };
 			},
-		} as unknown as D1Database;
+		};
 		expect(await isDuplicateEventSubMessage(db, 'msg-1')).toBe(false);
 	});
 
@@ -26,7 +26,7 @@ describe('EventSub message dedup', () => {
 					}),
 				};
 			},
-		} as unknown as D1Database;
+		};
 		expect(await isDuplicateEventSubMessage(db, 'msg-1')).toBe(true);
 	});
 
@@ -41,7 +41,7 @@ describe('EventSub message dedup', () => {
 					}),
 				};
 			},
-		} as unknown as D1Database;
+		};
 		expect(await isDuplicateEventSubMessage(db, 'msg-old')).toBe(false);
 	});
 
@@ -52,7 +52,7 @@ describe('EventSub message dedup', () => {
 				sql.push(q);
 				return { bind: () => ({ run: async () => ({}) }) };
 			},
-		} as unknown as D1Database;
+		};
 		await recordEventSubMessageId(db, 'msg-new');
 		expect(sql.some((s) => s.includes('ingest_metadata'))).toBe(true);
 	});

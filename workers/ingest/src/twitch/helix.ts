@@ -1,3 +1,12 @@
+import {
+	parseHelixChannelFollowersResponse,
+	parseHelixChannel,
+	parseHelixGame,
+	parseHelixListResponse,
+	parseHelixStream,
+	parseHelixUser,
+	parseHelixVideo,
+} from '../json-guards';
 import { getAppAccessToken } from './auth';
 import { chunkArray } from '../db/d1-batch';
 import { HelixRateBudget, helixRateLimitExceeded, helixRateLimitWaitMs, sleepMs } from './rate-limit';
@@ -114,8 +123,8 @@ export class TwitchHelixClient {
 	}
 
 	async getTopGames(first = 100): Promise<HelixGame[]> {
-		const json = await this.get<HelixListResponse<HelixGame>>('/games/top', { first: String(first) });
-		return json.data ?? [];
+		const json = parseHelixListResponse(await this.fetchHelixJson('/games/top', { first: String(first) }));
+		return json.data.map(parseHelixGame).filter((game): game is HelixGame => game !== null);
 	}
 
 	/** All live streams, viewer count descending (global directory). */
@@ -124,7 +133,7 @@ export class TwitchHelixClient {
 			first: String(opts.first ?? STREAMS_BATCH_SIZE),
 		};
 		if (opts.after) params.after = opts.after;
-		return this.get<HelixListResponse<HelixStream>>('/streams', params);
+		return this.getStreamsList('/streams', params);
 	}
 
 	async getStreamsByGameId(gameId: string, opts: { first?: number; after?: string } = {}): Promise<HelixListResponse<HelixStream>> {
@@ -133,7 +142,7 @@ export class TwitchHelixClient {
 			first: String(opts.first ?? 100),
 		};
 		if (opts.after) params.after = opts.after;
-		return this.get<HelixListResponse<HelixStream>>('/streams', params);
+		return this.getStreamsList('/streams', params);
 	}
 
 	async getStreamsByUserIds(userIds: string[]): Promise<HelixStream[]> {
@@ -209,7 +218,7 @@ export class TwitchHelixClient {
 			return null;
 		}
 
-		const json = (await res.json()) as HelixChannelFollowersResponse;
+		const json = parseHelixChannelFollowersResponse(await res.json());
 		return typeof json.total === 'number' ? json.total : null;
 	}
 
@@ -232,22 +241,28 @@ export class TwitchHelixClient {
 			first: String(opts.first ?? 100),
 		};
 		if (opts.after) params.after = opts.after;
-		return this.get<HelixListResponse<HelixVideo>>('/videos', params);
+		return this.getVideosList('/videos', params);
 	}
 
 	private async getUsersBatch(userIds: string[]): Promise<HelixUser[]> {
-		return this.getIdListBatch<HelixUser>('/users', 'id', userIds);
+		return this.getIdListBatch('/users', 'id', userIds, parseHelixUser);
 	}
 
 	private async getUsersByLoginsBatch(logins: string[]): Promise<HelixUser[]> {
-		return this.getIdListBatch<HelixUser>('/users', 'login', logins);
+		return this.getIdListBatch('/users', 'login', logins, parseHelixUser);
 	}
 
 	private async getChannelsBatch(broadcasterIds: string[]): Promise<HelixChannel[]> {
-		return this.getIdListBatch<HelixChannel>('/channels', 'broadcaster_id', broadcasterIds);
+		return this.getIdListBatch('/channels', 'broadcaster_id', broadcasterIds, parseHelixChannel);
 	}
 
-	private async getIdListBatch<T>(path: string, param: string, ids: string[], rateLimitRetries = 0): Promise<T[]> {
+	private async getIdListBatch<T>(
+		path: string,
+		param: string,
+		ids: string[],
+		parseItem: (item: unknown) => T | null,
+		rateLimitRetries = 0,
+	): Promise<T[]> {
 		const token = await getAppAccessToken(this.env, this.budget);
 		await this.budget.consume(1);
 
@@ -271,7 +286,7 @@ export class TwitchHelixClient {
 				throw new Error(`Helix ${path} rate limited after ${HELIX_429_MAX_RETRIES} retries: ${text.slice(0, 300)}`);
 			}
 			await sleepMs(helixRateLimitWaitMs(res.headers));
-			return this.getIdListBatch<T>(path, param, ids, rateLimitRetries + 1);
+			return this.getIdListBatch(path, param, ids, parseItem, rateLimitRetries + 1);
 		}
 
 		if (!res.ok) {
@@ -279,8 +294,8 @@ export class TwitchHelixClient {
 			throw new Error(`Helix ${path} ${res.status}: ${text.slice(0, 300)}`);
 		}
 
-		const json = (await res.json()) as HelixListResponse<T>;
-		return json.data ?? [];
+		const json = parseHelixListResponse(await res.json());
+		return json.data.map(parseItem).filter((item): item is T => item !== null);
 	}
 
 	private async getStreamsBatch(userIds: string[], rateLimitRetries = 0): Promise<HelixStream[]> {
@@ -316,11 +331,27 @@ export class TwitchHelixClient {
 			throw new Error(`Helix /streams ${res.status}: ${text.slice(0, 300)}`);
 		}
 
-		const json = (await res.json()) as HelixListResponse<HelixStream>;
-		return json.data ?? [];
+		const json = parseHelixListResponse(await res.json());
+		return json.data.map(parseHelixStream).filter((stream): stream is HelixStream => stream !== null);
 	}
 
-	private async get<T>(path: string, query: Record<string, string>, rateLimitRetries = 0): Promise<T> {
+	private async getStreamsList(path: string, query: Record<string, string>, rateLimitRetries = 0): Promise<HelixListResponse<HelixStream>> {
+		const json = parseHelixListResponse(await this.fetchHelixJson(path, query, rateLimitRetries));
+		return {
+			data: json.data.map(parseHelixStream).filter((stream): stream is HelixStream => stream !== null),
+			pagination: json.pagination,
+		};
+	}
+
+	private async getVideosList(path: string, query: Record<string, string>, rateLimitRetries = 0): Promise<HelixListResponse<HelixVideo>> {
+		const json = parseHelixListResponse(await this.fetchHelixJson(path, query, rateLimitRetries));
+		return {
+			data: json.data.map(parseHelixVideo).filter((video): video is HelixVideo => video !== null),
+			pagination: json.pagination,
+		};
+	}
+
+	private async fetchHelixJson(path: string, query: Record<string, string>, rateLimitRetries = 0): Promise<unknown> {
 		const token = await getAppAccessToken(this.env, this.budget);
 		await this.budget.consume(1);
 
@@ -344,7 +375,7 @@ export class TwitchHelixClient {
 				throw new Error(`Helix ${path} rate limited after ${HELIX_429_MAX_RETRIES} retries: ${text.slice(0, 300)}`);
 			}
 			await sleepMs(helixRateLimitWaitMs(res.headers));
-			return this.get<T>(path, query, rateLimitRetries + 1);
+			return this.fetchHelixJson(path, query, rateLimitRetries + 1);
 		}
 
 		if (!res.ok) {
@@ -352,6 +383,6 @@ export class TwitchHelixClient {
 			throw new Error(`Helix ${path} ${res.status}: ${text.slice(0, 300)}`);
 		}
 
-		return (await res.json()) as T;
+		return res.json();
 	}
 }

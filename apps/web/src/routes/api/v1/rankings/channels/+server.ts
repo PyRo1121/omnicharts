@@ -11,6 +11,7 @@ import { ROLLUP_CACHE_CONTROL } from '$lib/server/cache';
 import { getIngestBaseUrl } from '$lib/server/ingest';
 import { proxyIngestResponse } from '$lib/server/proxy-ingest';
 import { getD1 } from '$lib/server/d1';
+import { cfRankingEnv } from '$lib/server/load-context';
 import { webRankingEligibility } from '$lib/server/ranking-env';
 import type { RequestHandler } from './$types';
 
@@ -24,7 +25,7 @@ export const GET: RequestHandler = async ({ url, fetch, platform }) => {
 	const parsed = parseRankingsChannelsQuery(url);
 
 	if (parsed.ok && db && (parsed.platform === 'twitch' || parsed.platform === 'kick' || parsed.platform === 'youtube')) {
-		const eligibility = webRankingEligibility(platform?.env, parsed.platform);
+		const eligibility = webRankingEligibility(cfRankingEnv(platform), parsed.platform);
 		const body = await buildRankingsChannelsResponse(db, {
 			platform: parsed.platform,
 			period: parsed.period,

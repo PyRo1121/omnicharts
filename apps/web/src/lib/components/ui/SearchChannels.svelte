@@ -22,7 +22,7 @@
 		initialQuery?: string;
 	}
 
-	let { trending, platform = 'twitch', initialQuery = '' }: Props = $props();
+	const { trending, platform = 'twitch', initialQuery = '' }: Props = $props();
 
 	let query = $state('');
 	let hits = $state<SearchHit[]>([]);

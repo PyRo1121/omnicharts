@@ -7,7 +7,7 @@
 		actions?: Snippet;
 	}
 
-	let { title, subtitle, actions }: Props = $props();
+	const { title, subtitle, actions }: Props = $props();
 </script>
 
 <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">

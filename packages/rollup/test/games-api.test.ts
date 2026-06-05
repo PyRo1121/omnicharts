@@ -1,6 +1,7 @@
-import { describe, it, expect, vi, afterEach } from 'bun:test';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import * as topGames from '../src/top-games';
 import { buildRankingsGamesResponse, parseRankingsGamesQuery } from '../src/games-api';
+import { unusedMockD1 } from './mock-d1';
 
 describe('parseRankingsGamesQuery', () => {
 	it('defaults platform twitch and period 7d', () => {
@@ -43,13 +44,15 @@ describe('buildRankingsGamesResponse', () => {
 			},
 		]);
 
-		const res = await buildRankingsGamesResponse({} as D1Database, {
+		const db = unusedMockD1();
+
+		const res = await buildRankingsGamesResponse(db, {
 			platform: 'kick',
 			period: '7d',
 			limit: 20,
 		});
 
-		expect(spy).toHaveBeenCalledWith({}, expect.objectContaining({ platformId: 'kick', days: 7, limit: 20 }));
+		expect(spy).toHaveBeenCalledWith(db, expect.objectContaining({ platformId: 'kick', days: 7, limit: 20 }));
 		expect(res.platform).toBe('kick');
 		expect(res.items[0]).toMatchObject({
 			rank: 1,
@@ -63,19 +66,23 @@ describe('buildRankingsGamesResponse', () => {
 	it('uses platform-specific min viewers from env', async () => {
 		const spy = vi.spyOn(topGames, 'getTopGamesByAverageViewers').mockResolvedValue([]);
 
+		const db = unusedMockD1();
+
 		await buildRankingsGamesResponse(
-			{} as D1Database,
+			db,
 			{ platform: 'youtube', period: '7d', limit: 20 },
 			{ YOUTUBE_MIN_VIEWERS: 30, TWITCH_MIN_VIEWERS: 2 },
 		);
 
-		expect(spy).toHaveBeenCalledWith({}, expect.objectContaining({ platformId: 'youtube', minAverageViewers: 30 }));
+		expect(spy).toHaveBeenCalledWith(db, expect.objectContaining({ platformId: 'youtube', minAverageViewers: 30 }));
 	});
 
 	it('returns empty items for youtube when no rollups', async () => {
 		vi.spyOn(topGames, 'getTopGamesByAverageViewers').mockResolvedValue([]);
 
-		const res = await buildRankingsGamesResponse({} as D1Database, {
+		const db = unusedMockD1();
+
+		const res = await buildRankingsGamesResponse(db, {
 			platform: 'youtube',
 			period: '7d',
 			limit: 20,
@@ -96,7 +103,9 @@ describe('buildRankingsGamesResponse', () => {
 			},
 		]);
 
-		const res = await buildRankingsGamesResponse({} as D1Database, {
+		const db = unusedMockD1();
+
+		const res = await buildRankingsGamesResponse(db, {
 			platform: 'twitch',
 			period: '30d',
 			limit: 10,

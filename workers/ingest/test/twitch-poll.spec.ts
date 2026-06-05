@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { testEnv } from './helpers';
 import * as twitchDb from '../src/db/twitch';
 import { TwitchHelixClient } from '../src/twitch/helix';
 import { enqueueTwitchPollShards, runTwitchPollBatch } from '../src/twitch/poll';
@@ -10,9 +11,9 @@ describe('twitch poll', () => {
 
 	it('enqueueTwitchPollShards sends one consolidated catalog message', async () => {
 		const send = vi.fn().mockResolvedValue(undefined);
-		const env = {
-			INGEST_QUEUE: { send },
-		} as unknown as Env;
+		const env = testEnv({
+			INGEST_QUEUE: { send, sendBatch: vi.fn(), metrics: vi.fn() },
+		});
 
 		const messages = await enqueueTwitchPollShards(env);
 		expect(messages).toBe(1);
@@ -58,14 +59,12 @@ describe('twitch poll', () => {
 				};
 			},
 			batch: async (statements: { run: () => Promise<unknown> }[]) => {
-				for (const stmt of statements) {
-					await stmt.run();
-				}
+				await Promise.all(statements.map((stmt) => stmt.run()));
 				return [];
 			},
-		} as unknown as D1Database;
+		};
 
-		const result = await runTwitchPollBatch({ TWITCH_MIN_VIEWERS: '5', DB: db } as Env, ['10', '11']);
+		const result = await runTwitchPollBatch(testEnv({ TWITCH_MIN_VIEWERS: '5', DB: db }), ['10', '11']);
 
 		expect(result.liveStreams).toBe(1);
 		expect(result.samplesWritten).toBe(1);

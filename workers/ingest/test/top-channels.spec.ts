@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { unusedIngestD1 } from './helpers';
 import * as rankingQueries from '../../../packages/rollup/src/ranking-queries';
 import { getTopTwitchChannelsByHoursWatched } from '../src/ranking/top-channels';
 
@@ -25,7 +26,7 @@ describe('getTopTwitchChannelsByHoursWatched', () => {
 			},
 		]);
 
-		const rankings = await getTopTwitchChannelsByHoursWatched({} as D1Database, {
+		const rankings = await getTopTwitchChannelsByHoursWatched(unusedIngestD1(), {
 			days: 7,
 			limit: 20,
 		});

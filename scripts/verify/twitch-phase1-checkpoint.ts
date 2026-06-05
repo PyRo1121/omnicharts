@@ -61,7 +61,7 @@ async function sleep(ms: number): Promise<void> {
 
 function runCmd(cmd: string[], cwd: string): Promise<{ ok: boolean; exitCode: number | null; output: string }> {
 	return new Promise((resolve) => {
-		const proc = spawn(cmd[0]!, cmd.slice(1), { cwd, stdio: ['ignore', 'pipe', 'pipe'] });
+		const proc = spawn(cmd[0], cmd.slice(1), { cwd, stdio: ['ignore', 'pipe', 'pipe'] });
 		let output = '';
 		proc.stdout?.on('data', (d) => {
 			output += d.toString();
@@ -271,7 +271,7 @@ async function main(): Promise<number> {
 	if (!devVarsOk) return finish(1);
 
 	// 2. D1 migrate local — only while ingest is down (concurrent wrangler dev + migrate locks/crashes D1)
-	let health = await fetchHealth();
+	const health = await fetchHealth();
 	if (health.body?.db === 'connected') {
 		record({
 			name: 'd1:migrate:local',

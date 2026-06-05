@@ -1,11 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
 import * as rollup from '@omnicharts/rollup';
 import { resolvePeriodContext } from './period-context';
+import { unusedMockD1 } from './mock-d1';
 
 describe('resolvePeriodContext', () => {
 	it('returns coverage note when rollup history is shorter than 90d', async () => {
 		vi.spyOn(rollup, 'getRollupCoverageDays').mockResolvedValue(12);
-		const db = {} as D1Database;
+		const db = unusedMockD1();
 
 		const result = await resolvePeriodContext('90d', db);
 		expect(result.period).toBe('90d');

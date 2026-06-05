@@ -1,7 +1,25 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { mockIngestD1, testEnv } from './helpers';
 import { VIEWER_SAMPLE_DELETE_BATCH_SIZE } from '../src/db/prune-samples';
 import { runRetentionWithColdArchive } from '../src/db/cold-archive';
 import * as coldArchiveR2 from '../src/r2/cold-archive';
+
+function samplesBucket(put: R2Bucket['put']): R2Bucket {
+	const stub: R2Bucket = {
+		head: async () => null,
+		get: async () => null,
+		put,
+		createMultipartUpload: async () => {
+			throw new Error('unexpected createMultipartUpload');
+		},
+		resumeMultipartUpload: () => {
+			throw new Error('unexpected resumeMultipartUpload');
+		},
+		delete: async () => {},
+		list: async () => ({ objects: [], delimitedPrefixes: [], truncated: false }),
+	};
+	return stub;
+}
 
 vi.mock('../src/r2/cold-archive', async (importOriginal) => {
 	const actual = await importOriginal<typeof coldArchiveR2>();
@@ -19,7 +37,7 @@ describe('runRetentionWithColdArchive', () => {
 	});
 
 	it('returns zeroes when DB binding missing', async () => {
-		await expect(runRetentionWithColdArchive({} as Env, NOW)).resolves.toEqual({
+		await expect(runRetentionWithColdArchive(testEnv({ DB: undefined }), NOW)).resolves.toEqual({
 			viewerSamplesPruned: 0,
 			channelRollupsPruned: 0,
 			gameRollupsPruned: 0,
@@ -38,14 +56,13 @@ describe('runRetentionWithColdArchive', () => {
 			},
 		});
 
-		const stats = await runRetentionWithColdArchive({ DB: db } as Env, NOW);
+		const stats = await runRetentionWithColdArchive(testEnv({ DB: db }), NOW);
 		expect(stats.viewerSamplesPruned).toBe(1);
 		expect(coldArchiveR2.archiveRowsToColdStorage).not.toHaveBeenCalled();
 		expect(sampleDeletes).toBe(1);
 	});
 
 	it('archives samples to R2 before delete when enabled', async () => {
-		const env = { DB: undefined as unknown as D1Database, COLD_ARCHIVE_ENABLED: '1', SAMPLES: { put: vi.fn() } } as unknown as Env;
 		let deletedIds: number[] = [];
 		const db = makeDb({
 			sampleRows: [
@@ -63,8 +80,7 @@ describe('runRetentionWithColdArchive', () => {
 				return ids.length;
 			},
 		});
-
-		env.DB = db;
+		const env = testEnv({ DB: db, COLD_ARCHIVE_ENABLED: '1', SAMPLES: samplesBucket(vi.fn()) });
 		const stats = await runRetentionWithColdArchive(env, NOW);
 		expect(stats.viewerSamplesPruned).toBe(1);
 		expect(coldArchiveR2.archiveRowsToColdStorage).toHaveBeenCalled();
@@ -72,7 +88,6 @@ describe('runRetentionWithColdArchive', () => {
 	});
 
 	it('archives and prunes channel and game rollups when enabled', async () => {
-		const env = { DB: undefined as unknown as D1Database, COLD_ARCHIVE_ENABLED: '1', SAMPLES: {} } as unknown as Env;
 		let channelRollupDeletes = 0;
 		let gameRollupDeletes = 0;
 
@@ -112,8 +127,7 @@ describe('runRetentionWithColdArchive', () => {
 				return 1;
 			},
 		});
-
-		env.DB = db;
+		const env = testEnv({ DB: db, COLD_ARCHIVE_ENABLED: '1', SAMPLES: samplesBucket(vi.fn()) });
 		const stats = await runRetentionWithColdArchive(env, NOW);
 		expect(stats.channelRollupsPruned).toBe(1);
 		expect(stats.gameRollupsPruned).toBe(1);
@@ -123,7 +137,6 @@ describe('runRetentionWithColdArchive', () => {
 	});
 
 	it('continues sample archive batches until fewer than batch size remain', async () => {
-		const env = { DB: undefined as unknown as D1Database, COLD_ARCHIVE_ENABLED: '1', SAMPLES: {} } as unknown as Env;
 		const fullBatch = Array.from({ length: VIEWER_SAMPLE_DELETE_BATCH_SIZE }, (_, i) => ({
 			id: i + 1,
 			stream_session_id: `sess-${i}`,
@@ -165,83 +178,76 @@ describe('runRetentionWithColdArchive', () => {
 			}
 			return originalPrepare(sql);
 		};
-
-		env.DB = db;
+		const env = testEnv({ DB: db, COLD_ARCHIVE_ENABLED: '1', SAMPLES: samplesBucket(vi.fn()) });
 		const stats = await runRetentionWithColdArchive(env, NOW);
 		expect(stats.viewerSamplesPruned).toBe(VIEWER_SAMPLE_DELETE_BATCH_SIZE + 1);
 		expect(coldArchiveR2.archiveRowsToColdStorage).toHaveBeenCalledTimes(2);
 	});
 
 	it('counts zero when delete statements omit meta', async () => {
-		const env = { DB: undefined as unknown as D1Database, COLD_ARCHIVE_ENABLED: '1', SAMPLES: {} } as unknown as Env;
-		const db = {
-			prepare(sql: string) {
-				if (sql.includes('FROM viewer_samples vs') && sql.includes('SELECT vs.id')) {
-					let calls = 0;
-					return {
-						bind: () => ({
-							all: async () => {
-								calls += 1;
-								if (calls > 1) return { results: [] };
-								return {
-									results: [
-										{
-											id: 1,
-											stream_session_id: 's',
-											sampled_at: '2026-05-01T00:00:00.000Z',
-											viewer_count: 1,
-											channel_id: 'c',
-											platform_id: 'twitch',
-										},
-									],
-								};
-							},
-						}),
-					};
-				}
-				if (sql.includes('DELETE FROM viewer_samples') && sql.includes('json_each')) {
-					return { bind: () => ({ run: async () => ({}) }) };
-				}
-				if (sql.includes('FROM channel_daily_rollups') || sql.includes('FROM game_daily_rollups')) {
-					return { bind: () => ({ all: async () => ({ results: [] }) }) };
-				}
-				return { bind: () => ({ run: async () => ({}), all: async () => ({ results: [] }) }) };
-			},
-		} as unknown as D1Database;
-		env.DB = db;
+		const db = mockIngestD1((sql: string) => {
+			if (sql.includes('FROM viewer_samples vs') && sql.includes('SELECT vs.id')) {
+				let calls = 0;
+				return {
+					bind: () => ({
+						all: async () => {
+							calls += 1;
+							if (calls > 1) return { results: [] };
+							return {
+								results: [
+									{
+										id: 1,
+										stream_session_id: 's',
+										sampled_at: '2026-05-01T00:00:00.000Z',
+										viewer_count: 1,
+										channel_id: 'c',
+										platform_id: 'twitch',
+									},
+								],
+							};
+						},
+					}),
+				};
+			}
+			if (sql.includes('DELETE FROM viewer_samples') && sql.includes('json_each')) {
+				return { bind: () => ({ run: async () => ({}) }) };
+			}
+			if (sql.includes('FROM channel_daily_rollups') || sql.includes('FROM game_daily_rollups')) {
+				return { bind: () => ({ all: async () => ({ results: [] }) }) };
+			}
+			return { bind: () => ({ run: async () => ({}), all: async () => ({ results: [] }) }) };
+		});
+		const env = testEnv({ DB: db, COLD_ARCHIVE_ENABLED: '1', SAMPLES: samplesBucket(vi.fn()) });
 		const stats = await runRetentionWithColdArchive(env, NOW);
 		expect(stats.viewerSamplesPruned).toBe(0);
 		expect(coldArchiveR2.archiveRowsToColdStorage).toHaveBeenCalledOnce();
 	});
 
 	it('treats null D1 results as empty', async () => {
-		const env = { DB: undefined as unknown as D1Database, COLD_ARCHIVE_ENABLED: '1', SAMPLES: {} } as unknown as Env;
-		const db = {
-			prepare(sql: string) {
-				if (sql.includes('FROM channel_daily_rollups') && sql.includes('channel_id')) {
-					return {
-						bind: () => ({ all: async () => ({ results: null }) }),
-					};
-				}
-				if (sql.includes('FROM game_daily_rollups') && sql.includes('game_category_id')) {
-					return {
-						bind: () => ({ all: async () => ({ results: null }) }),
-					};
-				}
-				if (sql.includes('FROM viewer_samples vs') && sql.includes('SELECT vs.id')) {
-					return {
-						bind: () => ({ all: async () => ({ results: null }) }),
-					};
-				}
+		const db = mockIngestD1((sql: string) => {
+			if (sql.includes('FROM channel_daily_rollups') && sql.includes('channel_id')) {
 				return {
-					bind: () => ({
-						run: async () => ({}),
-						all: async () => ({ results: [] }),
-					}),
+					bind: () => ({ all: async () => ({ results: null }) }),
 				};
-			},
-		} as unknown as D1Database;
-		env.DB = db;
+			}
+			if (sql.includes('FROM game_daily_rollups') && sql.includes('game_category_id')) {
+				return {
+					bind: () => ({ all: async () => ({ results: null }) }),
+				};
+			}
+			if (sql.includes('FROM viewer_samples vs') && sql.includes('SELECT vs.id')) {
+				return {
+					bind: () => ({ all: async () => ({ results: null }) }),
+				};
+			}
+			return {
+				bind: () => ({
+					run: async () => ({}),
+					all: async () => ({ results: [] }),
+				}),
+			};
+		});
+		const env = testEnv({ DB: db, COLD_ARCHIVE_ENABLED: '1', SAMPLES: samplesBucket(vi.fn()) });
 		await expect(runRetentionWithColdArchive(env, NOW)).resolves.toEqual({
 			viewerSamplesPruned: 0,
 			channelRollupsPruned: 0,
@@ -271,101 +277,102 @@ function makeDb(opts: {
 	let channelSelectCount = 0;
 	let gameSelectCount = 0;
 
-	return {
-		prepare(sql: string) {
-			if (sql.startsWith('DELETE FROM viewer_samples') && sql.includes('json_each')) {
-				return {
-					bind: (idsJson: string) => ({
-						run: async () => {
-							const ids = JSON.parse(idsJson) as number[];
-							return { meta: { changes: opts.onSampleDelete?.(ids) ?? ids.length } };
-						},
-					}),
-				};
-			}
-			if (sql.startsWith('DELETE FROM viewer_samples')) {
-				return {
-					bind: () => ({
-						run: async () => {
-							const changes = opts.onSampleDelete?.([1]) ?? 1;
-							return { meta: { changes } };
-						},
-					}),
-				};
-			}
-			if (sql.startsWith('DELETE FROM channel_daily_rollups') && sql.includes('json_each')) {
-				return {
-					bind: () => ({
-						run: async () => ({ meta: { changes: opts.onChannelRollupDelete?.() ?? 1 } }),
-					}),
-				};
-			}
-			if (sql.startsWith('DELETE FROM channel_daily_rollups')) {
-				return {
-					bind: () => ({
-						run: async () => ({ meta: { changes: opts.onChannelRollupDelete?.() ?? 0 } }),
-					}),
-				};
-			}
-			if (sql.startsWith('DELETE FROM game_daily_rollups') && sql.includes('json_each')) {
-				return {
-					bind: () => ({
-						run: async () => ({ meta: { changes: opts.onGameRollupDelete?.() ?? 1 } }),
-					}),
-				};
-			}
-			if (sql.startsWith('DELETE FROM game_daily_rollups')) {
-				return {
-					bind: () => ({
-						run: async () => ({ meta: { changes: opts.onGameRollupDelete?.() ?? 0 } }),
-					}),
-				};
-			}
-			if (sql.includes('FROM viewer_samples vs') && sql.includes('SELECT vs.id')) {
-				return {
-					bind(_cutoff: string, _limit: number) {
-						return {
-							all: async () => {
-								sampleSelectCount += 1;
-								if (sampleSelectCount > 1) return { results: [] };
-								return { results: opts.sampleRows };
-							},
-						};
-					},
-				};
-			}
-			if (sql.includes('FROM channel_daily_rollups') && sql.includes('channel_id')) {
-				return {
-					bind(_cutoff: string, _limit: number) {
-						return {
-							all: async () => {
-								channelSelectCount += 1;
-								if (channelSelectCount > 1) return { results: [] };
-								return { results: opts.channelRollupRows ?? [] };
-							},
-						};
-					},
-				};
-			}
-			if (sql.includes('FROM game_daily_rollups') && sql.includes('game_category_id')) {
-				return {
-					bind(_cutoff: string, _limit: number) {
-						return {
-							all: async () => {
-								gameSelectCount += 1;
-								if (gameSelectCount > 1) return { results: [] };
-								return { results: opts.gameRollupRows ?? [] };
-							},
-						};
-					},
-				};
-			}
+	return mockIngestD1((sql: string) => {
+		if (sql.startsWith('DELETE FROM viewer_samples') && sql.includes('json_each')) {
 			return {
-				bind: () => ({
-					run: async () => ({ meta: { changes: 0 } }),
-					all: async () => ({ results: [] }),
+				bind: (idsJson: string) => ({
+					run: async () => {
+						const parsed: unknown = JSON.parse(idsJson);
+						if (!Array.isArray(parsed) || !parsed.every((id): id is number => typeof id === 'number')) {
+							throw new Error('expected number[]');
+						}
+						return { meta: { changes: opts.onSampleDelete?.(parsed) ?? parsed.length } };
+					},
 				}),
 			};
-		},
-	} as unknown as D1Database;
+		}
+		if (sql.startsWith('DELETE FROM viewer_samples')) {
+			return {
+				bind: () => ({
+					run: async () => {
+						const changes = opts.onSampleDelete?.([1]) ?? 1;
+						return { meta: { changes } };
+					},
+				}),
+			};
+		}
+		if (sql.startsWith('DELETE FROM channel_daily_rollups') && sql.includes('json_each')) {
+			return {
+				bind: () => ({
+					run: async () => ({ meta: { changes: opts.onChannelRollupDelete?.() ?? 1 } }),
+				}),
+			};
+		}
+		if (sql.startsWith('DELETE FROM channel_daily_rollups')) {
+			return {
+				bind: () => ({
+					run: async () => ({ meta: { changes: opts.onChannelRollupDelete?.() ?? 0 } }),
+				}),
+			};
+		}
+		if (sql.startsWith('DELETE FROM game_daily_rollups') && sql.includes('json_each')) {
+			return {
+				bind: () => ({
+					run: async () => ({ meta: { changes: opts.onGameRollupDelete?.() ?? 1 } }),
+				}),
+			};
+		}
+		if (sql.startsWith('DELETE FROM game_daily_rollups')) {
+			return {
+				bind: () => ({
+					run: async () => ({ meta: { changes: opts.onGameRollupDelete?.() ?? 0 } }),
+				}),
+			};
+		}
+		if (sql.includes('FROM viewer_samples vs') && sql.includes('SELECT vs.id')) {
+			return {
+				bind(_cutoff: string, _limit: number) {
+					return {
+						all: async () => {
+							sampleSelectCount += 1;
+							if (sampleSelectCount > 1) return { results: [] };
+							return { results: opts.sampleRows };
+						},
+					};
+				},
+			};
+		}
+		if (sql.includes('FROM channel_daily_rollups') && sql.includes('channel_id')) {
+			return {
+				bind(_cutoff: string, _limit: number) {
+					return {
+						all: async () => {
+							channelSelectCount += 1;
+							if (channelSelectCount > 1) return { results: [] };
+							return { results: opts.channelRollupRows ?? [] };
+						},
+					};
+				},
+			};
+		}
+		if (sql.includes('FROM game_daily_rollups') && sql.includes('game_category_id')) {
+			return {
+				bind(_cutoff: string, _limit: number) {
+					return {
+						all: async () => {
+							gameSelectCount += 1;
+							if (gameSelectCount > 1) return { results: [] };
+							return { results: opts.gameRollupRows ?? [] };
+						},
+					};
+				},
+			};
+		}
+		return {
+			bind: () => ({
+				run: async () => ({ meta: { changes: 0 } }),
+				all: async () => ({ results: [] }),
+			}),
+		};
+	});
 }

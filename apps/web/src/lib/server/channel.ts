@@ -1,6 +1,7 @@
 import { parseRankingPeriod } from '@omnicharts/domain';
-import { buildChannelDetailResponse, resolveChannelSlug } from '@omnicharts/rollup';
+import { buildChannelDetailResponse, resolveChannelSlug, type ChannelDetailResponse } from '@omnicharts/rollup';
 import { getIngestBaseUrl } from '$lib/server/ingest';
+import { parseChannelLookupBody, parseChannelResolveBody, parseIngestChannelResponse } from '$lib/server/json-guards';
 import { periodForApi } from '$lib/server/period-api';
 import type { ServerLoadContext } from '$lib/server/load-context';
 import { parseUiPeriod, type RankingPeriod } from '$lib/ui/platform.svelte';
@@ -74,7 +75,7 @@ function mapDaily(rows: IngestChannelResponse['daily'] | undefined): ChannelDail
 	}));
 }
 
-function mapChannelBody(body: IngestChannelResponse, period: RankingPeriod): ChannelDetailLoad {
+function mapChannelBody(body: IngestChannelResponse | ChannelDetailResponse, period: RankingPeriod): ChannelDetailLoad {
 	return {
 		source: 'live',
 		platform: body.platform,
@@ -173,11 +174,8 @@ export async function findChannelOnOtherPlatforms(
 				const url = `${getIngestBaseUrl()}/v1/channels/${encodeURIComponent(slug)}?platform=${encodeURIComponent(platform)}&period=7d`;
 				const res = await ctx.fetch(url, { headers: { accept: 'application/json' } });
 				if (!res.ok) return null;
-				const body = (await res.json()) as {
-					slug: string;
-					display_name: string;
-					platform?: string;
-				};
+				const body = parseChannelLookupBody(await res.json());
+				if (!body) return null;
 				return {
 					slug: body.slug,
 					platform: body.platform ?? platform,
@@ -208,7 +206,8 @@ export async function resolveChannelSlugFromHistory(ctx: ServerLoadContext, slug
 			headers: { accept: 'application/json' },
 		});
 		if (!res.ok) return null;
-		const body = (await res.json()) as { slug: string; from_history?: boolean };
+		const body = parseChannelResolveBody(await res.json());
+		if (!body) return null;
 		if (body.from_history && body.slug && body.slug !== slug) return body.slug;
 		return null;
 	} catch {
@@ -232,7 +231,7 @@ export async function loadChannelDetail(
 					slug,
 					period: apiPeriod,
 				});
-				if (body) return mapChannelBody(body as IngestChannelResponse, period);
+				if (body) return mapChannelBody(body, period);
 			} catch {
 				/* platformProxy D1 may be empty — fall through to ingest HTTP */
 			}
@@ -242,7 +241,8 @@ export async function loadChannelDetail(
 		const res = await ctx.fetch(url, { headers: { accept: 'application/json' } });
 		if (res.status === 404) return notFoundLoad(slug, platform, period);
 		if (!res.ok) throw new Error(`ingest ${res.status}`);
-		const body = (await res.json()) as IngestChannelResponse;
+		const body = parseIngestChannelResponse(await res.json());
+		if (!body) throw new Error('invalid channel payload');
 		return mapChannelBody(body, period);
 	} catch {
 		return errorLoad(slug, platform, period);

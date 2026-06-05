@@ -1,3 +1,4 @@
+import { parseEventSubWebhookBody, parseStreamOnlineEvent } from '../../json-guards';
 import { applyStreamOffline, applyStreamOnline } from './lifecycle';
 import { isDuplicateEventSubMessage, recordEventSubMessageId } from './message-dedup';
 import { markEventSubRevoked } from './subscriptions-db';
@@ -12,12 +13,7 @@ const MESSAGE_TIMESTAMP = 'twitch-eventsub-message-timestamp';
 const MESSAGE_SIGNATURE = 'twitch-eventsub-message-signature';
 
 function parseStreamOnline(event: Record<string, unknown>): StreamOnlineEvent | null {
-	if (typeof event.id !== 'string') return null;
-	if (typeof event.broadcaster_user_id !== 'string') return null;
-	if (typeof event.broadcaster_user_login !== 'string') return null;
-	if (typeof event.broadcaster_user_name !== 'string') return null;
-	if (typeof event.started_at !== 'string') return null;
-	return event as StreamOnlineEvent;
+	return parseStreamOnlineEvent(event);
 }
 
 function parseStreamOffline(event: Record<string, unknown>): StreamOfflineEvent | null {
@@ -111,12 +107,13 @@ export async function handleTwitchEventSubWebhook(request: Request, env: Env, ct
 		return new Response('Invalid EventSub signature', { status: 403 });
 	}
 
-	let body: EventSubWebhookBody;
+	let body: EventSubWebhookBody | null;
 	try {
-		body = JSON.parse(rawBody) as EventSubWebhookBody;
+		body = parseEventSubWebhookBody(JSON.parse(rawBody));
 	} catch {
 		return new Response('Invalid JSON body', { status: 400 });
 	}
+	if (!body) return new Response('Invalid JSON body', { status: 400 });
 
 	const db = requireDb(env);
 

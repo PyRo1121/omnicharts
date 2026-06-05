@@ -288,19 +288,39 @@ Root monorepo scripts live in `package.json`. **Verify / test gates:** [13-testi
 
 ### Lint philosophy (oxlint)
 
-Root `.oxlintrc.json` targets **common bugs**, not style pedantry (oxfmt owns formatting).
+Root `.oxlintrc.json` targets **enterprise bug prevention** — correctness + high-signal suspicious rules, type-aware TypeScript checks, and ESLint/import parity. Oxfmt owns formatting; oxlint does not duplicate style pedantry.
 
-| Group | Level | Rules / intent |
-|-------|-------|----------------|
-| **Correctness** | error | Oxlint default category — outright wrong code (includes unused vars/imports, unreachable code, duplicate keys in objects/switch). |
-| **Strict equality** | warn | `eqeqeq` (`smart`) — catches `==` mistakes; allows idiomatic null checks. |
-| **Debug / prod hygiene** | error / warn | `no-debugger` (error); `no-console` (warn) on app + worker source — **off** in `scripts/**` and ingest logging shims (`log.ts`, `d1-meta.ts`). |
-| **TypeScript hygiene** | warn | `typescript/no-explicit-any` — nudge away from `any`; **off** in `*.test.ts` / `*.spec.ts` / `test/**`. |
-| **Explicit suspicious** | error | `no-unreachable`, `no-dupe-keys`, `no-dupe-class-members`, `no-duplicate-case` — belt-and-suspenders on top of correctness. |
+| Tier | Level | Intent |
+|------|-------|--------|
+| **correctness** | error | Full category — outright wrong code (unused vars/imports, unreachable paths, duplicate keys, etc.). |
+| **suspicious** | error | High-signal likely bugs; noisy rules explicitly **off** (see below). |
+| **perf** | warn | Map-spread and similar hot-path nits — fix in prod code. |
+| **pedantic / style / restriction** | off | Too noisy or overlaps oxfmt; not enabled by default. |
+| **Type-aware** (`options.typeAware: true`, `oxlint-tsgolint`) | mixed | Promise safety + TS hygiene on real programs (per-package `tsconfig.json`). |
+| **typescript/no-explicit-any** | error | Prod paths only; **off** in tests/e2e overrides. |
+| **typescript/no-floating-promises**, **no-misused-promises** | error | Unhandled/misused async — primary type-aware win. |
+| **typescript/no-unsafe-\*** | warn | Unsafe any propagation — fix in prod; **off** in tests/scripts overrides. |
+| **typescript/await-thenable** | error | Await non-Promise values. |
+| **ESLint parity** | error | `prefer-const`, `no-var`, `no-throw-literal`, `eqeqeq` (warn, smart). |
+| **import/no-duplicates** | error | Merge duplicate imports. |
+| **import/no-cycle** | warn | Circular deps (scripts override: off — verify CLIs are DAG-ish). |
+| **Debug / prod hygiene** | error / warn | `no-debugger` (error); `no-console` (warn) — **off** in `scripts/**` and ingest logging shims (`log.ts`, `d1-meta.ts`). |
 
-**Not enabled:** full `suspicious` category (noisy unicorn rules like `no-array-sort`), `pedantic` / `style` / `restriction`, or type-aware rules (`typescript/no-floating-promises`) — those need `options.typeAware` + TS program cost across the monorepo; `svelte-check` / Vitest cover typed paths instead.
+**Suspicious disables (documented noise):**
 
-**Oxfmt:** `.oxfmtrc.json` — tabs, single quotes, semicolons, 140 print width; no extra style rules duplicated in oxlint.
+| Rule | Why off |
+|------|---------|
+| `no-await-in-loop` | Ingest/cron/verify scripts intentionally sequential; **off** globally + scripts/tests. |
+| `unicorn/no-array-sort` | Rankings use explicit compare fns / locale — not `Array.prototype.sort` foot-guns. |
+| `import/no-unassigned-import` | Svelte side-effect imports (`+layout.svelte` CSS); **off** for `**/*.svelte`. |
+| `unicorn/no-null`, `prefer-node-protocol`, `prefer-top-level-await` | Ecosystem / Workers idioms differ from unicorn defaults. |
+| `typescript/no-unsafe-type-assertion`, `no-unnecessary-type-assertion`, `no-base-to-string`, `no-unnecessary-type-conversion`, `restrict-template-expressions`, `unbound-method`, `no-unnecessary-type-parameters`, `no-unnecessary-boolean-literal-compare` | Type-aware noise at scale (API/JSON boundaries); prefer targeted fixes over hundreds of assertion nits. |
+| `typescript/only-throw-error` | SvelteKit `error()` / `redirect()` throw framework types, not plain `Error`. |
+
+**Test / script overrides:** `*.test.ts`, `*.spec.ts`, `test/**`, `e2e/**` relax type-aware and `no-explicit-any`. `scripts/**` also disables `no-unsafe-*` and `import/no-cycle` (CLI JSON parsing).
+
+**Oxfmt:** `.oxfmtrc.json` — tabs, single quotes, semicolons, 140 print width.
+
 | **Preview built Pages** | `npm run build && npx wrangler pages dev .svelte-kit/cloudflare` | [adapter-cloudflare](https://svelte.dev/docs/kit/adapter-cloudflare) |
 | **Build** | `npm run build` | [adapter-cloudflare](https://svelte.dev/docs/kit/adapter-cloudflare) |
 | **Deploy Pages** | `npx wrangler pages deploy .svelte-kit/cloudflare --project-name=omnicharts-web` | [pages deploy](https://developers.cloudflare.com/workers/wrangler/commands/pages/#pages-deploy) |
@@ -334,3 +354,4 @@ Root `.oxlintrc.json` targets **common bugs**, not style pedantry (oxfmt owns fo
 | 2026-06-03 | Lane 4/5: `packages/*` in layout; `wrangler.jsonc` (not TOML) for Pages; monorepo import link to doc 27. |
 | 2026-06-05 | **Oxlint + Oxfmt:** root devDeps `oxlint`, `oxfmt`; configs `.oxlintrc.json`, `.oxfmtrc.json`; scripts `lint`, `format`, `format:check` scoped to apps/web, packages, workers/ingest, scripts. |
 | 2026-06-05 | **Oxlint tune:** practical rule set — correctness + eqeqeq/no-console/no-debugger/no-explicit-any + explicit duplicate/unreachable rules; scripts + logging shims exempt from no-console. |
+| 2026-06-05 | **Oxlint enterprise:** full correctness + suspicious (minus documented noise), perf warn, type-aware (`oxlint-tsgolint`), import/ESLint parity; test/script/svelte overrides; doc 19 lint philosophy table. |

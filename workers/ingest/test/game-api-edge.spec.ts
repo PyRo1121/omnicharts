@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { unusedIngestD1 } from './helpers';
 import { buildGameDetailResponse, parseGameDetailQuery } from '../src/ranking/game-api';
 
 describe('game-api edge cases', () => {
@@ -23,7 +24,7 @@ describe('game-api edge cases', () => {
 					bind: () => ({ first: async () => null }),
 				};
 			},
-		} as unknown as D1Database;
+		};
 		const res = await buildGameDetailResponse(db, {
 			platform: 'youtube',
 			slug: 'valorant',
@@ -33,7 +34,7 @@ describe('game-api edge cases', () => {
 	});
 
 	it('buildGameDetailResponse returns null for empty slug', async () => {
-		const db = {} as D1Database;
+		const db = unusedIngestD1();
 		const res = await buildGameDetailResponse(db, {
 			platform: 'twitch',
 			slug: '',

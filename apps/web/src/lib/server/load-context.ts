@@ -9,10 +9,16 @@ export type ServerLoadContext = {
 	cfEnv: WebRankingEnv | null;
 };
 
-export function serverLoadContext(fetchFn: typeof globalThis.fetch, platform: App.Platform | null | undefined): ServerLoadContext {
+type PlatformRankingEnv = { env?: WebRankingEnv };
+
+export function cfRankingEnv(platform: PlatformRankingEnv | null | undefined): WebRankingEnv | null {
+	return platform?.env ?? null;
+}
+
+export function serverLoadContext(fetchFn: typeof globalThis.fetch, platform: PlatformRankingEnv | null | undefined): ServerLoadContext {
 	return {
 		fetch: fetchFn,
 		db: getD1(platform),
-		cfEnv: (platform?.env as WebRankingEnv | undefined) ?? null,
+		cfEnv: cfRankingEnv(platform),
 	};
 }

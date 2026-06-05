@@ -1,3 +1,4 @@
+import { parseHelixEventSubCreateResponse, parseHelixEventSubListResponse } from '../../json-guards';
 import { getAppAccessToken } from '../auth';
 import { HelixRateBudget } from '../rate-limit';
 import type { CreateSubscriptionResult, EventSubSubscriptionType, HelixEventSubSubscription } from './types';
@@ -47,7 +48,7 @@ export class TwitchEventSubApi {
 		const res = await fetch(url, {
 			headers: {
 				Authorization: `Bearer ${token}`,
-				'Client-Id': this.env.TWITCH_CLIENT_ID!,
+				'Client-Id': this.env.TWITCH_CLIENT_ID,
 			},
 		});
 
@@ -56,7 +57,7 @@ export class TwitchEventSubApi {
 			throw new Error(`EventSub list ${res.status}: ${text.slice(0, 300)}`);
 		}
 
-		return (await res.json()) as HelixEventSubListResponse;
+		return parseHelixEventSubListResponse(await res.json());
 	}
 
 	async listAllEnabled(): Promise<HelixEventSubSubscription[]> {
@@ -103,16 +104,16 @@ export class TwitchEventSubApi {
 			method: 'POST',
 			headers: {
 				Authorization: `Bearer ${token}`,
-				'Client-Id': this.env.TWITCH_CLIENT_ID!,
+				'Client-Id': this.env.TWITCH_CLIENT_ID,
 				'Content-Type': 'application/json',
 			},
 			body: JSON.stringify(body),
 		});
 
 		const text = await res.text();
-		let json: HelixEventSubCreateResponse | { message?: string; error?: string } = {};
+		let json: HelixEventSubCreateResponse | null = null;
 		try {
-			json = JSON.parse(text) as HelixEventSubCreateResponse;
+			json = parseHelixEventSubCreateResponse(JSON.parse(text));
 		} catch {
 			/* non-json */
 		}
@@ -133,7 +134,7 @@ export class TwitchEventSubApi {
 			};
 		}
 
-		const sub = (json as HelixEventSubCreateResponse).data?.[0];
+		const sub = json?.data?.[0];
 		return {
 			subscriptionId: sub?.id ?? null,
 			status: sub?.status ?? 'unknown',
@@ -151,7 +152,7 @@ export class TwitchEventSubApi {
 			method: 'DELETE',
 			headers: {
 				Authorization: `Bearer ${token}`,
-				'Client-Id': this.env.TWITCH_CLIENT_ID!,
+				'Client-Id': this.env.TWITCH_CLIENT_ID,
 			},
 		});
 

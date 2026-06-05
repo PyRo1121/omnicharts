@@ -1,3 +1,5 @@
+import { parseDedupEntry } from '../../json-guards';
+
 /** Twitch EventSub webhook message_id dedup (~10m TTL in ingest_metadata).
  *  Stale keys use TTL-on-read: `isDuplicateEventSubMessage` ignores expired entries and deletes them. */
 
@@ -8,13 +10,7 @@ const keyFor = (messageId: string) => `eventsub_msg:${messageId}`;
 type DedupEntry = { seenAt: string };
 
 function parseEntry(value: string): DedupEntry | null {
-	try {
-		const parsed = JSON.parse(value) as DedupEntry;
-		if (typeof parsed.seenAt !== 'string') return null;
-		return parsed;
-	} catch {
-		return null;
-	}
+	return parseDedupEntry(value);
 }
 
 function isFresh(entry: DedupEntry): boolean {

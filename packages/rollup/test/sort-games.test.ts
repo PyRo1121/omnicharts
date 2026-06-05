@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'bun:test';
+import { describe, it, expect } from 'vitest';
 import { sortGamesByAverageViewers } from '../src/sort';
 
 describe('sortGamesByAverageViewers (docs/04)', () => {

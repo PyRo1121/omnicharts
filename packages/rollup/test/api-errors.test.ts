@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'bun:test';
+import { describe, it, expect } from 'vitest';
 import {
 	compareQueryErrorResponse,
 	rankingsChannelsQueryErrorResponse,
@@ -10,8 +10,7 @@ describe('api-errors', () => {
 	it('rankingsChannelsQueryErrorResponse returns OpenAPI-shaped 400', async () => {
 		const res = rankingsChannelsQueryErrorResponse('invalid_period');
 		expect(res.status).toBe(400);
-		const body = await res.json();
-		expect(body).toEqual({
+		expect(await res.json()).toEqual({
 			error: {
 				code: 'invalid_period',
 				message: 'period must be one of 24h, 7d, 30d, 90d',
@@ -22,14 +21,14 @@ describe('api-errors', () => {
 	it('rankingsGamesQueryErrorResponse omits invalid_language', async () => {
 		const res = rankingsGamesQueryErrorResponse('invalid_format');
 		expect(res.status).toBe(400);
-		const body = await res.json();
-		expect(body.error.code).toBe('invalid_format');
+		expect(await res.json()).toMatchObject({ error: { code: 'invalid_format' } });
 	});
 
 	it('compareQueryErrorResponse documents missing slugs', async () => {
 		const res = compareQueryErrorResponse('missing_slugs');
-		const body = await res.json();
-		expect(body.error.message).toContain('a and b');
+		expect(await res.json()).toMatchObject({
+			error: { message: 'query params a and b (channel slugs) are required' },
+		});
 	});
 
 	it('searchQueryErrorResponse uses no-store when requested', () => {

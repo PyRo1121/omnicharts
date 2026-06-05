@@ -15,12 +15,12 @@ export type ViewerSamplePoint = {
 export function computeHoursWatched(samples: ViewerSamplePoint[], defaultIntervalMinutes = 1): number {
 	if (samples.length === 0) return 0;
 
-	const sorted = [...samples].sort((a, b) => a.sampledAtMs - b.sampledAtMs);
+	const sorted = [...samples].toSorted((a, b) => a.sampledAtMs - b.sampledAtMs);
 	let total = 0;
 
 	for (let i = 0; i < sorted.length - 1; i++) {
-		const current = sorted[i]!;
-		const next = sorted[i + 1]!;
+		const current = sorted[i];
+		const next = sorted[i + 1];
 		const intervalHours = (next.sampledAtMs - current.sampledAtMs) / 3_600_000;
 		if (intervalHours <= 0) continue;
 		const avgViewers = (current.viewerCount + next.viewerCount) / 2;
@@ -28,7 +28,7 @@ export function computeHoursWatched(samples: ViewerSamplePoint[], defaultInterva
 	}
 
 	if (sorted.length === 1) {
-		total += sorted[0]!.viewerCount * (defaultIntervalMinutes / 60);
+		total += sorted[0].viewerCount * (defaultIntervalMinutes / 60);
 	}
 
 	return total;
@@ -49,9 +49,9 @@ export function computeAirtimeMinutesFromSamples(samples: ViewerSamplePoint[], d
 	if (samples.length === 0) return 0;
 	if (samples.length === 1) return defaultIntervalMinutes;
 
-	const sorted = [...samples].sort((a, b) => a.sampledAtMs - b.sampledAtMs);
-	const first = sorted[0]!;
-	const last = sorted[sorted.length - 1]!;
+	const sorted = [...samples].toSorted((a, b) => a.sampledAtMs - b.sampledAtMs);
+	const first = sorted[0];
+	const last = sorted[sorted.length - 1];
 	const spanMs = last.sampledAtMs - first.sampledAtMs;
 	return Math.max(defaultIntervalMinutes, Math.round(spanMs / 60_000) + defaultIntervalMinutes);
 }

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { testEnv } from './helpers';
 import { TwitchHelixClient } from '../src/twitch/helix';
 import * as topGamesCache from '../src/twitch/top-games-cache';
 import { runTwitchGamePass } from '../src/twitch/game-pass';
@@ -26,7 +27,7 @@ describe('runTwitchGamePass', () => {
 			games: [],
 			helixPointsUsed: 0,
 		});
-		const stats = await runTwitchGamePass({ TWITCH_MIN_VIEWERS: '2', DB: {} } as Env);
+		const stats = await runTwitchGamePass(testEnv({ TWITCH_MIN_VIEWERS: '2' }));
 		expect(stats.gamesScanned).toBe(0);
 	});
 
@@ -53,7 +54,7 @@ describe('runTwitchGamePass', () => {
 			pagination: {},
 		});
 
-		const stats = await runTwitchGamePass({ TWITCH_MIN_VIEWERS: '2', DB: {} } as Env);
+		const stats = await runTwitchGamePass(testEnv({ TWITCH_MIN_VIEWERS: '2' }));
 		expect(stats.gamesScanned).toBeGreaterThan(0);
 		expect(stats.channelsIngested).toBeGreaterThan(0);
 	});
@@ -88,11 +89,12 @@ describe('runTwitchGamePass', () => {
 			};
 		});
 
-		const stats = await runTwitchGamePass({
-			TWITCH_MIN_VIEWERS: '2',
-			GAME_PASS_GAMES_PER_CYCLE: '1',
-			DB: {},
-		} as Env);
+		const stats = await runTwitchGamePass(
+			testEnv({
+				TWITCH_MIN_VIEWERS: '2',
+				GAME_PASS_GAMES_PER_CYCLE: '1',
+			}),
+		);
 		expect(stats.pagesFetched).toBe(2);
 		expect(stats.channelsIngested).toBe(1);
 	});
@@ -127,12 +129,13 @@ describe('runTwitchGamePass', () => {
 			return { data: [], pagination: {} };
 		});
 
-		const stats = await runTwitchGamePass({
-			TWITCH_MIN_VIEWERS: '50',
-			TWITCH_CLIENT_ID: 'id',
-			TWITCH_CLIENT_SECRET: 'sec',
-			DB: {},
-		} as Env);
+		const stats = await runTwitchGamePass(
+			testEnv({
+				TWITCH_MIN_VIEWERS: '50',
+				TWITCH_CLIENT_ID: 'id',
+				TWITCH_CLIENT_SECRET: 'sec',
+			}),
+		);
 		expect(getStreams).toHaveBeenCalled();
 		expect(stats.pagesFetched).toBeGreaterThanOrEqual(1);
 	});
@@ -162,11 +165,10 @@ describe('runTwitchGamePass', () => {
 
 		const seenUserIds = new Set(['u1']);
 		const stats = await runTwitchGamePass(
-			{
+			testEnv({
 				TWITCH_MIN_VIEWERS: '2',
 				GAME_PASS_GAMES_PER_CYCLE: '1',
-				DB: {},
-			} as Env,
+			}),
 			{ seenUserIds },
 		);
 		expect(stats.duplicatesSkipped).toBe(1);

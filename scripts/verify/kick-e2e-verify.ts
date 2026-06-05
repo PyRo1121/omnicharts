@@ -31,7 +31,7 @@ function log(step: Step) {
 
 function run(cmd: string[], cwd = REPO_ROOT): Promise<{ ok: boolean; output: string }> {
 	return new Promise((resolve) => {
-		const proc = spawn(cmd[0]!, cmd.slice(1), { cwd, stdio: ['ignore', 'pipe', 'pipe'] });
+		const proc = spawn(cmd[0], cmd.slice(1), { cwd, stdio: ['ignore', 'pipe', 'pipe'] });
 		let output = '';
 		proc.stdout?.on('data', (d) => {
 			output += d.toString();

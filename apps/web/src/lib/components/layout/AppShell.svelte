@@ -12,7 +12,7 @@
 		topbar?: Snippet;
 	}
 
-	let { children, topbar }: Props = $props();
+	const { children, topbar }: Props = $props();
 
 	const activePlatform = $derived(parseUiPlatform($page.url.searchParams.get('platform')));
 </script>

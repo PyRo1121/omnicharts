@@ -2,6 +2,7 @@ import { buildGameDetailResponse, parseGameDetailQuery } from '@omnicharts/rollu
 import { ROLLUP_CACHE_CONTROL } from '$lib/server/cache';
 import { getIngestBaseUrl } from '$lib/server/ingest';
 import { getD1 } from '$lib/server/d1';
+import { cfRankingEnv } from '$lib/server/load-context';
 import { webRankingEligibility } from '$lib/server/ranking-env';
 import type { RequestHandler } from './$types';
 
@@ -20,7 +21,7 @@ export const GET: RequestHandler = async ({ params, url, fetch, platform }) => {
 	}
 
 	if (db && (query.platform === 'twitch' || query.platform === 'kick' || query.platform === 'youtube')) {
-		const eligibility = webRankingEligibility(platform?.env, query.platform);
+		const eligibility = webRankingEligibility(cfRankingEnv(platform), query.platform);
 		const body = await buildGameDetailResponse(
 			db,
 			{

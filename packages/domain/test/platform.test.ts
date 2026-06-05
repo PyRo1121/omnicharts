@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, test } from 'vitest';
 import { isPlatformId, parsePlatformId, platformIds } from '../src/platform';
 
 describe('platform ids', () => {

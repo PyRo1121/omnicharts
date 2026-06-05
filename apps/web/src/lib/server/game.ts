@@ -1,6 +1,7 @@
 import { parseRankingPeriod } from '@omnicharts/domain';
-import { buildGameDetailResponse, formatHoursWatched, type GameTopChannelItem } from '@omnicharts/rollup';
+import { buildGameDetailResponse, formatHoursWatched, type GameDetailResponse, type GameTopChannelItem } from '@omnicharts/rollup';
 import { getIngestBaseUrl } from '$lib/server/ingest';
+import { parseIngestGameResponse } from '$lib/server/json-guards';
 import { periodForApi } from '$lib/server/period-api';
 import type { ChannelDailyPoint } from '$lib/server/channel';
 import type { ServerLoadContext } from '$lib/server/load-context';
@@ -80,7 +81,7 @@ function mapTopChannels(rows: GameTopChannelItem[] | undefined): GameTopChannelR
 	}));
 }
 
-function mapGameBody(body: IngestGameResponse, period: RankingPeriod): GameDetailLoad {
+function mapGameBody(body: IngestGameResponse | GameDetailResponse, period: RankingPeriod): GameDetailLoad {
 	return {
 		source: 'live',
 		platform: body.platform,
@@ -139,7 +140,7 @@ export async function loadGameDetail(
 					},
 				);
 				if (!body) return emptyGameLoad('not_found', slug, platform, period);
-				return mapGameBody(body as IngestGameResponse, period);
+				return mapGameBody(body, period);
 			} catch {
 				/* platformProxy D1 may be empty — fall through to ingest HTTP */
 			}
@@ -149,7 +150,8 @@ export async function loadGameDetail(
 		const res = await ctx.fetch(url, { headers: { accept: 'application/json' } });
 		if (res.status === 404) return emptyGameLoad('not_found', slug, platform, period);
 		if (!res.ok) throw new Error(`ingest ${res.status}`);
-		const body = (await res.json()) as IngestGameResponse;
+		const body = parseIngestGameResponse(await res.json());
+		if (!body) throw new Error('invalid game payload');
 		return mapGameBody(body, period);
 	} catch {
 		return emptyGameLoad('error', slug, platform, period);

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { testEnv, unusedIngestD1 } from './helpers';
 import worker from '../src/index';
 import * as vodBackfill from '../src/twitch/vod-backfill';
 
@@ -8,10 +9,10 @@ describe('VOD backfill admin routes (worker.fetch)', () => {
 	});
 
 	it('POST /admin/twitch/vod-backfill returns 401 without admin key', async () => {
-		const res = await worker.fetch(new Request('http://ingest/admin/twitch/vod-backfill', { method: 'POST' }), {
+		const res = await worker.fetch(new Request('http://ingest/admin/twitch/vod-backfill', { method: 'POST' }), testEnv({
 			ADMIN_API_KEY: 'secret',
-			DB: {} as D1Database,
-		} as Env);
+			DB: unusedIngestD1(),
+		}));
 		expect(res.status).toBe(401);
 	});
 
@@ -21,11 +22,11 @@ describe('VOD backfill admin routes (worker.fetch)', () => {
 				method: 'POST',
 				headers: { 'X-Admin-Api-Key': 'secret' },
 			}),
-			{ ADMIN_API_KEY: 'secret', DB: {} as D1Database } as Env,
+			testEnv({ ADMIN_API_KEY: 'secret', DB: unusedIngestD1() }),
 		);
 		expect(res.status).toBe(503);
-		const body = (await res.json()) as { error: string };
-		expect(body.error).toContain('not configured');
+		const body = await res.json();
+		expect(body).toEqual(expect.objectContaining({ error: expect.stringContaining('not configured') }));
 	});
 
 	it('POST /admin/twitch/vod-backfill returns stats on success', async () => {
@@ -47,17 +48,18 @@ describe('VOD backfill admin routes (worker.fetch)', () => {
 				},
 				body: JSON.stringify({ limit: 2 }),
 			}),
-			{
+			testEnv({
 				ADMIN_API_KEY: 'secret',
 				TWITCH_CLIENT_ID: 'id',
 				TWITCH_CLIENT_SECRET: 'secret',
-				DB: {} as D1Database,
-			} as Env,
+				DB: unusedIngestD1(),
+			}),
 		);
 
 		expect(res.status).toBe(200);
-		const body = (await res.json()) as { ok: boolean; stats: { sessions_upserted: number } };
-		expect(body.ok).toBe(true);
-		expect(body.stats.sessions_upserted).toBe(4);
+		expect(await res.json()).toEqual({
+			ok: true,
+			stats: { sessions_upserted: 4 },
+		});
 	});
 });

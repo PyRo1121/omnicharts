@@ -21,7 +21,7 @@ describe('buildGameDetailResponse', () => {
 					bind: () => ({ first: async () => null }),
 				};
 			},
-		} as unknown as D1Database;
+		};
 
 		const res = await buildGameDetailResponse(db, {
 			platform: 'twitch',
@@ -73,7 +73,7 @@ describe('buildGameDetailResponse', () => {
 				}
 				return { bind: () => ({ first: async () => null, all: async () => ({}) }) };
 			},
-		} as unknown as D1Database;
+		};
 
 		const res = await buildGameDetailResponse(db, {
 			platform: 'twitch',
@@ -139,7 +139,7 @@ describe('buildGameDetailResponse', () => {
 				}
 				return { bind: () => ({ first: async () => null, all: async () => ({}) }) };
 			},
-		} as unknown as D1Database;
+		};
 
 		const res = await buildGameDetailResponse(db, { platform: 'twitch', slug: 'valorant', period: '7d' }, { minAirtimeMinutes: 60 });
 
@@ -166,7 +166,7 @@ describe('buildGameDetailResponse', () => {
 			prepare: () => ({
 				bind: () => ({ all: async () => ({ results: [] }) }),
 			}),
-		} as unknown as D1Database;
+		};
 		const rows = await buildGameTopChannels(db, {
 			platform: 'youtube',
 			gameSlug: 'valorant',
@@ -198,7 +198,7 @@ describe('buildGameDetailResponse', () => {
 				}
 				return { bind: () => ({ first: async () => null, all: async () => ({}) }) };
 			},
-		} as unknown as D1Database;
+		};
 
 		const res = await buildGameDetailResponse(db, {
 			platform: 'twitch',

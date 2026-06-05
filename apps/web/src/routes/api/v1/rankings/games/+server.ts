@@ -11,6 +11,7 @@ import { ROLLUP_CACHE_CONTROL } from '$lib/server/cache';
 import { getIngestBaseUrl } from '$lib/server/ingest';
 import { proxyIngestResponse } from '$lib/server/proxy-ingest';
 import { getD1 } from '$lib/server/d1';
+import { cfRankingEnv } from '$lib/server/load-context';
 import { resolveWebRankingEnv } from '$lib/server/ranking-env';
 import type { RequestHandler } from './$types';
 
@@ -31,7 +32,7 @@ export const GET: RequestHandler = async ({ url, fetch, platform }) => {
 				period: parsed.period,
 				limit: parsed.limit,
 			},
-			resolveWebRankingEnv(platform?.env),
+			resolveWebRankingEnv(cfRankingEnv(platform)),
 		);
 		if (formatParsed.format === 'csv') {
 			const csv = gameRankingsToCsv(body);
@@ -47,7 +48,7 @@ export const GET: RequestHandler = async ({ url, fetch, platform }) => {
 		});
 	}
 
-	if (parsed.ok === false) {
+	if (!parsed.ok) {
 		return rankingsGamesQueryErrorResponse(parsed.error, { cacheControl: 'no-store' });
 	}
 

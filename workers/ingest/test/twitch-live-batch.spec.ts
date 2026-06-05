@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { testEnv, unusedIngestD1, mockIngestD1 } from './helpers';
 import type { HelixStream } from '../src/twitch/helix';
 import { runTwitchPollBatch } from '../src/twitch/poll';
 import { D1_BATCH_MAX_STATEMENTS } from '../src/db/d1-batch';
@@ -35,7 +36,7 @@ describe('batchUpsertGameCategories', () => {
 	it('uses multi-row INSERT with ON CONFLICT', async () => {
 		const run = vi.fn().mockResolvedValue({ success: true });
 		const prepare = vi.fn(() => ({ bind: vi.fn().mockReturnValue({ run }) }));
-		const db = { prepare, batch: vi.fn() } as unknown as D1Database;
+		const db = mockIngestD1((sql) => prepare(sql), vi.fn());
 
 		const map = await batchUpsertGameCategories(db, [
 			{ id: '1', name: 'A' },
@@ -50,7 +51,7 @@ describe('batchUpsertGameCategories', () => {
 	it('skips games with empty id and slugifies fallback name', async () => {
 		const run = vi.fn().mockResolvedValue({ success: true });
 		const prepare = vi.fn(() => ({ bind: vi.fn().mockReturnValue({ run }) }));
-		const db = { prepare, batch: vi.fn() } as unknown as D1Database;
+		const db = mockIngestD1((sql) => prepare(sql), vi.fn());
 
 		const map = await batchUpsertGameCategories(db, [
 			{ id: '', name: 'Bad' },
@@ -77,7 +78,7 @@ describe('batchUpsertChannelsFromStreams', () => {
 	};
 
 	it('returns empty map for no streams', async () => {
-		expect(await batchUpsertChannelsFromStreams({} as D1Database, [], { minViewers: 5, promoteToTracked: true })).toEqual(new Map());
+		expect(await batchUpsertChannelsFromStreams(unusedIngestD1(), [], { minViewers: 5, promoteToTracked: true })).toEqual(new Map());
 	});
 
 	it('inserts discovered channel and records sighting', async () => {
@@ -88,7 +89,7 @@ describe('batchUpsertChannelsFromStreams', () => {
 				all: async () => ({ results: [] }),
 			}),
 		}));
-		const db = { prepare, batch } as unknown as D1Database;
+		const db = mockIngestD1((sql) => prepare(sql), batch);
 
 		const map = await batchUpsertChannelsFromStreams(db, [stream], {
 			minViewers: 5,
@@ -120,10 +121,10 @@ describe('batchUpsertChannelsFromStreams', () => {
 				},
 			}),
 		}));
-		const db = { prepare, batch: vi.fn(async () => []) } as unknown as D1Database;
+		const db = mockIngestD1((sql) => prepare(sql), vi.fn(async () => []));
 
 		await batchUpsertChannelsFromStreams(db, [stream], { minViewers: 5, promoteToTracked: true });
-		expect(prepare.mock.calls.some(([sql]) => String(sql).includes('INSERT INTO channels'))).toBe(true);
+		expect(prepare.mock.calls.some(([sql]) => sql.includes('INSERT INTO channels'))).toBe(true);
 	});
 
 	it('writes slug_history when existing twitch channel slug changes', async () => {
@@ -149,12 +150,12 @@ describe('batchUpsertChannelsFromStreams', () => {
 			}),
 		}));
 		const batch = vi.fn(async () => []);
-		const db = { prepare, batch } as unknown as D1Database;
+		const db = mockIngestD1((sql) => prepare(sql), batch);
 
 		await batchUpsertChannelsFromStreams(db, [{ ...stream, user_login: 'new-login' }], { minViewers: 5, promoteToTracked: false });
 
 		expect(batch).toHaveBeenCalled();
-		expect(prepare.mock.calls.some(([sql]) => String(sql).includes('slug_history'))).toBe(true);
+		expect(prepare.mock.calls.some(([sql]) => sql.includes('slug_history'))).toBe(true);
 	});
 });
 
@@ -174,12 +175,13 @@ describe('runTwitchPollBatch live ingest', () => {
 		});
 
 		const userIds = Array.from({ length: 75 }, (_, i) => String(i));
-		const env = {
-			DB: { prepare, batch },
+		const db = mockIngestD1((sql) => prepare(sql), batch);
+		const env = testEnv({
+			DB: db,
 			TWITCH_CLIENT_ID: 'id',
 			TWITCH_CLIENT_SECRET: 'secret',
 			TWITCH_MIN_VIEWERS: '2',
-		} as unknown as Env;
+		});
 
 		await runTwitchPollBatch(env, userIds);
 
@@ -201,7 +203,7 @@ describe('batchRecordLiveSamples', () => {
 			}),
 		}));
 
-		const db = { prepare, batch } as unknown as D1Database;
+		const db = mockIngestD1((sql) => prepare(sql), batch);
 		const stream: HelixStream = {
 			id: 's1',
 			user_id: '1',
@@ -217,7 +219,7 @@ describe('batchRecordLiveSamples', () => {
 
 		await batchRecordLiveSamples(db, [{ channelId: 'twitch-ch-1', stream, gameCategoryId: 'twitch-game-10' }]);
 
-		const sampleInsert = prepare.mock.calls.find((c) => String(c[0]).includes('INSERT INTO viewer_samples'));
+		const sampleInsert = prepare.mock.calls.find((c) => c[0].includes('INSERT INTO viewer_samples'));
 		expect(sampleInsert?.[0]).toContain('VALUES (?, ?, ?)');
 	});
 });

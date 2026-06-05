@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { noopBatchD1, pollBatchD1, testEnv } from './helpers';
 import * as kickDb from '../src/db/kick-live-batch';
 import { KickPublicApiClient } from '../src/kick/api';
 import { runKickCatalogPoll, runKickPollBatch } from '../src/kick/poll';
@@ -9,7 +10,7 @@ describe('kick poll', () => {
 	});
 
 	it('runKickCatalogPoll returns NEEDS_API when credentials missing', async () => {
-		const result = await runKickCatalogPoll({} as Env);
+		const result = await runKickCatalogPoll(testEnv());
 		expect(result.skipped).toBe('NEEDS_API');
 		expect(result.batches).toBe(0);
 	});
@@ -38,32 +39,15 @@ describe('kick poll', () => {
 		]);
 
 		const runs: string[] = [];
-		const db = {
-			prepare(sql: string) {
-				return {
-					bind: () => ({
-						run: async () => {
-							runs.push(sql);
-							return {};
-						},
-					}),
-				};
-			},
-			batch: async (statements: { run: () => Promise<unknown> }[]) => {
-				for (const stmt of statements) {
-					await stmt.run();
-				}
-				return [];
-			},
-		} as unknown as D1Database;
+		const db = pollBatchD1((sql) => runs.push(sql));
 
 		const result = await runKickPollBatch(
-			{
+			testEnv({
 				KICK_CLIENT_ID: 'id',
 				KICK_CLIENT_SECRET: 'secret',
 				KICK_MIN_VIEWERS: '5',
 				DB: db,
-			} as Env,
+			}),
 			['10', '11'],
 		);
 
@@ -87,17 +71,12 @@ describe('kick poll', () => {
 		vi.spyOn(kickDb, 'batchUpsertKickChannelsFromLivestreams').mockResolvedValue(new Map([['10', 'ch-1']]));
 		const recordSpy = vi.spyOn(kickDb, 'batchRecordKickLiveSamples').mockResolvedValue([]);
 
-		const db = {
-			prepare: () => ({ bind: () => ({ run: async () => ({}) }) }),
-			batch: async () => [],
-		} as unknown as D1Database;
-
 		const result = await runKickPollBatch(
-			{
+			testEnv({
 				KICK_CLIENT_ID: 'id',
 				KICK_CLIENT_SECRET: 'secret',
-				DB: db,
-			} as Env,
+				DB: noopBatchD1(),
+			}),
 			['10'],
 		);
 
@@ -121,18 +100,13 @@ describe('kick poll', () => {
 		vi.spyOn(kickDb, 'batchUpsertKickChannelsFromLivestreams').mockResolvedValue(new Map([['10', 'ch-1']]));
 		const recordSpy = vi.spyOn(kickDb, 'batchRecordKickLiveSamples').mockResolvedValue([]);
 
-		const db = {
-			prepare: () => ({ bind: () => ({ run: async () => ({}) }) }),
-			batch: async () => [],
-		} as unknown as D1Database;
-
 		const result = await runKickPollBatch(
-			{
+			testEnv({
 				KICK_CLIENT_ID: 'id',
 				KICK_CLIENT_SECRET: 'secret',
 				KICK_MIN_VIEWERS: '5',
-				DB: db,
-			} as Env,
+				DB: noopBatchD1(),
+			}),
 			['10'],
 		);
 

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { mockIngestD1, noopBatchD1, pollBatchD1, testEnv, unusedIngestD1 } from './helpers';
 import * as youtubeDb from '../src/db/youtube-live-batch';
 import { YoutubeDataApiClient } from '../src/youtube/api';
 import { runYoutubeCatalogPoll, runYoutubePollBatch } from '../src/youtube/poll';
@@ -9,7 +10,7 @@ describe('youtube poll', () => {
 	});
 
 	it('runYoutubeCatalogPoll returns NEEDS_API when API key missing', async () => {
-		const result = await runYoutubeCatalogPoll({} as Env);
+		const result = await runYoutubeCatalogPoll(testEnv());
 		expect(result.skipped).toBe('NEEDS_API');
 		expect(result.batches).toBe(0);
 	});
@@ -41,31 +42,14 @@ describe('youtube poll', () => {
 		const clearSpy = vi.spyOn(youtubeDb, 'clearYoutubeLiveVideoIds').mockResolvedValue();
 
 		const runs: string[] = [];
-		const db = {
-			prepare(sql: string) {
-				return {
-					bind: () => ({
-						run: async () => {
-							runs.push(sql);
-							return {};
-						},
-					}),
-				};
-			},
-			batch: async (statements: { run: () => Promise<unknown> }[]) => {
-				for (const stmt of statements) {
-					await stmt.run();
-				}
-				return [];
-			},
-		} as unknown as D1Database;
+		const db = pollBatchD1((sql) => runs.push(sql));
 
 		const result = await runYoutubePollBatch(
-			{
+			testEnv({
 				YOUTUBE_API_KEY: 'key',
 				YOUTUBE_MIN_VIEWERS: '5',
 				DB: db,
-			} as Env,
+			}),
 			[{ channelRowId: 'ch-1', platformChannelId: 'UCabc', liveVideoId: 'vid-live' }],
 		);
 
@@ -92,12 +76,9 @@ describe('youtube poll', () => {
 		const recordSpy = vi.spyOn(youtubeDb, 'batchRecordYoutubeLiveSamples').mockResolvedValue([]);
 		vi.spyOn(youtubeDb, 'clearYoutubeLiveVideoIds').mockResolvedValue();
 
-		const db = {
-			prepare: () => ({ bind: () => ({ run: async () => ({}) }) }),
-			batch: async () => [],
-		} as unknown as D1Database;
+		const db = noopBatchD1();
 
-		const result = await runYoutubePollBatch({ YOUTUBE_API_KEY: 'key', DB: db } as Env, [
+		const result = await runYoutubePollBatch(testEnv({ YOUTUBE_API_KEY: 'key', DB: db }), [
 			{ channelRowId: 'ch-1', platformChannelId: 'UCabc', liveVideoId: 'vid-live' },
 		]);
 
@@ -124,12 +105,9 @@ describe('youtube poll', () => {
 		vi.spyOn(youtubeDb, 'batchRecordYoutubeLiveSamples').mockResolvedValue([]);
 		const clearSpy = vi.spyOn(youtubeDb, 'clearYoutubeLiveVideoIds').mockResolvedValue();
 
-		const db = {
-			prepare: () => ({ bind: () => ({ run: async () => ({}) }) }),
-			batch: async () => [],
-		} as unknown as D1Database;
+		const db = noopBatchD1();
 
-		await runYoutubePollBatch({ YOUTUBE_API_KEY: 'key', DB: db } as Env, [
+		await runYoutubePollBatch(testEnv({ YOUTUBE_API_KEY: 'key', DB: db }), [
 			{ channelRowId: 'ch-1', platformChannelId: 'UCabc', liveVideoId: 'vid-ended' },
 		]);
 
@@ -158,22 +136,20 @@ describe('youtube poll', () => {
 		vi.spyOn(youtubeDb, 'clearYoutubeLiveVideoIds').mockResolvedValue();
 
 		const setCalls: string[] = [];
-		const db = {
-			prepare(sql: string) {
-				return {
-					bind: (...args: unknown[]) => ({
-						run: async () => {
-							if (sql.includes('youtube_live_video_id')) {
-								setCalls.push(String(args[1]));
-							}
-						},
-					}),
-				};
-			},
-			batch: async () => [],
-		} as unknown as D1Database;
+		const db = mockIngestD1(
+			(sql) => ({
+				bind: (...args: unknown[]) => ({
+					run: async () => {
+						if (sql.includes('youtube_live_video_id')) {
+							setCalls.push(String(args[1]));
+						}
+					},
+				}),
+			}),
+			async () => [],
+		);
 
-		await runYoutubePollBatch({ YOUTUBE_API_KEY: 'key', DB: db } as Env, [
+		await runYoutubePollBatch(testEnv({ YOUTUBE_API_KEY: 'key', DB: db }), [
 			{ channelRowId: 'ch-1', platformChannelId: 'UCabc', liveVideoId: 'vid-ended' },
 		]);
 
@@ -181,7 +157,7 @@ describe('youtube poll', () => {
 	});
 
 	it('runYoutubePollBatch returns zero batches for empty targets', async () => {
-		const result = await runYoutubePollBatch({ YOUTUBE_API_KEY: 'key', DB: {} as D1Database } as Env, []);
+		const result = await runYoutubePollBatch(testEnv({ YOUTUBE_API_KEY: 'key', DB: unusedIngestD1() }), []);
 		expect(result).toEqual({ batches: 0, liveVideos: 0, samplesWritten: 0 });
 	});
 
@@ -199,12 +175,9 @@ describe('youtube poll', () => {
 		const recordSpy = vi.spyOn(youtubeDb, 'batchRecordYoutubeLiveSamples').mockResolvedValue([]);
 		vi.spyOn(youtubeDb, 'clearYoutubeLiveVideoIds').mockResolvedValue();
 
-		const db = {
-			prepare: () => ({ bind: () => ({ run: async () => ({}) }) }),
-			batch: async () => [],
-		} as unknown as D1Database;
+		const db = noopBatchD1();
 
-		const result = await runYoutubePollBatch({ YOUTUBE_API_KEY: 'key', YOUTUBE_MIN_VIEWERS: '5', DB: db } as Env, [
+		const result = await runYoutubePollBatch(testEnv({ YOUTUBE_API_KEY: 'key', YOUTUBE_MIN_VIEWERS: '5', DB: db }), [
 			{ channelRowId: 'ch-1', platformChannelId: 'UCabc', liveVideoId: 'vid-live' },
 		]);
 
@@ -239,19 +212,19 @@ describe('youtube poll', () => {
 		vi.spyOn(youtubeDb, 'clearYoutubeLiveVideoIds').mockResolvedValue();
 		vi.spyOn(await import('../src/r2/sample-archive'), 'archiveSampleBatch').mockResolvedValue();
 
-		const db = {
-			prepare: () => ({ bind: () => ({ run: async () => ({}) }) }),
-			batch: async (stmts: { run: () => Promise<unknown> }[]) => {
+		const db = mockIngestD1(
+			() => ({ bind: () => ({ run: async () => ({}) }) }),
+			async (stmts) => {
 				for (const s of stmts) await s.run();
 				return [];
 			},
-		} as unknown as D1Database;
+		);
 
-		const result = await runYoutubeCatalogPoll({
+		const result = await runYoutubeCatalogPoll(testEnv({
 			YOUTUBE_API_KEY: 'key',
 			YOUTUBE_MIN_VIEWERS: '5',
 			DB: db,
-		} as Env);
+		}));
 
 		expect(result.batches).toBe(1);
 		expect(result.samplesWritten).toBe(1);

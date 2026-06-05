@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { testEnv } from './helpers';
 import { clearKickTokenCacheForTests } from '../src/kick/auth';
 import { KickPublicApiClient } from '../src/kick/api';
 
@@ -45,7 +46,7 @@ describe('KickPublicApiClient', () => {
 		});
 		vi.stubGlobal('fetch', fetchMock);
 
-		const env = { KICK_CLIENT_ID: 'id', KICK_CLIENT_SECRET: 'secret' } as Env;
+		const env = testEnv({ KICK_CLIENT_ID: 'id', KICK_CLIENT_SECRET: 'secret' });
 		const client = new KickPublicApiClient(env);
 		const streams = await client.getLivestreamsByBroadcasterIds(['1']);
 
@@ -54,7 +55,7 @@ describe('KickPublicApiClient', () => {
 	});
 
 	it('returns empty array for no broadcaster IDs', async () => {
-		const client = new KickPublicApiClient({} as Env);
+		const client = new KickPublicApiClient(testEnv());
 		await expect(client.getLivestreamsByBroadcasterIds([])).resolves.toEqual([]);
 	});
 
@@ -82,10 +83,10 @@ describe('KickPublicApiClient', () => {
 		});
 		vi.stubGlobal('fetch', fetchMock);
 
-		const client = new KickPublicApiClient({
+		const client = new KickPublicApiClient(testEnv({
 			KICK_CLIENT_ID: 'id',
 			KICK_CLIENT_SECRET: 'secret',
-		} as Env);
+		}));
 		const page = await client.getCategoriesV2({ limit: 50 });
 
 		expect(page.data).toHaveLength(1);
@@ -124,10 +125,10 @@ describe('KickPublicApiClient', () => {
 		});
 		vi.stubGlobal('fetch', fetchMock);
 
-		const client = new KickPublicApiClient({
+		const client = new KickPublicApiClient(testEnv({
 			KICK_CLIENT_ID: 'id',
 			KICK_CLIENT_SECRET: 'secret',
-		} as Env);
+		}));
 		const streams = await client.getLivestreamsByCategoryId(42, {
 			limit: 100,
 			sort: 'viewer_count',
@@ -150,10 +151,10 @@ describe('KickPublicApiClient', () => {
 		});
 		vi.stubGlobal('fetch', fetchMock);
 
-		const client = new KickPublicApiClient({
+		const client = new KickPublicApiClient(testEnv({
 			KICK_CLIENT_ID: 'id',
 			KICK_CLIENT_SECRET: 'secret',
-		} as Env);
+		}));
 
 		await expect(client.getLivestreamsByCategoryId(1)).rejects.toThrow(/503/);
 	});

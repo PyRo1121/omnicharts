@@ -9,7 +9,7 @@
 	import { uiPeriods } from '$lib/ui/platform.svelte';
 	import type { RankingPeriod } from '@omnicharts/domain';
 
-	let { data } = $props();
+	const { data } = $props();
 	const ch = $derived(data.channel);
 
 	const metrics = $derived.by(() => {

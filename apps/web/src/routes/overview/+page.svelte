@@ -8,7 +8,7 @@
 		overviewTopGameLabel
 	} from '$lib/ui/platform.svelte';
 
-	let { data } = $props();
+	const { data } = $props();
 
 	function overviewHref(platform: (typeof platforms)[number]['id']): string {
 		return routeWithPlatform('/overview', platform);

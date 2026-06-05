@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { loadChannelRankings } from './rankings';
 import { testLoadContext, testLoadContextWithDb } from './test-helpers';
+import { mockD1Database } from './mock-d1';
 
 vi.mock('$env/dynamic/private', () => ({
 	env: { INGEST_URL: 'http://ingest.test' },
@@ -9,25 +10,23 @@ vi.mock('$env/dynamic/private', () => ({
 describe('loadChannelRankings (twitch)', () => {
 	it('uses D1 only when binding present (no ingest fallback)', async () => {
 		const fetchFn = vi.fn();
-		const db = {
-			prepare: vi.fn().mockReturnValue({
-				bind: vi.fn().mockReturnThis(),
-				all: vi.fn().mockResolvedValue({
-					results: [
-						{
-							slug: 'ninja',
-							display_name: 'Ninja',
-							avatar_url: 'https://cdn.example/a.png',
-							first_observed_at: '2026-01-01T00:00:00Z',
-							hours_watched: 12_000,
-							average_viewers: 500,
-							airtime_minutes: 1440,
-							peak_viewers: 800,
-						},
-					],
-				}),
+		const db = mockD1Database(() => ({
+			bind: vi.fn().mockReturnThis(),
+			all: vi.fn().mockResolvedValue({
+				results: [
+					{
+						slug: 'ninja',
+						display_name: 'Ninja',
+						avatar_url: 'https://cdn.example/a.png',
+						first_observed_at: '2026-01-01T00:00:00Z',
+						hours_watched: 12_000,
+						average_viewers: 500,
+						airtime_minutes: 1440,
+						peak_viewers: 800,
+					},
+				],
 			}),
-		} as unknown as D1Database;
+		}));
 
 		const load = await loadChannelRankings(testLoadContextWithDb(fetchFn as typeof fetch, db), 'twitch', '7d', 20);
 		expect(load.source).toBe('live');

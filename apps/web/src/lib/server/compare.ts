@@ -1,8 +1,7 @@
-import type { ComparePeriod } from '@omnicharts/domain';
+import type { ComparePeriod, PlatformId } from '@omnicharts/domain';
 import { loadChannelDetail, type ChannelDetailLoad } from '$lib/server/channel';
 import type { ServerLoadContext } from '$lib/server/load-context';
 import { normalizeCompareSlug } from '$lib/compare/url';
-import type { PlatformId } from '@omnicharts/domain';
 import { searchPlatformId } from '$lib/ui/platform.svelte';
 
 export type CompareSideLoad = ChannelDetailLoad & {

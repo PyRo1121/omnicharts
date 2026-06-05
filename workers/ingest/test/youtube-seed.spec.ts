@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { testEnv, unusedIngestD1 } from './helpers';
 import * as seedModule from '../src/youtube/seed';
 import * as resolve from '../src/youtube/resolve-channel';
 import * as upsert from '../src/db/youtube-channel';
@@ -9,12 +10,12 @@ describe('youtube seed', () => {
 	});
 
 	it('youtubeSeedNeedsApiReason when key missing', () => {
-		expect(seedModule.youtubeSeedNeedsApiReason({} as Env)).toMatch(/YOUTUBE_API_KEY/);
-		expect(seedModule.youtubeSeedNeedsApiReason({ YOUTUBE_API_KEY: 'key' } as Env)).toBeNull();
+		expect(seedModule.youtubeSeedNeedsApiReason(testEnv())).toMatch(/YOUTUBE_API_KEY/);
+		expect(seedModule.youtubeSeedNeedsApiReason(testEnv({ YOUTUBE_API_KEY: 'key' }))).toBeNull();
 	});
 
 	it('seedYoutubeChannelByQuery returns null on NEEDS_API', async () => {
-		const row = await seedModule.seedYoutubeChannelByQuery({} as Env, '@mrbeast');
+		const row = await seedModule.seedYoutubeChannelByQuery(testEnv(), '@mrbeast');
 		expect(row).toBeNull();
 	});
 
@@ -28,10 +29,10 @@ describe('youtube seed', () => {
 		vi.spyOn(upsert, 'upsertYoutubeChannel').mockResolvedValue({
 			id: 'youtube-ch-UCabcdefghijklmnopqrstuv',
 			slug: 'mrbeast',
-		} as Awaited<ReturnType<typeof upsert.upsertYoutubeChannel>>);
+		});
 
-		const db = {} as D1Database;
-		const env = { YOUTUBE_API_KEY: 'key', DB: db } as Env;
+		const db = unusedIngestD1();
+		const env = testEnv({ YOUTUBE_API_KEY: 'key', DB: db });
 		const row = await seedModule.seedYoutubeChannelByQuery(env, '@mrbeast');
 
 		expect(row?.slug).toBe('mrbeast');
@@ -39,13 +40,13 @@ describe('youtube seed', () => {
 	});
 
 	it('seedYoutubeChannels counts all skipped when NEEDS_API', async () => {
-		const stats = await seedModule.seedYoutubeChannels({} as Env, ['a', 'b']);
+		const stats = await seedModule.seedYoutubeChannels(testEnv(), ['a', 'b']);
 		expect(stats).toEqual({ seeded: 0, skipped: 2, errors: 0 });
 	});
 
 	it('seedYoutubeChannels counts errors when resolve throws', async () => {
 		vi.spyOn(resolve, 'fetchYoutubeChannelByQuery').mockRejectedValue(new Error('api down'));
-		const stats = await seedModule.seedYoutubeChannels({ YOUTUBE_API_KEY: 'key', DB: {} as D1Database } as Env, ['@fail']);
+		const stats = await seedModule.seedYoutubeChannels(testEnv({ YOUTUBE_API_KEY: 'key', DB: unusedIngestD1() }), ['@fail']);
 		expect(stats.errors).toBe(1);
 		expect(stats.seeded).toBe(0);
 	});

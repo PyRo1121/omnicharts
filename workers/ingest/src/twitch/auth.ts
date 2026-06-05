@@ -1,3 +1,4 @@
+import { parseOAuthTokenResponse } from '../json-guards';
 import type { HelixRateBudget } from './rate-limit';
 
 type TokenCache = {
@@ -34,7 +35,7 @@ export async function getAppAccessToken(env: Env, _budget: HelixRateBudget): Pro
 		throw new Error(`Twitch token failed ${res.status}: ${text.slice(0, 200)}`);
 	}
 
-	const data = (await res.json()) as { access_token: string; expires_in: number };
+	const data = parseOAuthTokenResponse(await res.json());
 	cached = {
 		accessToken: data.access_token,
 		expiresAtMs: now + data.expires_in * 1000,

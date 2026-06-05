@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import * as rollup from '@omnicharts/rollup';
 import { findChannelOnOtherPlatforms, loadChannelDetail, parseChannelPeriod, resolveChannelSlugFromHistory } from './channel';
 import { testLoadContext, testLoadContextWithDb } from './test-helpers';
+import { unusedMockD1 } from './mock-d1';
 
 vi.mock('$env/dynamic/private', () => ({
 	env: { INGEST_URL: 'http://ingest.test' },
@@ -28,7 +29,7 @@ describe('loadChannelDetail', () => {
 
 	it('resolveChannelSlugFromHistory falls back to ingest when D1 throws', async () => {
 		vi.spyOn(rollup, 'resolveChannelSlug').mockRejectedValueOnce(new Error('D1_ERROR: no such table: channels'));
-		const db = {} as D1Database;
+		const db = unusedMockD1();
 		const fetchFn = vi.fn().mockResolvedValue({
 			ok: true,
 			json: async () => ({ slug: 'canonical', from_history: true }),

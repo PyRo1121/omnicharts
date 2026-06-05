@@ -1,51 +1,50 @@
 import { describe, expect, it, vi } from 'vitest';
 import { GET as getChannelRankings } from '../../routes/api/v1/rankings/channels/+server';
+import { mockD1Database } from './mock-d1';
 
-function mockD1WithRankings(): D1Database {
-	return {
-		prepare(sql: string) {
-			const isRollup = sql.includes('channel_daily_rollups') || sql.includes('FROM channels');
-			return {
-				bind: (..._args: unknown[]) => ({
-					first: async () => {
-						if (sql.includes('slug_history')) return null;
-						if (sql.includes('FROM channels') && !sql.includes('rollup')) {
-							return {
-								id: '1',
-								slug: 'caedrel',
-								display_name: 'Caedrel',
-								avatar_url: null,
-								first_observed_at: '2026-03-01T00:00:00Z',
-								peak_viewers: 100,
-								airtime_minutes: 120,
-								stream_count: 1,
-								hours_watched: 500,
-								average_viewers: 50,
-							};
-						}
-						return null;
-					},
-					all: async () => ({
-						results: isRollup
-							? [
-									{
-										slug: 'caedrel',
-										display_name: 'Caedrel',
-										avatar_url: null,
-										first_observed_at: '2026-03-01T00:00:00Z',
-										peak_viewers: 100,
-										airtime_minutes: 120,
-										stream_count: 1,
-										hours_watched: 500,
-										average_viewers: 50,
-									},
-								]
-							: [],
-					}),
+function mockD1WithRankings() {
+	return mockD1Database((sql: string) => {
+		const isRollup = sql.includes('channel_daily_rollups') || sql.includes('FROM channels');
+		return {
+			bind: (..._args: unknown[]) => ({
+				first: async () => {
+					if (sql.includes('slug_history')) return null;
+					if (sql.includes('FROM channels') && !sql.includes('rollup')) {
+						return {
+							id: '1',
+							slug: 'caedrel',
+							display_name: 'Caedrel',
+							avatar_url: null,
+							first_observed_at: '2026-03-01T00:00:00Z',
+							peak_viewers: 100,
+							airtime_minutes: 120,
+							stream_count: 1,
+							hours_watched: 500,
+							average_viewers: 50,
+						};
+					}
+					return null;
+				},
+				all: async () => ({
+					results: isRollup
+						? [
+								{
+									slug: 'caedrel',
+									display_name: 'Caedrel',
+									avatar_url: null,
+									first_observed_at: '2026-03-01T00:00:00Z',
+									peak_viewers: 100,
+									airtime_minutes: 120,
+									stream_count: 1,
+									hours_watched: 500,
+									average_viewers: 50,
+								},
+							]
+						: [],
 				}),
-			};
-		},
-	} as unknown as D1Database;
+			}),
+		};
+	});
 }
 
 describe('GET /api/v1/rankings/channels?format=csv', () => {

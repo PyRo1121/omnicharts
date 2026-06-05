@@ -3,7 +3,7 @@
 		count: number;
 	}
 
-	let { count }: Props = $props();
+	const { count }: Props = $props();
 
 	const isEmpty = $derived(count === 0);
 </script>

@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { mockIngestD1, testEnv } from './helpers';
+import { parseHelixChannel, parseHelixListResponse, parseHelixUser } from '../src/json-guards';
 import type { HelixChannel, HelixUser } from '../src/twitch/helix';
 import { helixChannelProfileJson, mergeUserAndChannelProfile } from '../src/twitch/profile-fields';
 import { applyChannelProfileEnrichment, listPlatformIdsForProfileEnrichment } from '../src/db/twitch';
@@ -9,14 +11,39 @@ import { runTwitchProfileEnrichment } from '../src/twitch/enrich-profiles';
 import { TwitchHelixClient } from '../src/twitch/helix';
 
 const fixtureDir = dirname(fileURLToPath(import.meta.url));
-const usersFixture = JSON.parse(readFileSync(join(fixtureDir, 'fixtures/helix-users-sample.json'), 'utf8')) as { data: HelixUser[] };
-const channelsFixture = JSON.parse(readFileSync(join(fixtureDir, 'fixtures/helix-channels-sample.json'), 'utf8')) as {
-	data: HelixChannel[];
-};
+
+function loadHelixUsersFixture(): HelixUser[] {
+	const raw: unknown = JSON.parse(readFileSync(join(fixtureDir, 'fixtures/helix-users-sample.json'), 'utf8'));
+	return parseHelixListResponse(raw)
+		.data.map(parseHelixUser)
+		.filter((user): user is HelixUser => user !== null);
+}
+
+function loadHelixChannelsFixture(): HelixChannel[] {
+	const raw: unknown = JSON.parse(readFileSync(join(fixtureDir, 'fixtures/helix-channels-sample.json'), 'utf8'));
+	return parseHelixListResponse(raw)
+		.data.map(parseHelixChannel)
+		.filter((channel): channel is HelixChannel => channel !== null);
+}
+
+const usersFixture = loadHelixUsersFixture();
+const channelsFixture = loadHelixChannelsFixture();
+
+function fixtureUser(index = 0): HelixUser {
+	const user = usersFixture[index];
+	if (!user) throw new Error('missing helix user fixture');
+	return user;
+}
+
+function fixtureChannel(index = 0): HelixChannel {
+	const channel = channelsFixture[index];
+	if (!channel) throw new Error('missing helix channel fixture');
+	return channel;
+}
 
 describe('helix profile field mapping', () => {
 	it('serializes channel profile JSON from fixture', () => {
-		const channel = channelsFixture.data[0]!;
+		const channel = fixtureChannel();
 		expect(JSON.parse(helixChannelProfileJson(channel))).toEqual({
 			game_id: '509658',
 			game_name: 'Just Chatting',
@@ -27,8 +54,8 @@ describe('helix profile field mapping', () => {
 	});
 
 	it('merges user + channel into enrichment row', () => {
-		const user = usersFixture.data[0]!;
-		const channel = channelsFixture.data[0]!;
+		const user = fixtureUser();
+		const channel = fixtureChannel();
 		expect(mergeUserAndChannelProfile(user, channel, 1_234_567)).toEqual({
 			platform_channel_id: '545050196',
 			display_name: 'KatoJunichi',
@@ -42,7 +69,7 @@ describe('helix profile field mapping', () => {
 	});
 
 	it('omits empty description', () => {
-		const user = { ...usersFixture.data[0]!, description: '   ' };
+		const user = { ...fixtureUser(), description: '   ' };
 		const row = mergeUserAndChannelProfile(user, undefined);
 		expect(row.description).toBeNull();
 		expect(row.channel_profile_json).toBeNull();
@@ -61,21 +88,22 @@ describe('applyChannelProfileEnrichment', () => {
 					},
 				};
 			},
-		} as unknown as D1Database;
+		};
 
-		const user = usersFixture.data[0]!;
-		const channel = channelsFixture.data[0]!;
+		const user = fixtureUser();
+		const channel = fixtureChannel();
 		const row = mergeUserAndChannelProfile(user, channel);
 		await applyChannelProfileEnrichment(db, row);
 
-		expect(updates).toHaveLength(1);
-		expect(updates[0]![0]).toBe('KatoJunichi');
-		expect(updates[0]![1]).toContain('profile');
-		expect(updates[0]![2]).toBe('Speedrunner and variety streamer.');
-		expect(updates[0]![3]).toBe('affiliate');
-		expect(updates[0]![4]).toBe('2018-03-15T10:20:30Z');
-		expect(updates[0]![5]).toContain('Just Chatting');
-		expect(typeof updates[0]![6]).toBe('string');
+		const firstUpdate = updates[0];
+		expect(firstUpdate).toBeDefined();
+		expect(firstUpdate[0]).toBe('KatoJunichi');
+		expect(firstUpdate[1]).toContain('profile');
+		expect(firstUpdate[2]).toBe('Speedrunner and variety streamer.');
+		expect(firstUpdate[3]).toBe('affiliate');
+		expect(firstUpdate[4]).toBe('2018-03-15T10:20:30Z');
+		expect(firstUpdate[5]).toContain('Just Chatting');
+		expect(typeof firstUpdate[6]).toBe('string');
 	});
 });
 
@@ -93,7 +121,7 @@ describe('listPlatformIdsForProfileEnrichment', () => {
 					}),
 				};
 			},
-		} as unknown as D1Database;
+		};
 
 		const ids = await listPlatformIdsForProfileEnrichment(db, 10, 24);
 		expect(ids).toEqual(['545050196']);
@@ -106,8 +134,8 @@ describe('runTwitchProfileEnrichment', () => {
 	});
 
 	it('fetches users and channels in batches and persists', async () => {
-		const users = usersFixture.data;
-		const channels = channelsFixture.data;
+		const users = usersFixture;
+		const channels = channelsFixture;
 		vi.spyOn(TwitchHelixClient.prototype, 'getUsersByIds').mockResolvedValue(users);
 		vi.spyOn(TwitchHelixClient.prototype, 'getChannelsByBroadcasterIds').mockResolvedValue(channels);
 		vi.spyOn(TwitchHelixClient.prototype, 'getChannelFollowerTotals').mockResolvedValue(
@@ -118,21 +146,19 @@ describe('runTwitchProfileEnrichment', () => {
 		);
 
 		const updates: unknown[][] = [];
-		const db = {
-			prepare(sql: string) {
-				return {
-					bind: (...args: unknown[]) => {
-						if (sql.includes('UPDATE channels SET')) updates.push(args);
-						return { run: async () => ({}) };
-					},
-				};
+		const db = mockIngestD1(
+			(sql) => ({
+				bind: (...args: unknown[]) => {
+					if (sql.includes('UPDATE channels SET')) updates.push(args);
+					return { run: async () => ({}) };
+				},
+			}),
+			async (statements) => {
+				await Promise.all(statements.map((stmt) => stmt.run()));
 			},
-			batch: async (statements: { run: () => Promise<unknown> }[]) => {
-				for (const stmt of statements) await stmt.run();
-			},
-		} as unknown as D1Database;
+		);
 
-		const stats = await runTwitchProfileEnrichment({ DB: db } as Env, { platformChannelIds: ['545050196', '141981764'] });
+		const stats = await runTwitchProfileEnrichment(testEnv({ DB: db }), { platformChannelIds: ['545050196', '141981764'] });
 
 		expect(stats).toEqual({
 			candidates: 2,
@@ -161,32 +187,30 @@ describe('runTwitchProfileEnrichment', () => {
 					}),
 				};
 			},
-		} as unknown as D1Database;
+		};
 
-		const stats = await runTwitchProfileEnrichment({ DB: db } as Env);
+		const stats = await runTwitchProfileEnrichment(testEnv({ DB: db }));
 		expect(listCalls).toHaveLength(1);
 		expect(stats.candidates).toBe(0);
 	});
 
 	it('retires ids missing from Helix users response', async () => {
-		vi.spyOn(TwitchHelixClient.prototype, 'getUsersByIds').mockResolvedValue([usersFixture.data[0]!]);
+		vi.spyOn(TwitchHelixClient.prototype, 'getUsersByIds').mockResolvedValue([fixtureUser()]);
 		vi.spyOn(TwitchHelixClient.prototype, 'getChannelsByBroadcasterIds').mockResolvedValue([]);
 		vi.spyOn(TwitchHelixClient.prototype, 'getChannelFollowerTotals').mockResolvedValue(new Map([['545050196', 50]]));
 
 		const sqlCalls: string[] = [];
-		const db = {
-			prepare(sql: string) {
+		const db = mockIngestD1(
+			(sql) => {
 				sqlCalls.push(sql);
-				return {
-					bind: () => ({ run: async () => ({}) }),
-				};
+				return { bind: () => ({ run: async () => ({}) }) };
 			},
-			batch: async (statements: { run: () => Promise<unknown> }[]) => {
-				for (const stmt of statements) await stmt.run();
+			async (statements) => {
+				await Promise.all(statements.map((stmt) => stmt.run()));
 			},
-		} as unknown as D1Database;
+		);
 
-		const stats = await runTwitchProfileEnrichment({ DB: db } as Env, { platformChannelIds: ['545050196', '999999999999'] });
+		const stats = await runTwitchProfileEnrichment(testEnv({ DB: db }), { platformChannelIds: ['545050196', '999999999999'] });
 
 		expect(stats.updated).toBe(1);
 		expect(stats.retired).toBe(1);
@@ -194,20 +218,18 @@ describe('runTwitchProfileEnrichment', () => {
 	});
 
 	it('skips follower Helix calls when includeFollowers is false', async () => {
-		vi.spyOn(TwitchHelixClient.prototype, 'getUsersByIds').mockResolvedValue(usersFixture.data);
-		vi.spyOn(TwitchHelixClient.prototype, 'getChannelsByBroadcasterIds').mockResolvedValue(channelsFixture.data);
+		vi.spyOn(TwitchHelixClient.prototype, 'getUsersByIds').mockResolvedValue(usersFixture);
+		vi.spyOn(TwitchHelixClient.prototype, 'getChannelsByBroadcasterIds').mockResolvedValue(channelsFixture);
 		const followerSpy = vi.spyOn(TwitchHelixClient.prototype, 'getChannelFollowerTotals').mockResolvedValue(new Map());
 
-		const db = {
-			prepare() {
-				return { bind: () => ({ run: async () => ({}) }) };
+		const db = mockIngestD1(
+			() => ({ bind: () => ({ run: async () => ({}) }) }),
+			async (statements) => {
+				await Promise.all(statements.map((stmt) => stmt.run()));
 			},
-			batch: async (statements: { run: () => Promise<unknown> }[]) => {
-				for (const stmt of statements) await stmt.run();
-			},
-		} as unknown as D1Database;
+		);
 
-		await runTwitchProfileEnrichment({ DB: db } as Env, { platformChannelIds: ['545050196'], includeFollowers: false });
+		await runTwitchProfileEnrichment(testEnv({ DB: db }), { platformChannelIds: ['545050196'], includeFollowers: false });
 
 		expect(followerSpy).not.toHaveBeenCalled();
 	});

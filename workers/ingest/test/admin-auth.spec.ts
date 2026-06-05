@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
+import { testEnv } from './helpers';
 import { requireAdminApiKey } from '../src/admin/auth';
 import * as ingestLog from '../src/log';
 
@@ -8,9 +9,9 @@ describe('requireAdminApiKey', () => {
 	});
 
 	it('returns 401 when key is set and header missing', () => {
-		const res = requireAdminApiKey(new Request('http://x/admin/twitch/discover', { method: 'POST' }), {
+		const res = requireAdminApiKey(new Request('http://x/admin/twitch/discover', { method: 'POST' }), testEnv({
 			ADMIN_API_KEY: 'secret',
-		} as Env);
+		}));
 		expect(res?.status).toBe(401);
 	});
 
@@ -20,7 +21,7 @@ describe('requireAdminApiKey', () => {
 				method: 'POST',
 				headers: { 'X-Admin-Api-Key': 'secret' },
 			}),
-			{ ADMIN_API_KEY: 'secret' } as Env,
+			testEnv({ ADMIN_API_KEY: 'secret' }),
 		);
 		expect(res).toBeNull();
 	});
@@ -31,29 +32,28 @@ describe('requireAdminApiKey', () => {
 				method: 'POST',
 				headers: { Authorization: 'Bearer secret' },
 			}),
-			{ ADMIN_API_KEY: 'secret' } as Env,
+			testEnv({ ADMIN_API_KEY: 'secret' }),
 		);
 		expect(res).toBeNull();
 	});
 
 	it('bypasses when ADMIN_API_KEY unset in development', () => {
 		const warn = vi.spyOn(ingestLog, 'ingestWarn').mockImplementation(() => {});
-		const res = requireAdminApiKey(new Request('http://x/admin/twitch/discover', { method: 'POST' }), {
+		const res = requireAdminApiKey(new Request('http://x/admin/twitch/discover', { method: 'POST' }), testEnv({
 			ENVIRONMENT: 'development',
-		} as Env);
+		}));
 		expect(res).toBeNull();
 		expect(warn).toHaveBeenCalledOnce();
 	});
 
 	it('returns 503 in production when ADMIN_API_KEY unset', async () => {
-		const res = requireAdminApiKey(new Request('http://x/admin/twitch/discover', { method: 'POST' }), { ENVIRONMENT: 'production' } as Env);
+		const res = requireAdminApiKey(new Request('http://x/admin/twitch/discover', { method: 'POST' }), testEnv({ ENVIRONMENT: 'production' }));
 		expect(res?.status).toBe(503);
-		const json = (await res!.json()) as { error: { code: string } };
-		expect(json.error.code).toBe('service_unavailable');
+		expect(await res!.json()).toEqual({ error: { code: 'service_unavailable' } });
 	});
 
 	it('returns 503 in staging when ADMIN_API_KEY unset', async () => {
-		const res = requireAdminApiKey(new Request('http://x/admin/twitch/discover', { method: 'POST' }), { ENVIRONMENT: 'staging' } as Env);
+		const res = requireAdminApiKey(new Request('http://x/admin/twitch/discover', { method: 'POST' }), testEnv({ ENVIRONMENT: 'staging' }));
 		expect(res?.status).toBe(503);
 	});
 });

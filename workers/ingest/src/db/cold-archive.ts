@@ -10,10 +10,8 @@ import {
 	type GameRollupArchiveRow,
 	type ViewerSampleArchiveRow,
 } from '../r2/cold-archive';
-import { DAILY_ROLLUP_DELETE_BATCH_SIZE, dailyRollupRetentionCutoffDate } from './prune-rollups';
-import { VIEWER_SAMPLE_DELETE_BATCH_SIZE, viewerSampleRetentionCutoffIso } from './prune-samples';
-import { pruneDailyRollupsOlderThanRetention } from './prune-rollups';
-import { pruneViewerSamplesOlderThanRetention } from './prune-samples';
+import { DAILY_ROLLUP_DELETE_BATCH_SIZE, dailyRollupRetentionCutoffDate, pruneDailyRollupsOlderThanRetention } from './prune-rollups';
+import { VIEWER_SAMPLE_DELETE_BATCH_SIZE, viewerSampleRetentionCutoffIso, pruneViewerSamplesOlderThanRetention } from './prune-samples';
 
 export type RetentionWithColdArchiveStats = {
 	viewerSamplesPruned: number;

@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { unusedIngestD1 } from './helpers';
 import { buildChannelDetailResponse, parseChannelDetailQuery } from '../src/ranking/channel-api';
 
 describe('channel-api edge cases', () => {
@@ -17,7 +18,7 @@ describe('channel-api edge cases', () => {
 	});
 
 	it('buildChannelDetailResponse returns null for empty slug', async () => {
-		const db = {} as D1Database;
+		const db = unusedIngestD1();
 		const res = await buildChannelDetailResponse(db, {
 			platform: 'twitch',
 			slug: '',

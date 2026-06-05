@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { testEnv } from './helpers';
 import { helixSafePointsPerMinuteFromEnv } from '../src/twitch/helix-budget';
 import * as sweep from '../src/twitch/sweep';
 import * as gamePass from '../src/twitch/game-pass';
@@ -45,14 +46,14 @@ describe('runTwitchCoverageCycle', () => {
 			retired: 0,
 		});
 
-		const stats = await runTwitchCoverageCycle({ DB: {} } as Env);
+		const stats = await runTwitchCoverageCycle(testEnv());
 		expect(stats.global.pagesFetched).toBe(1);
 		expect(stats.gamePass.gamesScanned).toBe(1);
 		expect(stats.profileEnrichment.updated).toBe(1);
 	});
 
 	it('shares one Helix client and seenUserIds across sweep and game pass', async () => {
-		const env = { INGEST_COVERAGE_MODE: 'full', DB: {} } as Env;
+		const env = testEnv({ INGEST_COVERAGE_MODE: 'full' });
 		const sweepSpy = vi.spyOn(sweep, 'runTwitchLiveSweep').mockResolvedValue({
 			pagesFetched: 0,
 			streamsSeen: 0,
@@ -89,8 +90,8 @@ describe('runTwitchCoverageCycle', () => {
 
 		await runTwitchCoverageCycle(env);
 
-		const sweepOpts = sweepSpy.mock.calls[0]![1]!;
-		const gamePassOpts = gamePassSpy.mock.calls[0]![1]!;
+		const sweepOpts = sweepSpy.mock.calls[0]?.[1];
+		const gamePassOpts = gamePassSpy.mock.calls[0]?.[1];
 		expect(sweepOpts.client).toBeDefined();
 		expect(sweepOpts.client).toBe(gamePassOpts.client);
 		expect(sweepOpts.seenUserIds).toBe(gamePassOpts.seenUserIds);

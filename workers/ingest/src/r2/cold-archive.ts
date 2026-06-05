@@ -78,12 +78,28 @@ export function shouldColdArchive(env: Env): ColdArchiveSkipReason | null {
 	return null;
 }
 
+function isViewerSampleArchiveRow(row: ColdArchiveRow): row is ViewerSampleArchiveRow {
+	return 'sampled_at' in row && 'viewer_count' in row;
+}
+
+function isChannelRollupArchiveRow(row: ColdArchiveRow): row is ChannelRollupArchiveRow {
+	return 'channel_id' in row && 'date' in row;
+}
+
+function isGameRollupArchiveRow(row: ColdArchiveRow): row is GameRollupArchiveRow {
+	return 'game_category_id' in row && 'date' in row;
+}
+
 function partitionDateFromRows(kind: ColdArchiveKind, rows: ColdArchiveRow[]): string {
 	if (rows.length === 0) return new Date().toISOString().slice(0, 10);
-	if (kind === 'viewer_samples') {
-		return (rows[0] as ViewerSampleArchiveRow).sampled_at.slice(0, 10);
+	const first = rows[0];
+	if (kind === 'viewer_samples' && isViewerSampleArchiveRow(first)) {
+		return first.sampled_at.slice(0, 10);
 	}
-	return (rows[0] as ChannelRollupArchiveRow | GameRollupArchiveRow).date;
+	if (isChannelRollupArchiveRow(first) || isGameRollupArchiveRow(first)) {
+		return first.date;
+	}
+	return new Date().toISOString().slice(0, 10);
 }
 
 function platformFromSampleRows(rows: ViewerSampleArchiveRow[]): string {
@@ -94,7 +110,7 @@ export function encodeRowsToParquet(kind: ColdArchiveKind, rows: ColdArchiveRow[
 	if (rows.length === 0) return new ArrayBuffer(0);
 
 	if (kind === 'viewer_samples') {
-		const sampleRows = rows as ViewerSampleArchiveRow[];
+		const sampleRows = rows.filter(isViewerSampleArchiveRow);
 		return parquetWriteBuffer({
 			codec: 'UNCOMPRESSED',
 			columnData: [
@@ -108,7 +124,7 @@ export function encodeRowsToParquet(kind: ColdArchiveKind, rows: ColdArchiveRow[
 	}
 
 	if (kind === 'channel_daily_rollups') {
-		const rollupRows = rows as ChannelRollupArchiveRow[];
+		const rollupRows = rows.filter(isChannelRollupArchiveRow);
 		return parquetWriteBuffer({
 			codec: 'UNCOMPRESSED',
 			columnData: [
@@ -129,7 +145,7 @@ export function encodeRowsToParquet(kind: ColdArchiveKind, rows: ColdArchiveRow[
 		});
 	}
 
-	const gameRows = rows as GameRollupArchiveRow[];
+	const gameRows = rows.filter(isGameRollupArchiveRow);
 	return parquetWriteBuffer({
 		codec: 'UNCOMPRESSED',
 		columnData: [
@@ -172,7 +188,7 @@ export async function archiveRowsToColdStorage(env: Env, kind: ColdArchiveKind, 
 	if (skip) return { archived: 0, skipped: skip };
 
 	const partitionDate = partitionDateFromRows(kind, rows);
-	const platform = kind === 'viewer_samples' ? platformFromSampleRows(rows as ViewerSampleArchiveRow[]) : 'rollup';
+	const platform = kind === 'viewer_samples' ? platformFromSampleRows(rows.filter(isViewerSampleArchiveRow)) : 'rollup';
 	const body = encodeRowsToParquet(kind, rows);
 	return putColdArchiveParquet(env, kind, partitionDate, platform, body);
 }

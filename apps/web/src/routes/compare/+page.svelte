@@ -8,7 +8,7 @@
 	import { platformLabel, routeWithPlatform } from '$lib/ui/platform.svelte';
 	import { goto } from '$app/navigation';
 
-	let { data } = $props();
+	const { data } = $props();
 
 	class SyncedSlugInput {
 		#draft = $state<string | null>(null);

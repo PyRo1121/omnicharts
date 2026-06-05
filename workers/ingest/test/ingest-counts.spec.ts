@@ -18,7 +18,7 @@ describe('fetchIngestStateCounts', () => {
 					},
 				};
 			},
-		} as unknown as D1Database;
+		};
 
 		const counts = await fetchIngestStateCounts(db);
 		expect(counts.twitch.tracked).toBe(10);

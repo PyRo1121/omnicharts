@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
+import { testEnv } from './helpers';
 import { fetchYoutubeChannelByQuery } from '../src/youtube/resolve-channel';
 import { YoutubeDataApiClient } from '../src/youtube/api';
 
@@ -17,7 +18,7 @@ describe('fetchYoutubeChannelByQuery', () => {
 			},
 		});
 
-		const client = new YoutubeDataApiClient({ YOUTUBE_API_KEY: 'key' } as Env);
+		const client = new YoutubeDataApiClient(testEnv({ YOUTUBE_API_KEY: 'key' }));
 		const row = await fetchYoutubeChannelByQuery(client, 'mrbeast');
 
 		expect(row).toEqual({
@@ -36,7 +37,7 @@ describe('fetchYoutubeChannelByQuery', () => {
 			},
 		]);
 
-		const client = new YoutubeDataApiClient({ YOUTUBE_API_KEY: 'key' } as Env);
+		const client = new YoutubeDataApiClient(testEnv({ YOUTUBE_API_KEY: 'key' }));
 		const row = await fetchYoutubeChannelByQuery(client, 'UCabcdefghijklmnopqrstuv');
 
 		expect(row?.platformChannelId).toBe('UCabcdefghijklmnopqrstuv');
@@ -46,12 +47,12 @@ describe('fetchYoutubeChannelByQuery', () => {
 	it('returns null when API has no match', async () => {
 		vi.spyOn(YoutubeDataApiClient.prototype, 'getChannelByForHandle').mockResolvedValue(null);
 
-		const client = new YoutubeDataApiClient({ YOUTUBE_API_KEY: 'key' } as Env);
+		const client = new YoutubeDataApiClient(testEnv({ YOUTUBE_API_KEY: 'key' }));
 		await expect(fetchYoutubeChannelByQuery(client, 'unknown-channel-xyz')).resolves.toBeNull();
 	});
 
 	it('returns null for empty query without API call', async () => {
-		const client = new YoutubeDataApiClient({ YOUTUBE_API_KEY: 'key' } as Env);
+		const client = new YoutubeDataApiClient(testEnv({ YOUTUBE_API_KEY: 'key' }));
 		const byId = vi.spyOn(YoutubeDataApiClient.prototype, 'getChannelsByIds');
 		await expect(fetchYoutubeChannelByQuery(client, '   ')).resolves.toBeNull();
 		expect(byId).not.toHaveBeenCalled();

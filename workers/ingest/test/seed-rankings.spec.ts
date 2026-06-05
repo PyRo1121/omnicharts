@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { testEnv } from './helpers';
 import { seedDevRankings } from '../src/dev/seed-rankings';
 
 describe('seedDevRankings', () => {
@@ -13,9 +14,9 @@ describe('seedDevRankings', () => {
 					},
 				};
 			},
-		} as unknown as D1Database;
+		};
 
-		const stats = await seedDevRankings({ DB: db } as Env);
+		const stats = await seedDevRankings(testEnv({ DB: db }));
 		expect(stats.channels).toBe(20);
 		expect(stats.rollupDays).toBe(7);
 		const channelInserts = runs.filter((r) => r.sql.includes('INSERT INTO channels'));

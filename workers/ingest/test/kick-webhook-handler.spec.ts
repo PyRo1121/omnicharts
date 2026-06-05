@@ -1,11 +1,12 @@
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
+import { mockIngestD1, testEnv } from './helpers';
 import { handleKickWebhook } from '../src/kick/webhook/handler';
 import * as lifecycle from '../src/kick/webhook/lifecycle';
 import { buildKickWebhookSignedPayload } from '../src/kick/webhook/verify';
 import * as ingestLog from '../src/log';
 
 async function generateTestRsaKeyPair(): Promise<{ publicPem: string; privateKey: CryptoKey }> {
-	const { publicKey, privateKey } = await crypto.subtle.generateKey(
+	const keyPair: CryptoKeyPair = await crypto.subtle.generateKey(
 		{
 			name: 'RSASSA-PKCS1-v1_5',
 			modulusLength: 2048,
@@ -15,11 +16,11 @@ async function generateTestRsaKeyPair(): Promise<{ publicPem: string; privateKey
 		true,
 		['sign', 'verify'],
 	);
-	const spki = await crypto.subtle.exportKey('spki', publicKey);
+	const spki = await crypto.subtle.exportKey('spki', keyPair.publicKey);
 	const b64 = btoa(String.fromCharCode(...new Uint8Array(spki)));
 	const lines = b64.match(/.{1,64}/g) ?? [];
 	const publicPem = `-----BEGIN PUBLIC KEY-----\n${lines.join('\n')}\n-----END PUBLIC KEY-----`;
-	return { publicPem, privateKey };
+	return { publicPem, privateKey: keyPair.privateKey };
 }
 
 async function signedKickRequest(
@@ -55,51 +56,45 @@ async function signedKickRequest(
 
 describe('handleKickWebhook', () => {
 	let keys: { publicPem: string; privateKey: CryptoKey };
+	let env: Env;
 	const metadata = new Map<string, string>();
-
-	const env = {
-		KICK_WEBHOOK_PUBLIC_KEY: '',
-		DB: {
-			prepare(q: string) {
-				return {
-					bind: (...args: unknown[]) => ({
-						run: async () => {
-							if (q.includes('DELETE FROM ingest_metadata')) {
-								metadata.delete(String(args[0]));
-								return { meta: { changes: 1 } };
-							}
-							if (q.includes('INSERT INTO ingest_metadata')) {
-								const key = String(args[0]);
-								if (q.includes('ON CONFLICT(key) DO NOTHING')) {
-									if (metadata.has(key)) return { meta: { changes: 0 } };
-									metadata.set(key, String(args[1]));
-									return { meta: { changes: 1 } };
-								}
-								metadata.set(key, String(args[1]));
-							}
-							return { meta: { changes: 1 } };
-						},
-						first: async () => {
-							if (q.includes('ingest_metadata')) {
-								const key = String(args[0]);
-								const value = metadata.get(key);
-								return value ? { value } : null;
-							}
-							if (q.includes('SELECT id FROM channels')) {
-								return { id: 'kick-ch-123' };
-							}
-							return null;
-						},
-					}),
-				};
-			},
-			batch: async () => [{}],
-		},
-	} as unknown as Env;
 
 	beforeAll(async () => {
 		keys = await generateTestRsaKeyPair();
-		env.KICK_WEBHOOK_PUBLIC_KEY = keys.publicPem;
+		env = testEnv({
+			KICK_WEBHOOK_PUBLIC_KEY: keys.publicPem,
+			DB: mockIngestD1((q) => ({
+				bind: (...args: unknown[]) => ({
+					run: async () => {
+						if (q.includes('DELETE FROM ingest_metadata')) {
+							metadata.delete(String(args[0]));
+							return { meta: { changes: 1 } };
+						}
+						if (q.includes('INSERT INTO ingest_metadata')) {
+							const key = String(args[0]);
+							if (q.includes('ON CONFLICT(key) DO NOTHING')) {
+								if (metadata.has(key)) return { meta: { changes: 0 } };
+								metadata.set(key, String(args[1]));
+								return { meta: { changes: 1 } };
+							}
+							metadata.set(key, String(args[1]));
+						}
+						return { meta: { changes: 1 } };
+					},
+					first: async () => {
+						if (q.includes('ingest_metadata')) {
+							const key = String(args[0]);
+							const value = metadata.get(key);
+							return value ? { value } : null;
+						}
+						if (q.includes('SELECT id FROM channels')) {
+							return { id: 'kick-ch-123' };
+						}
+						return null;
+					},
+				}),
+			})),
+		});
 	});
 
 	beforeEach(() => {
@@ -108,7 +103,7 @@ describe('handleKickWebhook', () => {
 	});
 
 	it('503 when KICK_WEBHOOK_PUBLIC_KEY missing', async () => {
-		const res = await handleKickWebhook(new Request('http://x', { method: 'POST' }), {} as Env);
+		const res = await handleKickWebhook(new Request('http://x', { method: 'POST' }), testEnv());
 		expect(res.status).toBe(503);
 	});
 

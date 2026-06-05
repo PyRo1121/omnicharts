@@ -8,7 +8,7 @@
 		hrefFor: (id: UiPlatformFilter) => string;
 	}
 
-	let { platforms, value, hrefFor }: Props = $props();
+	const { platforms, value, hrefFor }: Props = $props();
 
 	const dotClass: Record<UiPlatformFilter, string> = {
 		all: 'bg-[var(--color-oc-accent)]',

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { testEnv, unusedIngestD1 } from './helpers';
 import * as kickDb from '../src/db/kick-live-batch';
 import { KickPublicApiClient } from '../src/kick/api';
 import { runKickDiscovery } from '../src/kick/discover';
@@ -15,11 +16,11 @@ describe('kick discover edge cases', () => {
 		});
 
 		const result = await runKickDiscovery(
-			{
+			testEnv({
 				KICK_CLIENT_ID: 'id',
 				KICK_CLIENT_SECRET: 'secret',
-				DB: {} as D1Database,
-			} as Env,
+				DB: unusedIngestD1(),
+			}),
 			{ quick: true },
 		);
 
@@ -41,11 +42,11 @@ describe('kick discover edge cases', () => {
 		vi.spyOn(kickDb, 'batchUpsertKickChannelsFromLivestreams').mockResolvedValue(new Map());
 
 		const result = await runKickDiscovery(
-			{
+			testEnv({
 				KICK_CLIENT_ID: 'id',
 				KICK_CLIENT_SECRET: 'secret',
-				DB: {} as D1Database,
-			} as Env,
+				DB: unusedIngestD1(),
+			}),
 			{ quick: true },
 		);
 

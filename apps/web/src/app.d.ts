@@ -17,5 +17,3 @@ declare global {
 		// interface PageState {}
 	}
 }
-
-export {};

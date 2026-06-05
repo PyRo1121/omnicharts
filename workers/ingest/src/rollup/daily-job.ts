@@ -174,7 +174,7 @@ export async function runDailyRollup(env: Env, dateOverride?: string): Promise<R
 
 	const channelSessions = new Map<string, ReturnType<typeof aggregateSessionSamples>[]>();
 	for (const [key, sessionRows] of byChannelSession) {
-		const channelId = key.split(':')[0]!;
+		const channelId = key.split(':')[0];
 		const metrics = aggregateSessionSamples(rowsToPoints(sessionRows));
 		const list = channelSessions.get(channelId) ?? [];
 		list.push(metrics);
@@ -212,7 +212,7 @@ export async function runDailyRollup(env: Env, dateOverride?: string): Promise<R
 	for (const [key, sessionRows] of byChannelSession) {
 		const gameId = sessionRows[0]?.game_category_id;
 		if (!gameId) continue;
-		const channelId = key.split(':')[0]!;
+		const channelId = key.split(':')[0];
 		const metrics = aggregateSessionSamples(rowsToPoints(sessionRows));
 		const sessions = gameSessions.get(gameId) ?? [];
 		sessions.push(metrics);

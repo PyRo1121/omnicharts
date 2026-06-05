@@ -1,25 +1,31 @@
 import { describe, it, expect } from 'vitest';
+import { testEnv } from './helpers';
 import { hasTwitchAppCredentials, twitchAppCredentialsErrorResponse } from '../src/twitch/credentials';
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+	return typeof v === 'object' && v !== null;
+}
 
 describe('twitch app credentials', () => {
 	it('detects configured env', () => {
 		expect(
-			hasTwitchAppCredentials({
+			hasTwitchAppCredentials(testEnv({
 				TWITCH_CLIENT_ID: 'id',
 				TWITCH_CLIENT_SECRET: 'secret',
-			} as Env),
+			})),
 		).toBe(true);
 	});
 
 	it('detects missing env', () => {
-		expect(hasTwitchAppCredentials({} as Env)).toBe(false);
+		expect(hasTwitchAppCredentials(testEnv())).toBe(false);
 	});
 
 	it('error response includes restart hint', async () => {
 		const res = twitchAppCredentialsErrorResponse();
 		expect(res.status).toBe(503);
-		const body = (await res.json()) as { hint?: string; dev_vars?: string };
-		expect(body.hint).toMatch(/restart/i);
-		expect(body.dev_vars).toBe('workers/ingest/.dev.vars');
+		await expect(res.json()).resolves.toSatisfy((body: unknown) => {
+			if (!isRecord(body)) return false;
+			return typeof body.hint === 'string' && /restart/i.test(body.hint) && body.dev_vars === 'workers/ingest/.dev.vars';
+		});
 	});
 });

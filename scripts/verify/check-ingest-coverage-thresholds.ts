@@ -109,7 +109,7 @@ function main(): number {
 			if (p < THRESHOLD) failed = true;
 		}
 		const status = parts.every((part) => {
-			const value = Number.parseFloat(part.split(' ')[1]!);
+			const value = Number.parseFloat(part.split(' ')[1]);
 			return value >= THRESHOLD;
 		})
 			? 'PASS'

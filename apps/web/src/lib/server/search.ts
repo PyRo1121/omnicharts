@@ -1,6 +1,7 @@
 import type { PlatformId } from '@omnicharts/domain';
 import { formatHoursWatched } from '@omnicharts/rollup';
 import { getIngestBaseUrl } from '$lib/server/ingest';
+import { isPlatformId, parseIngestSearchResponse } from '$lib/server/json-guards';
 import { loadChannelDetail } from '$lib/server/channel';
 import type { ServerLoadContext } from '$lib/server/load-context';
 
@@ -13,16 +14,6 @@ export type SearchResultRow = {
 	avatarUrl: string | null;
 	platform: string;
 	hoursWatched7d: string | null;
-};
-
-type IngestSearchResponse = {
-	results: {
-		id: string;
-		slug: string;
-		display_name: string;
-		avatar_url: string | null;
-		platform_id: string;
-	}[];
 };
 
 export async function searchChannels(
@@ -44,7 +35,8 @@ export async function searchChannels(
 			headers: { accept: 'application/json' },
 		});
 		if (!res.ok) return { results: [], error: true };
-		const body = (await res.json()) as IngestSearchResponse;
+		const body = parseIngestSearchResponse(await res.json());
+		if (!body) return { results: [], error: true };
 		return {
 			results: (body.results ?? []).map((r) => ({
 				id: r.id,
@@ -66,7 +58,7 @@ export async function enrichSearchResultsWithRollups(ctx: ServerLoadContext, res
 
 	return Promise.all(
 		results.map(async (row) => {
-			if (!SEARCH_HW_PLATFORMS.has(row.platform as PlatformId)) return row;
+			if (!isPlatformId(row.platform) || !SEARCH_HW_PLATFORMS.has(row.platform)) return row;
 
 			const detail = await loadChannelDetail(ctx, row.slug, row.platform, '7d');
 			const hoursWatched7d =

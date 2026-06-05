@@ -1,5 +1,6 @@
 import { PLATFORM_TWITCH } from '@omnicharts/domain';
 import { describe, it, expect, vi } from 'vitest';
+import { mockIngestD1 } from './helpers';
 import {
 	batchCloseStaleOpenSessionsForChannels,
 	closeOpenSessionsForPlatformChannelIds,
@@ -13,7 +14,7 @@ describe('session-lifecycle', () => {
 			sql,
 			bind: vi.fn().mockReturnThis(),
 		}));
-		const db = { prepare, batch } as unknown as D1Database;
+		const db = mockIngestD1((sql) => prepare(sql), batch);
 
 		const ids = Array.from({ length: 75 }, (_, i) => String(i));
 		await closeOpenSessionsForPlatformChannelIds(db, PLATFORM_TWITCH, ids, '2026-06-03T00:00:00.000Z', {
@@ -32,7 +33,7 @@ describe('session-lifecycle', () => {
 			bind: vi.fn().mockReturnThis(),
 			sql,
 		}));
-		const db = { prepare, batch } as unknown as D1Database;
+		const db = mockIngestD1((sql) => prepare(sql), batch);
 
 		await closeStaleOpenSessionsForChannel(db, 'ch-1', 'stream-new', '2026-06-03T00:00:00.000Z');
 
@@ -46,7 +47,7 @@ describe('session-lifecycle', () => {
 			bind: vi.fn().mockReturnThis(),
 			sql,
 		}));
-		const db = { prepare, batch } as unknown as D1Database;
+		const db = mockIngestD1((sql) => prepare(sql), batch);
 
 		const closes = Array.from({ length: 75 }, (_, i) => ({
 			channelId: `ch-${i}`,

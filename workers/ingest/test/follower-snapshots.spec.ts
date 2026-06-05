@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { mockIngestD1 } from './helpers';
 import {
 	computeFollowersDelta,
 	fetchFollowerCountsByChannelId,
@@ -22,7 +23,7 @@ function mockDbCountingInQueries() {
 				},
 			};
 		},
-	} as unknown as D1Database;
+	};
 	return { db, bindArgCounts };
 }
 
@@ -60,7 +61,7 @@ describe('storeFollowerSnapshots', () => {
 		const prepare = vi.fn((sql: string) => ({
 			bind: (...args: unknown[]) => ({ sql, args }),
 		}));
-		const db = { prepare, batch } as unknown as D1Database;
+		const db = mockIngestD1((sql) => prepare(sql), batch);
 		const snapshots = new Map(Array.from({ length: 75 }, (_, i) => [`ch-${i}`, 1000 + i] as const));
 
 		await storeFollowerSnapshots(db, snapshots);

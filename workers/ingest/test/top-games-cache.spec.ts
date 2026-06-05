@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { testEnv } from './helpers';
 import type { HelixGame } from '../src/twitch/helix';
 import {
 	readCachedTopGames,
@@ -26,7 +27,7 @@ function metadataDb(value: string | null) {
 				}),
 			};
 		},
-	} as unknown as D1Database;
+	};
 }
 
 describe('top games cache', () => {
@@ -59,7 +60,7 @@ describe('top games cache', () => {
 			games: sampleGames,
 		});
 		const getTopGames = vi.spyOn(TwitchHelixClient.prototype, 'getTopGames');
-		const client = new TwitchHelixClient({} as Env);
+		const client = new TwitchHelixClient(testEnv());
 
 		const result = await resolveTopGamesForCoverage(client, metadataDb(fresh), 100);
 		expect(result.helixPointsUsed).toBe(0);
@@ -83,10 +84,10 @@ describe('top games cache', () => {
 					}),
 				};
 			},
-		} as unknown as D1Database;
+		};
 
 		vi.spyOn(TwitchHelixClient.prototype, 'getTopGames').mockResolvedValue(sampleGames);
-		const client = new TwitchHelixClient({} as Env);
+		const client = new TwitchHelixClient(testEnv());
 
 		const result = await resolveTopGamesForCoverage(client, db, 100);
 		expect(result.helixPointsUsed).toBe(1);
@@ -98,7 +99,7 @@ describe('top games cache', () => {
 		const run = vi.fn();
 		const db = {
 			prepare: () => ({ bind: () => ({ run }) }),
-		} as unknown as D1Database;
+		};
 		await writeCachedTopGames(db, []);
 		expect(run).not.toHaveBeenCalled();
 	});

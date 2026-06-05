@@ -41,7 +41,7 @@ describe('pruneDailyRollupsOlderThanRetention', () => {
 					},
 				};
 			},
-		} as unknown as D1Database;
+		};
 
 		const result = await pruneDailyRollupsOlderThanRetention(db, new Date('2026-06-05T12:00:00.000Z'));
 		expect(result.channelRows).toBe(DAILY_ROLLUP_DELETE_BATCH_SIZE + 4);
@@ -57,7 +57,7 @@ describe('pruneDailyRollupsOlderThanRetention', () => {
 					run: async () => ({ meta: { changes: 0 } }),
 				}),
 			}),
-		} as unknown as D1Database;
+		};
 
 		await expect(pruneDailyRollupsOlderThanRetention(db, new Date('2026-06-05T12:00:00.000Z'))).resolves.toEqual({
 			channelRows: 0,

@@ -5,7 +5,7 @@
 		daily: ChannelDailyPoint[];
 	}
 
-	let { daily }: Props = $props();
+	const { daily }: Props = $props();
 
 	const width = 640;
 	const height = 200;
@@ -13,7 +13,7 @@
 	const innerW = width - pad.left - pad.right;
 	const innerH = height - pad.top - pad.bottom;
 
-	const sorted = $derived([...daily].sort((a, b) => a.date.localeCompare(b.date)));
+	const sorted = $derived([...daily].toSorted((a, b) => a.date.localeCompare(b.date)));
 
 	function scale(values: number[], maxPad = 1.08): (v: number) => number {
 		const max = Math.max(...values, 1);

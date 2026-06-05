@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, test } from 'vitest';
 import { INGEST_STATE_TRACKED } from '@omnicharts/domain';
 import { countFromBatchRow, maxSampleFromBatchRow } from '../src/d1';
 import { formatCompactMetric, formatHoursWatched } from '../src/format';

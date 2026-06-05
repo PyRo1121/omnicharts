@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { testEnv } from './helpers';
 import worker from '../src/index';
 import * as seed from '../src/youtube/seed';
 
@@ -17,7 +18,7 @@ describe('YouTube channel resolve (worker.fetch)', () => {
 					},
 				}),
 			}),
-		} as unknown as D1Database;
+		};
 
 		vi.spyOn(seed, 'seedYoutubeChannelByQuery').mockResolvedValue({
 			id: 'youtube-ch-UCabcdefghijklmnopqrstuv',
@@ -27,14 +28,13 @@ describe('YouTube channel resolve (worker.fetch)', () => {
 			platform_id: 'youtube',
 		});
 
-		const res = await worker.fetch(new Request('http://ingest/v1/channels/resolve?slug=mrbeast&platform=youtube'), {
+		const res = await worker.fetch(new Request('http://ingest/v1/channels/resolve?slug=mrbeast&platform=youtube'), testEnv({
 			DB: db,
 			YOUTUBE_API_KEY: 'key',
-		} as Env);
+		}));
 
 		expect(res.status).toBe(200);
-		const body = (await res.json()) as { slug: string; from_history: boolean; platform: string };
-		expect(body).toEqual({
+		expect(await res.json()).toEqual({
 			platform: 'youtube',
 			slug: 'mrbeast',
 			from_history: false,

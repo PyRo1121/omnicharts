@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { mockIngestD1 } from './helpers';
 import type { YoutubeVideoItem } from '../src/youtube/types';
 import { batchRecordYoutubeLiveSamples, clearYoutubeLiveVideoIds } from '../src/db/youtube-live-batch';
 
@@ -18,7 +19,10 @@ function mockDb() {
 		}),
 	}));
 	return {
-		db: { prepare, batch } as unknown as D1Database,
+		db: mockIngestD1((sql) => prepare(sql), async (statements) => {
+			for (const stmt of statements) await stmt.run();
+			return [];
+		}),
 		runs,
 		prepare,
 		batch,
@@ -83,7 +87,7 @@ describe('batchRecordYoutubeLiveSamples', () => {
 			}),
 		}));
 		const batch = vi.fn(async () => []);
-		const db = { prepare, batch } as unknown as D1Database;
+		const db = mockIngestD1((sql) => prepare(sql), batch);
 
 		await batchRecordYoutubeLiveSamples(db, [{ channelId: 'youtube-ch-1', video: liveVideo() }]);
 		expect(batch).toHaveBeenCalled();
@@ -125,9 +129,9 @@ describe('clearYoutubeLiveVideoIds', () => {
 			}),
 		}));
 		const batch = vi.fn(async () => []);
-		const db = { prepare, batch } as unknown as D1Database;
+		const db = mockIngestD1((sql) => prepare(sql), batch);
 
 		await batchRecordYoutubeLiveSamples(db, [{ channelId: 'youtube-ch-1', video: liveVideo() }]);
-		expect(prepare.mock.calls.some(([sql]) => String(sql).includes('UPDATE stream_sessions'))).toBe(true);
+		expect(prepare.mock.calls.some(([sql]) => sql.includes('UPDATE stream_sessions'))).toBe(true);
 	});
 });

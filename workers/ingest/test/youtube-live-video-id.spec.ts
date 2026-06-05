@@ -1,7 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
+import { testEnv } from './helpers';
 import { setYoutubeLiveVideoId } from '../src/db/youtube';
 import { pickLiveVideoIdFromPlaylistItems, resolveYoutubeLiveVideoId } from '../src/youtube/live-video-id';
-import type { YoutubeDataApiClient } from '../src/youtube/api';
+import { YoutubeDataApiClient } from '../src/youtube/api';
+
 describe('pickLiveVideoIdFromPlaylistItems', () => {
 	it('returns first live video id from uploads playlist page', () => {
 		const id = pickLiveVideoIdFromPlaylistItems([
@@ -28,32 +30,34 @@ describe('pickLiveVideoIdFromPlaylistItems', () => {
 
 describe('resolveYoutubeLiveVideoId', () => {
 	it('uses channels.list uploads playlist then playlistItems.list', async () => {
-		const client = {
-			getUploadsPlaylistId: vi.fn().mockResolvedValue('UU-uploads'),
-			getPlaylistItems: vi.fn().mockResolvedValue([
-				{
-					snippet: {
-						resourceId: { videoId: 'abcLive' },
-						liveBroadcastContent: 'live',
-					},
+		const getUploadsPlaylistId = vi.spyOn(YoutubeDataApiClient.prototype, 'getUploadsPlaylistId').mockResolvedValue('UU-uploads');
+		const getPlaylistItems = vi.spyOn(YoutubeDataApiClient.prototype, 'getPlaylistItems').mockResolvedValue([
+			{
+				snippet: {
+					resourceId: { videoId: 'abcLive' },
+					liveBroadcastContent: 'live',
 				},
-			]),
-		} as unknown as YoutubeDataApiClient;
+			},
+		]);
+		const client = new YoutubeDataApiClient(testEnv({ YOUTUBE_API_KEY: 'key' }));
 
 		const id = await resolveYoutubeLiveVideoId(client, 'UC-channel');
 		expect(id).toBe('abcLive');
-		expect(client.getUploadsPlaylistId).toHaveBeenCalledWith('UC-channel');
-		expect(client.getPlaylistItems).toHaveBeenCalledWith('UU-uploads', 15);
+		expect(getUploadsPlaylistId).toHaveBeenCalledWith('UC-channel');
+		expect(getPlaylistItems).toHaveBeenCalledWith('UU-uploads', 15);
+		getUploadsPlaylistId.mockRestore();
+		getPlaylistItems.mockRestore();
 	});
 
 	it('returns null when channel has no uploads playlist', async () => {
-		const client = {
-			getUploadsPlaylistId: vi.fn().mockResolvedValue(null),
-			getPlaylistItems: vi.fn(),
-		} as unknown as YoutubeDataApiClient;
+		const getUploadsPlaylistId = vi.spyOn(YoutubeDataApiClient.prototype, 'getUploadsPlaylistId').mockResolvedValue(null);
+		const getPlaylistItems = vi.spyOn(YoutubeDataApiClient.prototype, 'getPlaylistItems');
+		const client = new YoutubeDataApiClient(testEnv({ YOUTUBE_API_KEY: 'key' }));
 
 		await expect(resolveYoutubeLiveVideoId(client, 'UC-channel')).resolves.toBeNull();
-		expect(client.getPlaylistItems).not.toHaveBeenCalled();
+		expect(getPlaylistItems).not.toHaveBeenCalled();
+		getUploadsPlaylistId.mockRestore();
+		getPlaylistItems.mockRestore();
 	});
 });
 
@@ -70,7 +74,7 @@ describe('setYoutubeLiveVideoId', () => {
 					}),
 				};
 			},
-		} as unknown as D1Database;
+		};
 
 		await setYoutubeLiveVideoId(db, 'ch-row-1', 'video123');
 		expect(binds[0]?.[0]).toContain('youtube_live_video_id');

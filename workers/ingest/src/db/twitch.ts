@@ -80,7 +80,7 @@ export async function recordLiveSample(
 	gameCategoryId: string | null,
 ): Promise<SampleArchiveRow> {
 	const rows = await batchRecordLiveSamples(db, [{ channelId, stream, gameCategoryId }]);
-	return rows[0]!;
+	return rows[0];
 }
 
 export type DiscoveryStats = {

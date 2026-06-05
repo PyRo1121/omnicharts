@@ -1,15 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
 import { GET as getChannelDetail } from '../../routes/api/v1/channels/[slug]/+server';
 import { GET as getGameDetail } from '../../routes/api/v1/games/[slug]/+server';
+import { mockD1Database } from './mock-d1';
 
-function nullDb(): D1Database {
-	return {
-		prepare() {
-			return {
-				bind: () => ({ first: async () => null, all: async () => ({ results: [] }) }),
-			};
-		},
-	} as unknown as D1Database;
+function nullDb() {
+	return mockD1Database(() => ({
+		bind: () => ({ first: async () => null, all: async () => ({ results: [] }) }),
+	}));
 }
 
 describe('GET /api/v1/channels/[slug]', () => {

@@ -8,5 +8,3 @@ declare global {
 		INGEST_COVERAGE_MODE?: string;
 	}
 }
-
-export {};

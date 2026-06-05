@@ -3,6 +3,13 @@
  * @see docs/15-ingest-runbook.md
  */
 
+import {
+	parseAdminCsvBody,
+	parseAdminDateBody,
+	parseAdminQuickBody,
+	parseAdminSeedBody,
+	parseVodBackfillBody,
+} from './json-guards';
 import { parseQueueBody, type IngestQueueMessage } from './messages';
 import { runTwitchDiscovery } from './twitch/discover';
 import { enqueueTwitchPollShards, runTwitchCatalogPoll, runTwitchPollBatch } from './twitch/poll';
@@ -306,8 +313,7 @@ async function adminTwitchDiscover(request: Request, env: Env): Promise<Response
 	}
 	let quick = false;
 	try {
-		const body = (await request.json()) as { quick?: boolean };
-		quick = body.quick === true;
+		quick = parseAdminQuickBody(await request.json()).quick;
 	} catch {
 		/* empty body */
 	}
@@ -319,10 +325,7 @@ async function adminTwitchDiscover(request: Request, env: Env): Promise<Response
 async function adminYoutubePoll(request: Request, env: Env): Promise<Response> {
 	let seedHandles: string[] = [];
 	try {
-		const body = (await request.json()) as { seed?: string[] };
-		if (Array.isArray(body.seed)) {
-			seedHandles = body.seed.filter((h): h is string => typeof h === 'string');
-		}
+		seedHandles = parseAdminSeedBody(await request.json()).seed;
 	} catch {
 		/* empty body */
 	}
@@ -337,8 +340,7 @@ async function adminYoutubePoll(request: Request, env: Env): Promise<Response> {
 async function adminKickDiscover(request: Request, env: Env): Promise<Response> {
 	let quick = false;
 	try {
-		const body = (await request.json()) as { quick?: boolean };
-		quick = body.quick === true;
+		quick = parseAdminQuickBody(await request.json()).quick;
 	} catch {
 		/* empty body */
 	}
@@ -355,8 +357,7 @@ async function adminTwitchPoll(request: Request, env: Env): Promise<Response> {
 	}
 	let quick = false;
 	try {
-		const body = (await request.json()) as { quick?: boolean };
-		quick = body.quick === true;
+		quick = parseAdminQuickBody(await request.json()).quick;
 	} catch {
 		/* empty body */
 	}
@@ -397,8 +398,7 @@ async function adminTwitchEventSubSync(env: Env): Promise<Response> {
 async function adminRollupDaily(request: Request, env: Env): Promise<Response> {
 	let date: string | undefined;
 	try {
-		const json = (await request.json()) as { date?: string };
-		date = json.date;
+		date = parseAdminDateBody(await request.json()).date;
 	} catch {
 		// empty body → yesterday UTC
 	}
@@ -411,13 +411,11 @@ async function adminWatchlistImport(request: Request, env: Env): Promise<Respons
 	let csvText = '';
 
 	if (contentType.includes('application/json')) {
-		let body: { csv?: string };
 		try {
-			body = (await request.json()) as { csv?: string };
+			csvText = parseAdminCsvBody(await request.json()).csv?.trim() ?? '';
 		} catch {
 			return Response.json({ error: { code: 'invalid_csv', message: 'Request body must be JSON with csv field' } }, { status: 400 });
 		}
-		csvText = body.csv?.trim() ?? '';
 	} else {
 		csvText = (await request.text()).trim();
 	}
@@ -451,16 +449,9 @@ async function adminTwitchVodBackfill(request: Request, env: Env): Promise<Respo
 	let platformChannelIds: string[] | undefined;
 	let limit: number | undefined;
 	try {
-		const body = (await request.json()) as {
-			platform_channel_ids?: string[];
-			limit?: number;
-		};
-		if (Array.isArray(body.platform_channel_ids)) {
-			platformChannelIds = body.platform_channel_ids.filter((id): id is string => typeof id === 'string');
-		}
-		if (typeof body.limit === 'number' && Number.isFinite(body.limit) && body.limit > 0) {
-			limit = Math.floor(body.limit);
-		}
+		const body = parseVodBackfillBody(await request.json());
+		platformChannelIds = body.platform_channel_ids;
+		limit = body.limit;
 	} catch {
 		/* empty body — backfill next stale tracked batch */
 	}

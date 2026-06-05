@@ -53,6 +53,28 @@ describe('searchChannels', () => {
 	});
 });
 
+function channelDetailBody(platform: string, hoursWatched: number) {
+	return {
+		platform,
+		slug: 'xqc',
+		display_name: 'xQc',
+		avatar_url: null,
+		tracked_since: '2026-01-01T00:00:00Z',
+		ingest_state: 'tracked',
+		follower_count: 100,
+		description: null,
+		period: '7d',
+		totals: {
+			hours_watched: hoursWatched,
+			average_viewers: 5,
+			peak_viewers: 20,
+			airtime_hours: 2,
+			stream_count: 3,
+			followers_gain: null,
+		},
+	};
+}
+
 describe('enrichSearchResultsWithRollups', () => {
 	const kickRow = {
 		id: '1',
@@ -62,28 +84,6 @@ describe('enrichSearchResultsWithRollups', () => {
 		platform: 'kick',
 		hoursWatched7d: null,
 	};
-
-	function channelDetailBody(platform: string, hoursWatched: number) {
-		return {
-			platform,
-			slug: 'xqc',
-			display_name: 'xQc',
-			avatar_url: null,
-			tracked_since: '2026-01-01T00:00:00Z',
-			ingest_state: 'tracked',
-			follower_count: 100,
-			description: null,
-			period: '7d',
-			totals: {
-				hours_watched: hoursWatched,
-				average_viewers: 5,
-				peak_viewers: 20,
-				airtime_hours: 2,
-				stream_count: 3,
-				followers_gain: null,
-			},
-		};
-	}
 
 	it('enriches kick rows with 7d HW when channel detail exists (docs/16)', async () => {
 		const fetchFn = vi.fn().mockResolvedValue({

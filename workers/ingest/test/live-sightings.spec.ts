@@ -17,7 +17,7 @@ describe('live-sightings promotion', () => {
 					bind: () => ({ run: async () => ({}) }),
 				};
 			},
-		} as unknown as D1Database;
+		};
 
 		await recordChannelLiveSighting(db, 'ch-1', 100);
 		expect(runs.some((s) => s.includes('INSERT INTO channel_live_sightings'))).toBe(true);
@@ -36,7 +36,7 @@ describe('live-sightings promotion', () => {
 					}),
 				};
 			},
-		} as unknown as D1Database;
+		};
 
 		expect(await countChannelLiveSightings14d(db, 'ch-1')).toBe(2);
 	});
@@ -48,7 +48,7 @@ describe('live-sightings promotion', () => {
 					first: async () => null,
 				}),
 			}),
-		} as unknown as D1Database;
+		};
 		expect(await countChannelLiveSightings14d(db, 'ch-1')).toBe(0);
 	});
 });

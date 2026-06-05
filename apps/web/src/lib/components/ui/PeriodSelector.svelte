@@ -8,7 +8,7 @@
 		onPeriodChange?: (p: RankingPeriod) => void;
 	}
 
-	let { periods, value, onPeriodChange }: Props = $props();
+	const { periods, value, onPeriodChange }: Props = $props();
 
 	const labels: Record<RankingPeriod, string> = {
 		'24h': '24 hours',

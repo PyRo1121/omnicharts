@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { testEnv } from './helpers';
 import * as sessionLifecycle from '../src/db/session-lifecycle';
 import {
 	kickPlatformStreamId,
@@ -69,9 +70,9 @@ describe('kick webhook lifecycle vs poll session keys', () => {
 				}
 				return { bind: () => ({ run: async () => ({}) }) };
 			},
-		} as unknown as D1Database;
+		};
 
-		await applyKickLivestreamStatusUpdated({ DB: db } as Env, {
+		await applyKickLivestreamStatusUpdated(testEnv({ DB: db }), {
 			broadcaster: { user_id: 42, channel_slug: 'caster', channel_id: 99 },
 			channel_id: 99,
 			is_live: true,
@@ -103,9 +104,9 @@ describe('kick webhook lifecycle vs poll session keys', () => {
 					}),
 				};
 			},
-		} as unknown as D1Database;
+		};
 
-		await applyKickLivestreamStatusUpdated({ DB: db } as Env, {
+		await applyKickLivestreamStatusUpdated(testEnv({ DB: db }), {
 			broadcaster: { user_id: 42, channel_slug: 'caster', channel_id: 99 },
 			channel_id: 99,
 			is_live: false,

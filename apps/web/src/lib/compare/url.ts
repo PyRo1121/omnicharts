@@ -1,5 +1,4 @@
-import { comparePeriods, parseComparePeriod, type ComparePeriod } from '@omnicharts/domain';
-import type { PlatformId } from '@omnicharts/domain';
+import { comparePeriods, parseComparePeriod, type ComparePeriod, type PlatformId } from '@omnicharts/domain';
 import { parseUiPlatform, searchPlatformId } from '$lib/ui/platform.svelte';
 
 export type ComparePageParams = {

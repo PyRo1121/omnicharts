@@ -1,11 +1,10 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import SectionHeader from '$lib/components/ui/SectionHeader.svelte';
-	import LeaderboardTable from '$lib/components/ui/LeaderboardTable.svelte';
+	import LeaderboardTable, { channelLeaderboardRows } from '$lib/components/ui/LeaderboardTable.svelte';
 	import PeriodSelector from '$lib/components/ui/PeriodSelector.svelte';
 	import PlatformFilter from '$lib/components/ui/PlatformFilter.svelte';
 	import LanguageFilter from '$lib/components/ui/LanguageFilter.svelte';
-	import { channelLeaderboardRows } from '$lib/components/ui/LeaderboardTable.svelte';
 	import ExportCsvLink from '$lib/components/ui/ExportCsvLink.svelte';
 	import { rankingsChannelsCsvUrl } from '$lib/export/csv-url';
 	import {
@@ -19,7 +18,7 @@
 	} from '$lib/ui/platform.svelte';
 	import type { RankingPeriod } from '@omnicharts/domain';
 
-	let { data } = $props();
+	const { data } = $props();
 
 	const rows = $derived(channelLeaderboardRows(data.rows));
 	const subtitle = $derived(channelsPageSubtitle(data.platform, data.source));

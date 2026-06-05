@@ -9,7 +9,7 @@
 		onLanguageChange?: (code: string | null) => void;
 	}
 
-	let { languages, value, onLanguageChange }: Props = $props();
+	const { languages, value, onLanguageChange }: Props = $props();
 </script>
 
 <label class="inline-flex items-center gap-2 text-sm text-[var(--color-oc-text-muted)]">

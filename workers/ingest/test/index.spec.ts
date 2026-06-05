@@ -1,5 +1,6 @@
 import { env, createExecutionContext, waitOnExecutionContext, createScheduledController, createMessageBatch, SELF } from 'cloudflare:test';
 import { describe, it, expect, vi } from 'vitest';
+import { testEnv } from './helpers';
 import worker from '../src/index';
 import { TWITCH_CRON, MULTI_PLATFORM_CRON } from '../src/cron-messages';
 import * as ingestLog from '../src/log';
@@ -17,14 +18,8 @@ describe('ingest worker', () => {
 
 	it('GET /health returns public JSON', async () => {
 		const response = await SELF.fetch('https://example.com/health');
-		const body = (await response.json()) as {
-			service: string;
-			status: string;
-			db: string;
-			twitch: string;
-			tracked_channels: { twitch: number };
-		};
-		expect(body.service).toBe('omnicharts-ingest');
+		const body = await response.json();
+		expect(body).toMatchObject({ service: 'omnicharts-ingest' });
 		expect(body).toHaveProperty('status');
 		expect(body).toHaveProperty('timestamp');
 		expect(body).toHaveProperty('twitch');
@@ -33,10 +28,8 @@ describe('ingest worker', () => {
 	});
 
 	it('scheduled */1 sendBatch enqueues sweep+reconcile coverage messages (full mode)', async () => {
-		const sendBatch = vi
-			.spyOn(env.INGEST_QUEUE, 'sendBatch')
-			.mockResolvedValue({ messages: [] } as Awaited<ReturnType<Env['INGEST_QUEUE']['sendBatch']>>);
-		const scheduledEnv = { ...env, INGEST_COVERAGE_MODE: 'full' } as Env;
+		const sendBatch = vi.spyOn(env.INGEST_QUEUE, 'sendBatch').mockImplementation(async () => ({ messages: [] }));
+		const scheduledEnv = testEnv({ ...env, INGEST_COVERAGE_MODE: 'full' });
 		const ctrl = createScheduledController({
 			scheduledTime: new Date(1_000),
 			cron: TWITCH_CRON,
@@ -45,16 +38,15 @@ describe('ingest worker', () => {
 		await worker.scheduled(ctrl, scheduledEnv, ctx);
 		await waitOnExecutionContext(ctx);
 		expect(sendBatch).toHaveBeenCalledOnce();
-		const batch = sendBatch.mock.calls[0]?.[0] as { body: { type: string } }[];
-		expect(batch).toHaveLength(2);
-		expect(batch.map((m) => m.body.type)).toEqual(['poll_twitch_sweep', 'poll_twitch_reconcile']);
+		expect(sendBatch.mock.calls[0]?.[0]).toEqual([
+			{ body: { type: 'poll_twitch_sweep' } },
+			{ body: { type: 'poll_twitch_reconcile' } },
+		]);
 		sendBatch.mockRestore();
 	});
 
 	it('scheduled */2 sendBatch enqueues kick+youtube tracked poll', async () => {
-		const sendBatch = vi
-			.spyOn(env.INGEST_QUEUE, 'sendBatch')
-			.mockResolvedValue({ messages: [] } as Awaited<ReturnType<Env['INGEST_QUEUE']['sendBatch']>>);
+		const sendBatch = vi.spyOn(env.INGEST_QUEUE, 'sendBatch').mockImplementation(async () => ({ messages: [] }));
 		const ctrl = createScheduledController({
 			scheduledTime: new Date(1_000),
 			cron: MULTI_PLATFORM_CRON,
@@ -63,8 +55,10 @@ describe('ingest worker', () => {
 		await worker.scheduled(ctrl, env, ctx);
 		await waitOnExecutionContext(ctx);
 		expect(sendBatch).toHaveBeenCalledOnce();
-		const batch = sendBatch.mock.calls[0]?.[0] as { body: { type: string } }[];
-		expect(batch.map((m) => m.body.type)).toEqual(['poll_kick_tracked', 'poll_youtube_tracked']);
+		expect(sendBatch.mock.calls[0]?.[0]).toEqual([
+			{ body: { type: 'poll_kick_tracked' } },
+			{ body: { type: 'poll_youtube_tracked' } },
+		]);
 		sendBatch.mockRestore();
 	});
 
@@ -78,7 +72,8 @@ describe('ingest worker', () => {
 				attempts: 1,
 			},
 		]);
-		const message = batch.messages[0]!;
+		const [message] = batch.messages;
+		expect(message).toBeDefined();
 		const ack = vi.spyOn(message, 'ack');
 		const retry = vi.spyOn(message, 'retry');
 		const ctx = createExecutionContext();

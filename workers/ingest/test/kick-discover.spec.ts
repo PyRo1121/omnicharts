@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { testEnv, unusedIngestD1 } from './helpers';
 import * as kickDb from '../src/db/kick-live-batch';
 import { KickPublicApiClient } from '../src/kick/api';
 import { kickDiscoveryNeedsApiReason, runKickDiscovery } from '../src/kick/discover';
@@ -9,11 +10,11 @@ describe('kick discover', () => {
 	});
 
 	it('kickDiscoveryNeedsApiReason when credentials missing', () => {
-		expect(kickDiscoveryNeedsApiReason({} as Env)).toMatch(/not configured/);
+		expect(kickDiscoveryNeedsApiReason(testEnv())).toMatch(/not configured/);
 	});
 
 	it('runKickDiscovery returns zeros when NEEDS_API', async () => {
-		const result = await runKickDiscovery({} as Env);
+		const result = await runKickDiscovery(testEnv());
 		expect(result.categoriesScanned).toBe(0);
 		expect(result.streamsSeen).toBe(0);
 	});
@@ -41,12 +42,12 @@ describe('kick discover', () => {
 		const channelSpy = vi.spyOn(kickDb, 'batchUpsertKickChannelsFromLivestreams').mockResolvedValue(new Map());
 
 		const result = await runKickDiscovery(
-			{
+			testEnv({
 				KICK_CLIENT_ID: 'id',
 				KICK_CLIENT_SECRET: 'secret',
 				KICK_MIN_VIEWERS: '2',
-				DB: {} as D1Database,
-			} as Env,
+				DB: unusedIngestD1(),
+			}),
 			{ quick: true },
 		);
 
@@ -83,12 +84,12 @@ describe('kick discover', () => {
 		vi.spyOn(kickDb, 'batchUpsertKickChannelsFromLivestreams').mockResolvedValue(new Map());
 
 		const result = await runKickDiscovery(
-			{
+			testEnv({
 				KICK_CLIENT_ID: 'id',
 				KICK_CLIENT_SECRET: 'secret',
 				KICK_MIN_VIEWERS: '2',
-				DB: {} as D1Database,
-			} as Env,
+				DB: unusedIngestD1(),
+			}),
 			{ quick: true },
 		);
 

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { testEnv, unusedIngestD1 } from './helpers';
 import { fetchAllArchiveVideosForUser, runTwitchVodBackfill } from '../src/twitch/vod-backfill';
 import { TwitchHelixClient, type HelixVideo } from '../src/twitch/helix';
 import * as vodSessions from '../src/db/vod-sessions';
@@ -24,9 +25,8 @@ const sampleVideo = (overrides: Partial<HelixVideo> = {}): HelixVideo => ({
 
 describe('fetchAllArchiveVideosForUser', () => {
 	it('returns empty list when Helix has no VODs', async () => {
-		const client = {
-			getArchiveVideosPage: vi.fn().mockResolvedValue({ data: [] }),
-		} as unknown as TwitchHelixClient;
+		const client = new TwitchHelixClient(testEnv({ TWITCH_CLIENT_ID: 'id', TWITCH_CLIENT_SECRET: 'secret' }));
+		vi.spyOn(client, 'getArchiveVideosPage').mockResolvedValue({ data: [] });
 
 		const result = await fetchAllArchiveVideosForUser(client, '123');
 		expect(result.videos).toEqual([]);
@@ -34,18 +34,16 @@ describe('fetchAllArchiveVideosForUser', () => {
 	});
 
 	it('follows pagination until cursor exhausted', async () => {
-		const client = {
-			getArchiveVideosPage: vi
-				.fn()
-				.mockResolvedValueOnce({
-					data: [sampleVideo({ id: '1' })],
-					pagination: { cursor: 'next' },
-				})
-				.mockResolvedValueOnce({
-					data: [sampleVideo({ id: '2' })],
-					pagination: {},
-				}),
-		} as unknown as TwitchHelixClient;
+		const client = new TwitchHelixClient(testEnv({ TWITCH_CLIENT_ID: 'id', TWITCH_CLIENT_SECRET: 'secret' }));
+		vi.spyOn(client, 'getArchiveVideosPage')
+			.mockResolvedValueOnce({
+				data: [sampleVideo({ id: '1' })],
+				pagination: { cursor: 'next' },
+			})
+			.mockResolvedValueOnce({
+				data: [sampleVideo({ id: '2' })],
+				pagination: {},
+			});
 
 		const result = await fetchAllArchiveVideosForUser(client, '123', { first: 1 });
 		expect(result.videos.map((v) => v.id)).toEqual(['1', '2']);
@@ -59,7 +57,7 @@ describe('runTwitchVodBackfill', () => {
 	});
 
 	it('returns NEEDS_API when Twitch credentials missing', async () => {
-		const stats = await runTwitchVodBackfill({ DB: {} as D1Database } as Env);
+		const stats = await runTwitchVodBackfill(testEnv({ DB: unusedIngestD1() }));
 		expect(stats.skipped).toBe('NEEDS_API');
 		expect(stats.ok).toBe(false);
 	});
@@ -79,11 +77,11 @@ describe('runTwitchVodBackfill', () => {
 		});
 
 		const stats = await runTwitchVodBackfill(
-			{
+			testEnv({
 				TWITCH_CLIENT_ID: 'id',
 				TWITCH_CLIENT_SECRET: 'secret',
-				DB: {} as D1Database,
-			} as Env,
+				DB: unusedIngestD1(),
+			}),
 			{ limit: 1 },
 		);
 
@@ -119,11 +117,11 @@ describe('runTwitchVodBackfill', () => {
 		});
 
 		const stats = await runTwitchVodBackfill(
-			{
+			testEnv({
 				TWITCH_CLIENT_ID: 'id',
 				TWITCH_CLIENT_SECRET: 'secret',
-				DB: {} as D1Database,
-			} as Env,
+				DB: unusedIngestD1(),
+			}),
 			{ limit: 1 },
 		);
 
@@ -158,11 +156,11 @@ describe('runTwitchVodBackfill', () => {
 
 		await expect(
 			runTwitchVodBackfill(
-				{
+				testEnv({
 					TWITCH_CLIENT_ID: 'id',
 					TWITCH_CLIENT_SECRET: 'secret',
-					DB: {} as D1Database,
-				} as Env,
+					DB: unusedIngestD1(),
+				}),
 				{ platformChannelIds: ['333'] },
 			),
 		).rejects.toThrow(/rate limited/);
@@ -171,11 +169,11 @@ describe('runTwitchVodBackfill', () => {
 		getPage.mockResolvedValueOnce({ data: [sampleVideo()] });
 
 		const stats = await runTwitchVodBackfill(
-			{
+			testEnv({
 				TWITCH_CLIENT_ID: 'id',
 				TWITCH_CLIENT_SECRET: 'secret',
-				DB: {} as D1Database,
-			} as Env,
+				DB: unusedIngestD1(),
+			}),
 			{ platformChannelIds: ['333'] },
 		);
 		expect(stats.channels_processed).toBe(1);

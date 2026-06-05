@@ -1,23 +1,68 @@
 {
 	"$schema": "./node_modules/oxlint/configuration_schema.json",
-	"plugins": ["typescript", "unicorn", "oxc"],
+	"plugins": ["typescript", "unicorn", "oxc", "eslint", "import", "promise"],
+	"options": {
+		"typeAware": true
+	},
 	"categories": {
-		"correctness": "error"
+		"correctness": "error",
+		"suspicious": "error",
+		"pedantic": "off",
+		"perf": "warn",
+		"style": "off",
+		"restriction": "off"
+	},
+	"env": {
+		"builtin": true,
+		"node": true
 	},
 	"rules": {
 		"eqeqeq": ["warn", "smart"],
 		"no-console": "warn",
 		"no-debugger": "error",
-		"no-unused-vars": "error",
-		"no-unreachable": "error",
-		"no-dupe-keys": "error",
-		"no-dupe-class-members": "error",
-		"no-duplicate-case": "error",
-		"typescript/no-explicit-any": "warn"
-	},
-	"env": {
-		"builtin": true,
-		"node": true
+		"prefer-const": "error",
+		"no-var": "error",
+		"no-throw-literal": "error",
+		"no-underscore-dangle": ["error", { "allow": ["_exhaustive"] }],
+
+		"import/no-duplicates": "error",
+		"import/no-cycle": "warn",
+
+		"typescript/no-explicit-any": "error",
+		"typescript/no-floating-promises": "error",
+		"typescript/no-misused-promises": [
+			"error",
+			{
+				"checksVoidReturn": {
+					"attributes": false
+				}
+			}
+		],
+		"typescript/no-unsafe-assignment": "warn",
+		"typescript/no-unsafe-member-access": "warn",
+		"typescript/no-unsafe-call": "warn",
+		"typescript/no-unsafe-return": "warn",
+		"typescript/no-unsafe-argument": "warn",
+		"typescript/only-throw-error": "off",
+		"typescript/await-thenable": "error",
+
+		"no-await-in-loop": "off",
+		"unicorn/no-array-sort": "off",
+		"import/no-unassigned-import": "off",
+		"unicorn/no-null": "off",
+		"unicorn/prefer-node-protocol": "off",
+		"unicorn/prefer-top-level-await": "off",
+		"eslint/no-plusplus": "off",
+
+		"typescript/no-unsafe-type-assertion": "off",
+		"typescript/no-unnecessary-type-assertion": "off",
+		"typescript/no-base-to-string": "off",
+		"typescript/no-unnecessary-type-conversion": "off",
+		"typescript/restrict-template-expressions": "off",
+		"typescript/unbound-method": "off",
+		"typescript/no-unnecessary-type-parameters": "off",
+		"typescript/no-unnecessary-boolean-literal-compare": "off",
+		"typescript/no-redundant-type-constituents": "off"
 	},
 	"ignorePatterns": [
 		"**/node_modules/**",
@@ -26,28 +71,54 @@
 		"**/dist/**",
 		"**/.wrangler/**",
 		"**/worker-configuration.d.ts",
+		"**/wrangler.jsonc",
+		"**/wrangler*.jsonc",
+		"**/wrangler.toml",
 		"**/*.tsbuildinfo"
 	],
 	"overrides": [
 		{
-			"files": ["**/*.test.ts", "**/*.spec.ts", "**/test/**"],
+			"files": ["**/*.test.ts", "**/*.spec.ts", "**/test/**", "**/e2e/**"],
 			"env": {
 				"vitest": true
 			},
 			"rules": {
-				"typescript/no-explicit-any": "off"
+				"typescript/no-explicit-any": "off",
+				"typescript/no-floating-promises": "off",
+				"typescript/no-misused-promises": "off",
+				"typescript/no-unsafe-assignment": "off",
+				"typescript/no-unsafe-member-access": "off",
+				"typescript/no-unsafe-call": "off",
+				"typescript/no-unsafe-return": "off",
+				"typescript/no-unsafe-argument": "off",
+				"no-await-in-loop": "off",
+				"typescript/no-redundant-type-constituents": "off"
 			}
 		},
 		{
 			"files": ["scripts/**"],
 			"rules": {
-				"no-console": "off"
+				"no-console": "off",
+				"no-await-in-loop": "off",
+				"import/no-cycle": "off",
+				"typescript/no-unsafe-assignment": "off",
+				"typescript/no-unsafe-member-access": "off",
+				"typescript/no-unsafe-call": "off",
+				"typescript/no-unsafe-return": "off",
+				"typescript/no-unsafe-argument": "off",
+				"typescript/no-base-to-string": "off"
 			}
 		},
 		{
 			"files": ["workers/ingest/src/log.ts", "workers/ingest/src/db/d1-meta.ts"],
 			"rules": {
 				"no-console": "off"
+			}
+		},
+		{
+			"files": ["**/*.svelte"],
+			"rules": {
+				"import/no-unassigned-import": "off"
 			}
 		}
 	]

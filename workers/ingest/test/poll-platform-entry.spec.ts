@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { testEnv } from './helpers';
 import { runKickPollPlatform } from '../src/kick/poll-platform';
 import { runYoutubePollPlatform } from '../src/youtube/poll-platform';
 import * as kickPoll from '../src/kick/poll';
@@ -14,7 +15,7 @@ describe('platform poll entrypoints', () => {
 			batches: 0,
 			skipped: 'NEEDS_API',
 		});
-		await runKickPollPlatform({} as Env);
+		await runKickPollPlatform(testEnv());
 		expect(spy).toHaveBeenCalledOnce();
 	});
 
@@ -23,7 +24,7 @@ describe('platform poll entrypoints', () => {
 			batches: 0,
 			skipped: 'NEEDS_API',
 		});
-		await runYoutubePollPlatform({} as Env);
+		await runYoutubePollPlatform(testEnv());
 		expect(spy).toHaveBeenCalledOnce();
 	});
 });

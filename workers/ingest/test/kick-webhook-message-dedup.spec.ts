@@ -41,7 +41,7 @@ function mockDb(store = new Map<string, string>()) {
 				}),
 			};
 		},
-	} as unknown as D1Database;
+	};
 }
 
 describe('kick webhook message dedup', () => {

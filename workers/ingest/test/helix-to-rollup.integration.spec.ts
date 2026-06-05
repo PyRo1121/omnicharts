@@ -2,12 +2,15 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
+import { mockIngestD1, testEnv } from './helpers';
 import type { HelixStream } from '../src/twitch/helix';
 import { ingestHelixStream } from '../src/twitch/ingest-stream';
 import { runDailyRollup } from '../src/rollup/daily-job';
 
 const fixtureDir = dirname(fileURLToPath(import.meta.url));
-const helixPayload = JSON.parse(readFileSync(join(fixtureDir, 'fixtures/helix-streams-sample.json'), 'utf8')) as { data: HelixStream[] };
+const helixPayload: { data: HelixStream[] } = JSON.parse(
+	readFileSync(join(fixtureDir, 'fixtures/helix-streams-sample.json'), 'utf8'),
+);
 
 const ROLLUP_DATE = new Date().toISOString().slice(0, 10);
 const CHANNEL_ID = 'twitch-ch-545050196';
@@ -15,7 +18,8 @@ const SESSION_ID = 'open-sess';
 const GAME_CATEGORY_ID = 'twitch-game-515025';
 
 function fixtureStream(): HelixStream {
-	const raw = helixPayload.data[0]!;
+	const raw = helixPayload.data[0];
+	if (!raw) throw new Error('missing helix fixture stream');
 	return {
 		...raw,
 		user_login: 'kato_junichi0817',
@@ -30,8 +34,8 @@ function createHelixToRollupDb() {
 	const rawSamples: unknown[][] = [];
 	const channelRollups: unknown[][] = [];
 
-	const db = {
-		prepare(sql: string) {
+	const db = mockIngestD1(
+		(sql) => {
 			if (sql.includes('platform_channel_id IN')) {
 				return { bind: () => ({ all: async () => ({ results: [] }) }) };
 			}
@@ -129,14 +133,14 @@ function createHelixToRollupDb() {
 				bind: () => ({ run: async () => ({}), first: async () => null, all: async () => ({}) }),
 			};
 		},
-		async batch(statements: { run: () => Promise<unknown> }[]) {
+		async (statements) => {
 			const results = [];
 			for (const stmt of statements) {
 				results.push(await stmt.run());
 			}
 			return results;
 		},
-	} as unknown as D1Database;
+	);
 
 	return { db, rawSamples, channelRollups };
 }
@@ -144,17 +148,17 @@ function createHelixToRollupDb() {
 describe('Helix fixture → ingest → rollup', () => {
 	it('ingest records viewer_samples and rollup writes channel_daily_rollup', async () => {
 		const { db, rawSamples, channelRollups } = createHelixToRollupDb();
-		const env = { DB: db } as Env;
+		const env = testEnv({ DB: db });
 
 		await ingestHelixStream(env, fixtureStream(), 20);
 
 		expect(rawSamples).toHaveLength(1);
-		expect(rawSamples[0]![2]).toBe(100);
+		expect(rawSamples[0]?.[2]).toBe(100);
 
 		const stats = await runDailyRollup(env, ROLLUP_DATE);
 		expect(stats.channelsProcessed).toBe(1);
 		expect(channelRollups).toHaveLength(1);
-		expect((channelRollups[0] as unknown[])[0]).toBe(CHANNEL_ID);
-		expect((channelRollups[0] as unknown[])[2]).toBeGreaterThan(0);
+		expect(channelRollups[0]?.[0]).toBe(CHANNEL_ID);
+		expect(Number(channelRollups[0]?.[2])).toBeGreaterThan(0);
 	});
 });

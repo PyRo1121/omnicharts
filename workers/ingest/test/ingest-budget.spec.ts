@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { testEnv } from './helpers';
 import {
 	CATALOG_CONSOLIDATED_MAX_TRACKED,
 	PLATFORM_BUDGET_SHARE,
@@ -44,7 +45,7 @@ describe('ingest budget allocator', () => {
 
 	it('full cron uses two messages without poll_platform hop', () => {
 		expect(messagesPerTwitchCronTick('full', 3000)).toBe(2);
-		const msgs = twitchCronEnqueueMessages({ INGEST_COVERAGE_MODE: 'full' } as Env);
+		const msgs = twitchCronEnqueueMessages(testEnv({ INGEST_COVERAGE_MODE: 'full' }));
 		expect(msgs.map((m) => m.type)).toEqual(['poll_twitch_sweep', 'poll_twitch_reconcile']);
 	});
 

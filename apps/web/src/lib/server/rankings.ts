@@ -1,6 +1,7 @@
 import { parseRankingPeriod, type PlatformId } from '@omnicharts/domain';
 import { buildRankingsChannelsResponse, formatHoursWatched, type RankingsChannelsResponse } from '@omnicharts/rollup';
 import { getIngestBaseUrl } from '$lib/server/ingest';
+import { parseRankingsChannelsResponse } from '$lib/server/json-guards';
 import type { ServerLoadContext } from '$lib/server/load-context';
 import { webRankingEligibility } from '$lib/server/ranking-env';
 import { topChannels, type ChannelRow, type RankingPeriod } from '$lib/mock/home';
@@ -84,7 +85,8 @@ async function loadFromIngest(
 	const url = `${getIngestBaseUrl()}/v1/rankings/channels?${params}`;
 	const res = await fetchFn(url, { headers: { accept: 'application/json' } });
 	if (!res.ok) return null;
-	const body = (await res.json()) as RankingsChannelsResponse;
+	const body = parseRankingsChannelsResponse(await res.json());
+	if (!body) return null;
 	return mapChannelRankingsBody(body, period, limit, platform);
 }
 

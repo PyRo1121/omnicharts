@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { testEnv } from './helpers';
 import {
 	cronToMessages,
 	TWITCH_CRON,
@@ -15,18 +16,18 @@ describe('cronToMessages', () => {
 
 	it('*/1 with production env enqueues sweep+reconcile (game pass inline in sweep)', () => {
 		expect(
-			cronToMessages(TWITCH_CRON, {
+			cronToMessages(TWITCH_CRON, testEnv({
 				INGEST_COVERAGE_MODE: 'full',
-			} as Env),
+			})),
 		).toEqual([{ type: 'poll_twitch_sweep' }, { type: 'poll_twitch_reconcile' }]);
 	});
 
 	it('*/1 staging shards_only enqueues one catalog message', () => {
 		expect(
-			cronToMessages(TWITCH_CRON, {
+			cronToMessages(TWITCH_CRON, testEnv({
 				INGEST_COVERAGE_MODE: 'shards_only',
 				TWITCH_MAX_TRACKED: '200',
-			} as Env),
+			})),
 		).toEqual([{ type: 'poll_twitch_catalog' }]);
 	});
 
@@ -36,10 +37,10 @@ describe('cronToMessages', () => {
 
 	it('*/5 staging shards_only enqueues one catalog message', () => {
 		expect(
-			cronToMessages(TWITCH_STAGING_CRON, {
+			cronToMessages(TWITCH_STAGING_CRON, testEnv({
 				INGEST_COVERAGE_MODE: 'shards_only',
 				TWITCH_MAX_TRACKED: '200',
-			} as Env),
+			})),
 		).toEqual([{ type: 'poll_twitch_catalog' }]);
 	});
 
@@ -60,7 +61,7 @@ describe('cronToMessages', () => {
 	});
 
 	it('discover cron optionally enqueues vod backfill when enabled', () => {
-		expect(cronToMessages(DISCOVER_TWITCH_CRON, { VOD_BACKFILL_ON_DISCOVER: '1' } as Env)).toEqual([
+		expect(cronToMessages(DISCOVER_TWITCH_CRON, testEnv({ VOD_BACKFILL_ON_DISCOVER: '1' }))).toEqual([
 			{ type: 'discover_twitch' },
 			{ type: 'sync_eventsub_twitch' },
 			{ type: 'discover_kick' },

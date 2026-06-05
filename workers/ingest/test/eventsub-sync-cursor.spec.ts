@@ -11,7 +11,7 @@ describe('EventSub sync cursor', () => {
 					}),
 				};
 			},
-		} as unknown as D1Database;
+		};
 		expect(await getEventSubSyncCursor(db)).toBe(0);
 
 		const bad = {
@@ -22,7 +22,7 @@ describe('EventSub sync cursor', () => {
 					}),
 				};
 			},
-		} as unknown as D1Database;
+		};
 		expect(await getEventSubSyncCursor(bad)).toBe(0);
 	});
 
@@ -34,12 +34,12 @@ describe('EventSub sync cursor', () => {
 				return {
 					bind: (...args: unknown[]) => ({
 						first: async () =>
-							q.includes('SELECT value FROM ingest_metadata') ? { value: String(args[0] === EVENTSUB_SYNC_CURSOR_KEY ? '7' : '') } : null,
+							q.includes('SELECT value FROM ingest_metadata') ? { value: args[0] === EVENTSUB_SYNC_CURSOR_KEY ? '7' : '' } : null,
 						run: async () => ({}),
 					}),
 				};
 			},
-		} as unknown as D1Database;
+		};
 
 		await setEventSubSyncCursor(db, 12);
 		expect(sql.some((s) => s.includes('ingest_metadata'))).toBe(true);

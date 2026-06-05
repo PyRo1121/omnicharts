@@ -6,7 +6,7 @@
 	import { uiPeriods } from '$lib/ui/platform.svelte';
 	import type { RankingPeriod } from '@omnicharts/domain';
 
-	let { data } = $props();
+	const { data } = $props();
 	const game = $derived(data.game);
 
 	const metrics = $derived([

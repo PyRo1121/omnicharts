@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { testEnv } from './helpers';
 import { applyStreamOffline, applyStreamOnline } from '../src/twitch/eventsub/lifecycle';
 import type { StreamOfflineEvent, StreamOnlineEvent } from '../src/twitch/eventsub/types';
 
@@ -46,9 +47,9 @@ describe('EventSub lifecycle', () => {
 				}
 				return { bind: () => ({ run: async () => ({}) }) };
 			},
-		} as unknown as D1Database;
+		};
 
-		await applyStreamOnline({ DB: db } as Env, onlineEvent);
+		await applyStreamOnline(testEnv({ DB: db }), onlineEvent);
 		expect(sessionUpdates.some((u) => u.sql.includes('ended_at'))).toBe(true);
 		expect(sessionUpdates.some((u) => u.endedAt === onlineEvent.started_at)).toBe(true);
 	});
@@ -77,9 +78,9 @@ describe('EventSub lifecycle', () => {
 				}
 				return { bind: () => ({ run: async () => ({}) }) };
 			},
-		} as unknown as D1Database;
+		};
 
-		await applyStreamOffline({ DB: db } as Env, offlineEvent);
+		await applyStreamOffline(testEnv({ DB: db }), offlineEvent);
 		expect(closed).toBe(true);
 	});
 
@@ -98,9 +99,9 @@ describe('EventSub lifecycle', () => {
 					}),
 				};
 			},
-		} as unknown as D1Database;
+		};
 
-		await applyStreamOffline({ DB: db } as Env, { ...offlineEvent, ended_at: endedAt });
+		await applyStreamOffline(testEnv({ DB: db }), { ...offlineEvent, ended_at: endedAt });
 		expect(binds.some((row) => row.includes(endedAt))).toBe(true);
 	});
 
@@ -119,9 +120,9 @@ describe('EventSub lifecycle', () => {
 					}),
 				};
 			},
-		} as unknown as D1Database;
+		};
 
-		await applyStreamOffline({ DB: db } as Env, offlineEvent, { endedAt });
+		await applyStreamOffline(testEnv({ DB: db }), offlineEvent, { endedAt });
 		expect(binds.some((row) => row.includes(endedAt))).toBe(true);
 	});
 });

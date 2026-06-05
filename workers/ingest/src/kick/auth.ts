@@ -1,3 +1,5 @@
+import { parseOAuthTokenResponse } from '../json-guards';
+
 type TokenCache = {
 	accessToken: string;
 	expiresAtMs: number;
@@ -32,7 +34,7 @@ export async function getKickAppAccessToken(env: Env): Promise<string> {
 		throw new Error(`Kick token failed ${res.status}: ${text.slice(0, 200)}`);
 	}
 
-	const data = (await res.json()) as { access_token: string; expires_in: number };
+	const data = parseOAuthTokenResponse(await res.json());
 	cached = {
 		accessToken: data.access_token,
 		expiresAtMs: now + data.expires_in * 1000,

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { testEnv } from './helpers';
 import worker from '../src/index';
 import * as helixModule from '../src/twitch/helix';
 import * as watchlistUpsert from '../src/watchlist/upsert';
@@ -7,7 +8,7 @@ const dbStub = {
 	prepare: () => ({
 		bind: () => ({ first: async () => null, run: async () => ({}) }),
 	}),
-} as unknown as D1Database;
+};
 
 describe('watchlist admin routes (worker.fetch)', () => {
 	beforeEach(() => {
@@ -21,7 +22,7 @@ describe('watchlist admin routes (worker.fetch)', () => {
 				headers: { 'content-type': 'text/csv' },
 				body: 'platform,slug\ntwitch,ninja',
 			}),
-			{ ADMIN_API_KEY: 'secret', DB: dbStub } as Env,
+			testEnv({ ADMIN_API_KEY: 'secret', DB: dbStub }),
 		);
 		expect(res.status).toBe(401);
 	});
@@ -36,11 +37,10 @@ describe('watchlist admin routes (worker.fetch)', () => {
 				},
 				body: '',
 			}),
-			{ ADMIN_API_KEY: 'secret', DB: dbStub } as Env,
+			testEnv({ ADMIN_API_KEY: 'secret', DB: dbStub }),
 		);
 		expect(res.status).toBe(400);
-		const body = (await res.json()) as { error: { code: string } };
-		expect(body.error.code).toBe('invalid_csv');
+		expect(await res.json()).toEqual({ error: { code: 'invalid_csv' } });
 	});
 
 	it('POST /admin/watchlist/import returns needs_api when twitch credentials missing', async () => {
@@ -53,18 +53,15 @@ describe('watchlist admin routes (worker.fetch)', () => {
 				},
 				body: 'platform,slug\ntwitch,ninja',
 			}),
-			{ ADMIN_API_KEY: 'secret', DB: dbStub } as Env,
+			testEnv({ ADMIN_API_KEY: 'secret', DB: dbStub }),
 		);
 
 		expect(res.status).toBe(200);
-		const body = (await res.json()) as {
-			ok: boolean;
-			skipped: boolean;
-			results: { status: string }[];
-		};
-		expect(body.ok).toBe(false);
-		expect(body.skipped).toBe(true);
-		expect(body.results[0]?.status).toBe('needs_api');
+		expect(await res.json()).toEqual({
+			ok: false,
+			skipped: true,
+			results: [{ status: 'needs_api' }],
+		});
 	});
 
 	it('POST /admin/watchlist/import imports twitch row via Helix lookup', async () => {
@@ -96,17 +93,15 @@ describe('watchlist admin routes (worker.fetch)', () => {
 				},
 				body: 'platform,slug\ntwitch,ninja',
 			}),
-			{
+			testEnv({
 				ADMIN_API_KEY: 'secret',
 				TWITCH_CLIENT_ID: 'id',
 				TWITCH_CLIENT_SECRET: 'sec',
 				DB: dbStub,
-			} as Env,
+			}),
 		);
 
 		expect(res.status).toBe(200);
-		const body = (await res.json()) as { ok: boolean; imported: number };
-		expect(body.ok).toBe(true);
-		expect(body.imported).toBe(1);
+		expect(await res.json()).toEqual({ ok: true, imported: 1 });
 	});
 });

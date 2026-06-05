@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { testEnv } from './helpers';
 import { TwitchHelixClient } from '../src/twitch/helix';
 import { runTwitchLiveSweep } from '../src/twitch/sweep';
 import { runTwitchDiscovery } from '../src/twitch/discover';
@@ -44,7 +45,7 @@ describe('runTwitchLiveSweep', () => {
 			pagination: {},
 		});
 
-		const stats = await runTwitchLiveSweep({ TWITCH_MIN_VIEWERS: '10', DB: {} } as Env, { maxPages: 3 });
+		const stats = await runTwitchLiveSweep(testEnv({ TWITCH_MIN_VIEWERS: '10' }), { maxPages: 3 });
 		expect(stats.stoppedBecause).toBe('below_threshold');
 		expect(stats.pagesFetched).toBe(1);
 	});
@@ -55,7 +56,7 @@ describe('runTwitchLiveSweep', () => {
 			pagination: {},
 		});
 
-		const stats = await runTwitchLiveSweep({ TWITCH_MIN_VIEWERS: '2', DB: {} } as Env, { maxPages: 5 });
+		const stats = await runTwitchLiveSweep(testEnv({ TWITCH_MIN_VIEWERS: '2' }), { maxPages: 5 });
 		expect(stats.stoppedBecause).toBe('end_of_catalog');
 	});
 
@@ -64,7 +65,7 @@ describe('runTwitchLiveSweep', () => {
 			data: [],
 			pagination: {},
 		});
-		const stats = await runTwitchLiveSweep({ TWITCH_MIN_VIEWERS: '2', DB: {} } as Env);
+		const stats = await runTwitchLiveSweep(testEnv({ TWITCH_MIN_VIEWERS: '2' }));
 		expect(stats.stoppedBecause).toBe('end_of_catalog');
 		expect(stats.pagesFetched).toBe(1);
 	});
@@ -81,7 +82,7 @@ describe('runTwitchLiveSweep', () => {
 				pagination: {},
 			};
 		});
-		const stats = await runTwitchLiveSweep({ TWITCH_MIN_VIEWERS: '2', DB: {} } as Env, { maxPages: 5 });
+		const stats = await runTwitchLiveSweep(testEnv({ TWITCH_MIN_VIEWERS: '2' }), { maxPages: 5 });
 		expect(stats.pagesFetched).toBe(3);
 		expect(stats.channelsIngested).toBe(1);
 	});
@@ -91,7 +92,7 @@ describe('runTwitchLiveSweep', () => {
 			data: [helixStream('u1', 100)],
 			pagination: { cursor: 'more' },
 		});
-		const stats = await runTwitchLiveSweep({ TWITCH_MIN_VIEWERS: '2', DB: {} } as Env, { maxPages: 1 });
+		const stats = await runTwitchLiveSweep(testEnv({ TWITCH_MIN_VIEWERS: '2' }), { maxPages: 1 });
 		expect(stats.stoppedBecause).toBe('max_pages');
 	});
 });
@@ -111,7 +112,7 @@ describe('runTwitchDiscovery quick mode', () => {
 			pagination: {},
 		});
 
-		const stats = await runTwitchDiscovery({ TWITCH_MIN_VIEWERS: '2', DB: {} } as Env, {
+		const stats = await runTwitchDiscovery(testEnv({ TWITCH_MIN_VIEWERS: '2' }), {
 			quick: true,
 		});
 		expect(stats.gamesScanned).toBe(2);
@@ -131,7 +132,7 @@ describe('runTwitchDiscovery quick mode', () => {
 		const enrich = await import('../src/twitch/enrich-profiles');
 		vi.spyOn(enrich, 'runTwitchProfileEnrichment').mockRejectedValue(new Error('enrich fail'));
 
-		const stats = await runTwitchDiscovery({ TWITCH_MIN_VIEWERS: '2', DB: {} } as Env, {
+		const stats = await runTwitchDiscovery(testEnv({ TWITCH_MIN_VIEWERS: '2' }), {
 			quick: false,
 		});
 		expect(stats.gamesScanned).toBeGreaterThan(0);
@@ -152,7 +153,7 @@ describe('runTwitchDiscovery quick mode', () => {
 			};
 		});
 
-		const stats = await runTwitchDiscovery({ TWITCH_MIN_VIEWERS: '2', DB: {} } as Env, {
+		const stats = await runTwitchDiscovery(testEnv({ TWITCH_MIN_VIEWERS: '2' }), {
 			quick: true,
 		});
 		expect(stats.pagesFetched).toBe(2);

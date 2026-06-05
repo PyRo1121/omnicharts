@@ -4,12 +4,13 @@ import { youtubeApiKeyConfigured } from '../youtube/config';
 import {
 	countFromBatchRow,
 	maxSampleFromBatchRow,
+	normalizeBatchResult,
 	TWITCH_LIVE_COUNT_SQL,
 	TWITCH_MAX_SAMPLE_SQL,
 	TWITCH_TRACKED_COUNT_SQL,
-	type D1BatchResult,
 } from '@omnicharts/rollup';
 import { DISCOVERY_SEED_KEY } from '../discovery/seed';
+import { isIngestStateKey, parseIngestStateRow, parseMetadataAtJson, readMetadataValue } from '../json-guards';
 import type { PlatformIngestCounts } from './ingest-counts';
 import {
 	fetchIngestOperationalMetrics,
@@ -79,16 +80,16 @@ export async function buildPublicHealth(env: Env): Promise<PublicHealthPayload> 
 		]);
 		if (!pingBatch.results?.length) throw new Error('db ping failed');
 		dbConnected = true;
-		twitchTracked = countFromBatchRow(twitchTrackedBatch as D1BatchResult);
-		kickTracked = countFromBatchRow(kickTrackedBatch as D1BatchResult);
-		youtubeTracked = countFromBatchRow(youtubeTrackedBatch as D1BatchResult);
+		twitchTracked = countFromBatchRow(normalizeBatchResult(twitchTrackedBatch));
+		kickTracked = countFromBatchRow(normalizeBatchResult(kickTrackedBatch));
+		youtubeTracked = countFromBatchRow(normalizeBatchResult(youtubeTrackedBatch));
 		channelsLiveByPlatform = {
-			twitch: countFromBatchRow(twitchLiveBatch as D1BatchResult),
-			kick: countFromBatchRow(kickLiveBatch as D1BatchResult),
-			youtube: countFromBatchRow(youtubeLiveBatch as D1BatchResult),
+			twitch: countFromBatchRow(normalizeBatchResult(twitchLiveBatch)),
+			kick: countFromBatchRow(normalizeBatchResult(kickLiveBatch)),
+			youtube: countFromBatchRow(normalizeBatchResult(youtubeLiveBatch)),
 		};
 		channelsLive = channelsLiveByPlatform.twitch + channelsLiveByPlatform.kick + channelsLiveByPlatform.youtube;
-		twitchLag = ingestLagSecondsFromMaxSample(maxSampleFromBatchRow(sampleBatch as D1BatchResult));
+		twitchLag = ingestLagSecondsFromMaxSample(maxSampleFromBatchRow(normalizeBatchResult(sampleBatch)));
 	} catch {
 		dbConnected = false;
 	}
@@ -113,21 +114,16 @@ export async function buildPublicHealth(env: Env): Promise<PublicHealthPayload> 
 
 function parseDiscoverySeedAt(value: string | null | undefined): string | null {
 	if (!value) return null;
-	try {
-		const parsed = JSON.parse(value) as { at?: string };
-		return parsed.at ?? value;
-	} catch {
-		return value;
-	}
+	return parseMetadataAtJson(value);
 }
 
 function ingestStateCountsFromBatch(batchEntry: D1Result): PlatformIngestCounts {
 	const empty = { discovered: 0, tracked: 0, dormant: 0, retired: 0 };
 	const twitch = { ...empty };
 	for (const row of batchEntry.results ?? []) {
-		const typed = row as { ingest_state: string; n: number };
-		if (typed.ingest_state in twitch) {
-			twitch[typed.ingest_state as keyof typeof empty] = typed.n;
+		const typed = parseIngestStateRow(row);
+		if (typed && isIngestStateKey(typed.ingest_state)) {
+			twitch[typed.ingest_state] = typed.n;
 		}
 	}
 	return { twitch };
@@ -173,14 +169,12 @@ export async function buildIngestHealth(env: Env): Promise<IngestHealthPayload> 
 		if (!batchResults[0]?.results?.length) throw new Error('db ping failed');
 		dbConnected = true;
 
-		const rollupRow = batchResults[1]?.results?.[0] as { value?: string } | undefined;
-		lastRollupAt = rollupRow?.value ?? null;
-		ingestStateCounts = ingestStateCountsFromBatch(batchResults[2]!);
+		lastRollupAt = readMetadataValue(batchResults[1]?.results?.[0]) ?? null;
+		ingestStateCounts = ingestStateCountsFromBatch(batchResults[2]);
 		twitchTracked = ingestStateCounts.twitch.tracked;
-		kickTracked = countFromBatchRow(multiPlatformTracked[0] as D1BatchResult);
-		youtubeTracked = countFromBatchRow(multiPlatformTracked[1] as D1BatchResult);
-		const seedRow = batchResults[3]?.results?.[0] as { value?: string } | undefined;
-		discoverySeedAt = parseDiscoverySeedAt(seedRow?.value);
+		kickTracked = countFromBatchRow(normalizeBatchResult(multiPlatformTracked[0]));
+		youtubeTracked = countFromBatchRow(normalizeBatchResult(multiPlatformTracked[1]));
+		discoverySeedAt = parseDiscoverySeedAt(readMetadataValue(batchResults[3]?.results?.[0]));
 
 		channelsLive = ops.channels_live;
 		channelsLiveByPlatform = ops.channels_live_by_platform;

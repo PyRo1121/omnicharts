@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { mockIngestD1, testEnv } from './helpers';
 import { handleTwitchEventSubWebhook } from '../src/twitch/eventsub/handler';
 import { buildEventSubHmacMessage } from '../src/twitch/eventsub/verify';
 import * as ingestLog from '../src/log';
@@ -37,37 +38,30 @@ async function signedRequest(opts: {
 
 describe('handleTwitchEventSubWebhook', () => {
 	const metadata = new Map<string, string>();
-	const env = {
+	const env = testEnv({
 		TWITCH_EVENTSUB_SECRET: secret,
-		DB: {
-			prepare(q: string) {
-				return {
-					bind: (...args: unknown[]) => ({
-						run: async () => {
-							if (q.includes('INSERT INTO ingest_metadata')) {
-								metadata.set(String(args[0]), String(args[1]));
-							}
-							if (q.includes('INSERT INTO channels') || q.includes('INSERT INTO stream_sessions')) {
-								return {};
-							}
-							return {};
-						},
-						first: async () => {
-							if (q.includes('ingest_metadata')) {
-								const key = String(args[0]);
-								const value = metadata.get(key);
-								return value ? { value } : null;
-							}
-							if (q.includes('SELECT id FROM channels')) {
-								return { id: 'twitch-ch-123' };
-							}
-							return null;
-						},
-					}),
-				};
-			},
-		},
-	} as unknown as Env;
+		DB: mockIngestD1((q) => ({
+			bind: (...args: unknown[]) => ({
+				run: async () => {
+					if (q.includes('INSERT INTO ingest_metadata')) {
+						metadata.set(String(args[0]), String(args[1]));
+					}
+					return {};
+				},
+				first: async () => {
+					if (q.includes('ingest_metadata')) {
+						const key = String(args[0]);
+						const value = metadata.get(key);
+						return value ? { value } : null;
+					}
+					if (q.includes('SELECT id FROM channels')) {
+						return { id: 'twitch-ch-123' };
+					}
+					return null;
+				},
+			}),
+		})),
+	});
 
 	beforeEach(() => {
 		vi.restoreAllMocks();
@@ -75,7 +69,7 @@ describe('handleTwitchEventSubWebhook', () => {
 	});
 
 	it('503 when secret missing', async () => {
-		const res = await handleTwitchEventSubWebhook(new Request('http://x', { method: 'POST' }), {} as Env);
+		const res = await handleTwitchEventSubWebhook(new Request('http://x', { method: 'POST' }), testEnv());
 		expect(res.status).toBe(503);
 	});
 
@@ -164,33 +158,31 @@ describe('handleTwitchEventSubWebhook', () => {
 
 	it('204 for revocation and marks subscription revoked', async () => {
 		const sql: string[] = [];
-		const metadata = new Map<string, string>();
-		const revokeEnv = {
+		const metaStore = new Map<string, string>();
+		const revokeEnv = testEnv({
 			TWITCH_EVENTSUB_SECRET: secret,
-			DB: {
-				prepare(q: string) {
-					sql.push(q);
-					return {
-						bind: (...args: unknown[]) => ({
-							run: async () => {
-								if (q.includes('INSERT INTO ingest_metadata')) {
-									metadata.set(String(args[0]), String(args[1]));
-								}
-								return {};
-							},
-							first: async () => {
-								if (q.includes('ingest_metadata')) {
-									const key = String(args[0]);
-									const value = metadata.get(key);
-									return value ? { value } : null;
-								}
-								return null;
-							},
-						}),
-					};
-				},
-			},
-		} as unknown as Env;
+			DB: mockIngestD1((q) => {
+				sql.push(q);
+				return {
+					bind: (...args: unknown[]) => ({
+						run: async () => {
+							if (q.includes('INSERT INTO ingest_metadata')) {
+								metaStore.set(String(args[0]), String(args[1]));
+							}
+							return {};
+						},
+						first: async () => {
+							if (q.includes('ingest_metadata')) {
+								const key = String(args[0]);
+								const value = metaStore.get(key);
+								return value ? { value } : null;
+							}
+							return null;
+						},
+					}),
+				};
+			}),
+		});
 
 		const body = JSON.stringify({
 			subscription: { id: 'sub-revoked-1', status: 'user_removed' },

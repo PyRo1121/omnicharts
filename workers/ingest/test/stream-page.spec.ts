@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { noopBatchD1, testEnv } from './helpers';
 import type { HelixStream } from '../src/twitch/helix';
 import { ingestStreamPage } from '../src/twitch/stream-page';
 
@@ -21,7 +22,7 @@ vi.mock('../src/twitch/ingest-stream', () => ({
 }));
 
 describe('ingestStreamPage', () => {
-	const env = { DB: {} } as Env;
+	const env = testEnv({ DB: noopBatchD1() });
 
 	beforeEach(() => {
 		vi.clearAllMocks();

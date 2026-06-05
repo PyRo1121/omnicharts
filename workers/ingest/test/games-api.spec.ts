@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { unusedIngestD1 } from './helpers';
 import * as rankingQueries from '../../../packages/rollup/src/ranking-queries';
 import { buildRankingsGamesResponse, parseRankingsGamesQuery } from '../src/ranking/games-api';
 
@@ -30,7 +31,7 @@ describe('buildRankingsGamesResponse', () => {
 			},
 		]);
 
-		const res = await buildRankingsGamesResponse({} as D1Database, {
+		const res = await buildRankingsGamesResponse(unusedIngestD1(), {
 			platform: 'kick',
 			period: '7d',
 			limit: 20,
@@ -50,7 +51,7 @@ describe('buildRankingsGamesResponse', () => {
 
 	it('returns empty items for youtube when no rollups', async () => {
 		vi.spyOn(rankingQueries, 'queryTopGamesByAverageViewers').mockResolvedValue([]);
-		const res = await buildRankingsGamesResponse({} as D1Database, {
+		const res = await buildRankingsGamesResponse(unusedIngestD1(), {
 			platform: 'youtube',
 			period: '7d',
 			limit: 20,
@@ -69,7 +70,7 @@ describe('buildRankingsGamesResponse', () => {
 			},
 		]);
 
-		const res = await buildRankingsGamesResponse({} as D1Database, {
+		const res = await buildRankingsGamesResponse(unusedIngestD1(), {
 			platform: 'twitch',
 			period: '30d',
 			limit: 10,

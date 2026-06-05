@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { unusedIngestD1 } from './helpers';
 import * as rankingQueries from '../../../packages/rollup/src/ranking-queries';
 import { buildRankingsChannelsResponse, parseRankingsChannelsQuery } from '../src/ranking/channels-api';
 
@@ -47,7 +48,7 @@ describe('buildRankingsChannelsResponse', () => {
 			},
 		]);
 
-		const res = await buildRankingsChannelsResponse({} as D1Database, {
+		const res = await buildRankingsChannelsResponse(unusedIngestD1(), {
 			platform: 'kick',
 			period: '7d',
 			limit: 20,
@@ -73,7 +74,7 @@ describe('buildRankingsChannelsResponse', () => {
 			},
 		]);
 
-		const res = await buildRankingsChannelsResponse({} as D1Database, {
+		const res = await buildRankingsChannelsResponse(unusedIngestD1(), {
 			platform: 'twitch',
 			period: '7d',
 			limit: 20,

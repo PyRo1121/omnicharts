@@ -20,7 +20,7 @@ describe('channel-state', () => {
 				expect(sql).toContain("ingest_state = 'tracked'");
 				return { bind: () => ({ run }) };
 			},
-		} as unknown as D1Database;
+		};
 
 		const n = await markChannelsDormantWithoutRecentActivity(db, 30);
 		expect(n).toBe(3);
@@ -31,7 +31,7 @@ describe('channel-state', () => {
 			prepare() {
 				return { bind: () => ({ run: async () => ({ meta: {} }) }) };
 			},
-		} as unknown as D1Database;
+		};
 		expect(await markChannelsDormantWithoutRecentActivity(db, 7)).toBe(0);
 	});
 
@@ -59,14 +59,14 @@ describe('channel-state', () => {
 					};
 				},
 			}),
-		} as unknown as D1Database;
+		};
 
 		await markChannelRetired(db, '123');
 		expect(run).toHaveBeenCalled();
 	});
 
 	it('batchMarkChannelsRetired returns 0 for empty input', async () => {
-		const db = { batch: async () => [] } as unknown as D1Database;
+		const db = { batch: async () => [] };
 		expect(await batchMarkChannelsRetired(db, [])).toBe(0);
 	});
 
@@ -79,7 +79,7 @@ describe('channel-state', () => {
 			async batch(statements: unknown[]) {
 				batches.push(statements);
 			},
-		} as unknown as D1Database;
+		};
 
 		expect(await batchMarkChannelsRetired(db, ['111', '222'])).toBe(2);
 		expect(batches).toHaveLength(1);
@@ -87,7 +87,7 @@ describe('channel-state', () => {
 	});
 
 	it('recordSlugChangeIfNeeded no-ops when slug unchanged', async () => {
-		const db = { prepare: vi.fn() } as unknown as D1Database;
+		const db = { prepare: vi.fn() };
 		await recordSlugChangeIfNeeded(db, {
 			channelId: 'ch-1',
 			oldSlug: 'alpha',
@@ -109,7 +109,7 @@ describe('channel-state', () => {
 					},
 				};
 			},
-		} as unknown as D1Database;
+		};
 
 		await recordSlugChangeIfNeeded(db, {
 			channelId: 'ch-1',

@@ -15,7 +15,7 @@ describe('upsertYoutubeChannel', () => {
 					}),
 				};
 			},
-		} as unknown as D1Database;
+		};
 
 		const row = await upsertYoutubeChannel(db, {
 			platformChannelId: 'UCabcdefghijklmnopqrstuv',
@@ -51,7 +51,7 @@ describe('upsertYoutubeChannel', () => {
 					}),
 				};
 			},
-		} as unknown as D1Database;
+		};
 
 		const row = await upsertYoutubeChannel(db, {
 			platformChannelId: 'UCabcdefghijklmnopqrstuv',

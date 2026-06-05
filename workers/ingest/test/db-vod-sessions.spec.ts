@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { mockIngestD1 } from './helpers';
 import {
 	batchUpsertVodSessions,
 	helixVideoToVodSessionRow,
@@ -10,24 +11,21 @@ import type { HelixVideo } from '../src/twitch/helix';
 
 function mockDb(results: unknown[] = []) {
 	const runs: unknown[][] = [];
-	const db = {
-		prepare(_sql: string) {
-			return {
-				bind: (...args: unknown[]) => ({
-					run: async () => {
-						runs.push(args);
-						return {};
-					},
-					all: async () => ({ results }),
-				}),
-			};
+	const db = mockIngestD1(
+		(_sql) => ({
+			bind: (...args: unknown[]) => ({
+				run: async () => {
+					runs.push(args);
+					return {};
+				},
+				all: async () => ({ results }),
+			}),
+		}),
+		async (statements) => {
+			await Promise.all(statements.map((stmt) => stmt.run()));
+			return [];
 		},
-		batch: async (statements: unknown[]) => {
-			for (const stmt of statements) {
-				await (stmt as { run: () => Promise<unknown> }).run();
-			}
-		},
-	} as unknown as D1Database;
+	);
 	return { db, runs };
 }
 
@@ -61,15 +59,23 @@ describe('helixVideoToVodSessionRow', () => {
 	});
 
 	it('nulls optional fields when absent', () => {
-		const video = {
+		const video: HelixVideo = {
 			id: '123',
+			user_id: '1',
+			user_login: 'u',
+			user_name: 'U',
 			title: 't',
-			language: '',
+			description: '',
+			created_at: '2026-06-01T10:00:00.000Z',
+			published_at: '2026-06-01T10:00:00.000Z',
+			url: 'https://twitch.tv/videos/123',
 			thumbnail_url: '',
+			viewable: 'public',
+			view_count: Number.NaN,
+			language: '',
 			type: '',
 			duration: '',
-			view_count: Number.NaN,
-		} as HelixVideo;
+		};
 
 		const row = helixVideoToVodSessionRow('ch-1', video, {
 			started_at: '2026-06-01T10:00:00.000Z',

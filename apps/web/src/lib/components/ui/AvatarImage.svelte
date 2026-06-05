@@ -11,7 +11,7 @@
 		rounded?: 'lg' | 'full';
 	}
 
-	let {
+	const {
 		src,
 		alt = '',
 		size = 40,

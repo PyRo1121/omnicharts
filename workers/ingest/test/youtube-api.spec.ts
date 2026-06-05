@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
+import { testEnv } from './helpers';
 import { YoutubeDataApiClient } from '../src/youtube/api';
 
 describe('YoutubeDataApiClient', () => {
@@ -35,7 +36,7 @@ describe('YoutubeDataApiClient', () => {
 		});
 		vi.stubGlobal('fetch', fetchMock);
 
-		const client = new YoutubeDataApiClient({ YOUTUBE_API_KEY: 'test-key' } as Env);
+		const client = new YoutubeDataApiClient(testEnv({ YOUTUBE_API_KEY: 'test-key' }));
 		const videos = await client.getVideosByIds(['vid1']);
 
 		expect(videos).toHaveLength(1);
@@ -43,12 +44,12 @@ describe('YoutubeDataApiClient', () => {
 	});
 
 	it('returns empty array for no video IDs', async () => {
-		const client = new YoutubeDataApiClient({ YOUTUBE_API_KEY: 'key' } as Env);
+		const client = new YoutubeDataApiClient(testEnv({ YOUTUBE_API_KEY: 'key' }));
 		await expect(client.getVideosByIds([])).resolves.toEqual([]);
 	});
 
 	it('throws when API key missing', async () => {
-		const client = new YoutubeDataApiClient({} as Env);
+		const client = new YoutubeDataApiClient(testEnv());
 		await expect(client.getVideosByIds(['vid1'])).rejects.toThrow(/YOUTUBE_API_KEY/);
 	});
 
@@ -68,7 +69,7 @@ describe('YoutubeDataApiClient', () => {
 		);
 		vi.stubGlobal('fetch', fetchMock);
 
-		const client = new YoutubeDataApiClient({ YOUTUBE_API_KEY: 'test-key' } as Env);
+		const client = new YoutubeDataApiClient(testEnv({ YOUTUBE_API_KEY: 'test-key' }));
 		const channel = await client.getChannelByForHandle('mrbeast');
 
 		expect(channel?.id).toBe('UCabcdefghijklmnopqrstuv');
@@ -78,7 +79,7 @@ describe('YoutubeDataApiClient', () => {
 	});
 
 	it('getChannelByForHandle returns null for empty handle', async () => {
-		const client = new YoutubeDataApiClient({ YOUTUBE_API_KEY: 'key' } as Env);
+		const client = new YoutubeDataApiClient(testEnv({ YOUTUBE_API_KEY: 'key' }));
 		await expect(client.getChannelByForHandle('   ')).resolves.toBeNull();
 	});
 
@@ -93,7 +94,7 @@ describe('YoutubeDataApiClient', () => {
 		);
 		vi.stubGlobal('fetch', fetchMock);
 
-		const client = new YoutubeDataApiClient({ YOUTUBE_API_KEY: 'key' } as Env);
+		const client = new YoutubeDataApiClient(testEnv({ YOUTUBE_API_KEY: 'key' }));
 		const channels = await client.getChannelsByIds(['UC1']);
 		expect(channels).toHaveLength(1);
 		expect(String(fetchMock.mock.calls[0]?.[0])).toContain('id=UC1');
@@ -114,7 +115,7 @@ describe('YoutubeDataApiClient', () => {
 		);
 		vi.stubGlobal('fetch', fetchMock);
 
-		const client = new YoutubeDataApiClient({ YOUTUBE_API_KEY: 'key' } as Env);
+		const client = new YoutubeDataApiClient(testEnv({ YOUTUBE_API_KEY: 'key' }));
 		await expect(client.getUploadsPlaylistId('UCabc')).resolves.toBe('UUuploads123');
 	});
 
@@ -129,7 +130,7 @@ describe('YoutubeDataApiClient', () => {
 		);
 		vi.stubGlobal('fetch', fetchMock);
 
-		const client = new YoutubeDataApiClient({ YOUTUBE_API_KEY: 'key' } as Env);
+		const client = new YoutubeDataApiClient(testEnv({ YOUTUBE_API_KEY: 'key' }));
 		const items = await client.getPlaylistItems('UUuploads123', 5);
 		expect(items).toHaveLength(1);
 		const url = String(fetchMock.mock.calls[0]?.[0]);
@@ -141,7 +142,7 @@ describe('YoutubeDataApiClient', () => {
 		const fetchMock = vi.fn().mockResolvedValue(new Response('quota exceeded', { status: 429 }));
 		vi.stubGlobal('fetch', fetchMock);
 
-		const client = new YoutubeDataApiClient({ YOUTUBE_API_KEY: 'key' } as Env);
+		const client = new YoutubeDataApiClient(testEnv({ YOUTUBE_API_KEY: 'key' }));
 		await expect(client.getVideosByIds(['vid1'])).rejects.toThrow(/429/);
 	});
 
@@ -153,7 +154,7 @@ describe('YoutubeDataApiClient', () => {
 		);
 		vi.stubGlobal('fetch', fetchMock);
 
-		const client = new YoutubeDataApiClient({ YOUTUBE_API_KEY: 'key' } as Env);
+		const client = new YoutubeDataApiClient(testEnv({ YOUTUBE_API_KEY: 'key' }));
 		await expect(client.getUploadsPlaylistId('UCabc')).resolves.toBeNull();
 	});
 
@@ -161,7 +162,7 @@ describe('YoutubeDataApiClient', () => {
 		const fetchMock = vi.fn().mockResolvedValue(new Response('bad', { status: 400 }));
 		vi.stubGlobal('fetch', fetchMock);
 
-		const client = new YoutubeDataApiClient({ YOUTUBE_API_KEY: 'key' } as Env);
+		const client = new YoutubeDataApiClient(testEnv({ YOUTUBE_API_KEY: 'key' }));
 		await expect(client.getChannelsByIds(['UC1'])).rejects.toThrow(/400/);
 	});
 });

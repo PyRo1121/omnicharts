@@ -4,6 +4,18 @@ import { join } from 'node:path';
 
 const WRANGLER_PATH = join(import.meta.dirname, '../wrangler.jsonc');
 
+type WranglerEnvBlock = {
+	triggers?: { crons: string[] };
+	vars?: Record<string, string>;
+	limits?: { cpu_ms: number };
+	queues?: { consumers: { max_batch_size: number; max_retries: number }[] };
+};
+type WranglerConfig = { env?: Record<string, WranglerEnvBlock> };
+
+function isWranglerConfig(v: unknown): v is WranglerConfig {
+	return typeof v === 'object' && v !== null;
+}
+
 function parseProductionVars(): Record<string, string> {
 	const raw = readFileSync(WRANGLER_PATH, 'utf8');
 	const productionBlock = raw.match(/"production"\s*:\s*\{[\s\S]*?"vars"\s*:\s*\{([\s\S]*?)\}/);
@@ -15,12 +27,19 @@ function parseProductionVars(): Record<string, string> {
 	return vars;
 }
 
-function parseProductionBlock(): Record<string, unknown> {
+function parseProductionBlock(): WranglerEnvBlock {
 	const raw = readFileSync(WRANGLER_PATH, 'utf8')
 		.replace(/\/\*[\s\S]*?\*\//g, '')
 		.replace(/\/\/.*$/gm, '');
-	const config = JSON.parse(raw) as { env: { production: Record<string, unknown> } };
-	return config.env.production;
+	const parsed: unknown = JSON.parse(raw);
+	if (!isWranglerConfig(parsed)) {
+		throw new Error('Invalid wrangler.jsonc');
+	}
+	const production = parsed.env?.production;
+	if (!production) {
+		throw new Error('env.production not found');
+	}
+	return production;
 }
 
 describe('wrangler production ranking thresholds', () => {

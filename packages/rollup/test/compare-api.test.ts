@@ -1,5 +1,6 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, test } from 'vitest';
 import { buildCompareChannelsResponse, parseCompareChannelsQuery } from '../src/compare-api';
+import { mockD1Database } from './mock-d1';
 
 describe('parseCompareChannelsQuery', () => {
 	test('requires both slug query params', () => {
@@ -51,59 +52,57 @@ describe('parseCompareChannelsQuery', () => {
 	});
 });
 
-describe('buildCompareChannelsResponse', () => {
-	function mockCompareDb(opts?: { missingSlug?: string }): D1Database {
-		return {
-			prepare(sql: string) {
-				if (sql.includes('lower(slug)')) {
-					return {
-						bind: (_platform: string, slug: string) => ({
-							first: async () => (opts?.missingSlug === slug ? null : { slug }),
-						}),
-					};
-				}
-				if (sql.includes('FROM channels') && sql.includes('display_name')) {
-					return {
-						bind: (_platform: string, slug: string) => ({
-							first: async () => ({
-								id: `id-${slug}`,
-								slug,
-								display_name: slug,
-								avatar_url: null,
-								language: 'en',
-								first_observed_at: '2026-01-01T00:00:00Z',
-								ingest_state: 'tracked',
-								follower_count: 100,
-								description: null,
-							}),
-							all: async () => ({ results: [] }),
-						}),
-					};
-				}
-				if (sql.includes('channel_daily_rollups')) {
-					return {
-						bind: () => ({
-							all: async () => ({
-								results: [
-									{
-										date: '2026-06-01',
-										hours_watched: 100,
-										average_viewers: 10,
-										peak_viewers: 20,
-										airtime_minutes: 60,
-										stream_count: 1,
-										followers_delta: 1,
-									},
-								],
-							}),
-						}),
-					};
-				}
-				return { bind: () => ({ first: async () => null, all: async () => ({ results: [] }) }) };
-			},
-		} as unknown as D1Database;
-	}
+function mockCompareDb(opts?: { missingSlug?: string }) {
+	return mockD1Database((sql: string) => {
+		if (sql.includes('lower(slug)')) {
+			return {
+				bind: (_platform: string, slug: string) => ({
+					first: async () => (opts?.missingSlug === slug ? null : { slug }),
+				}),
+			};
+		}
+		if (sql.includes('FROM channels') && sql.includes('display_name')) {
+			return {
+				bind: (_platform: string, slug: string) => ({
+					first: async () => ({
+						id: `id-${slug}`,
+						slug,
+						display_name: slug,
+						avatar_url: null,
+						language: 'en',
+						first_observed_at: '2026-01-01T00:00:00Z',
+						ingest_state: 'tracked',
+						follower_count: 100,
+						description: null,
+					}),
+					all: async () => ({ results: [] }),
+				}),
+			};
+		}
+		if (sql.includes('channel_daily_rollups')) {
+			return {
+				bind: () => ({
+					all: async () => ({
+						results: [
+							{
+								date: '2026-06-01',
+								hours_watched: 100,
+								average_viewers: 10,
+								peak_viewers: 20,
+								airtime_minutes: 60,
+								stream_count: 1,
+								followers_delta: 1,
+							},
+						],
+					}),
+				}),
+			};
+		}
+		return { bind: () => ({ first: async () => null, all: async () => ({ results: [] }) }) };
+	});
+}
 
+describe('buildCompareChannelsResponse', () => {
 	test('returns both channels when present', async () => {
 		const body = await buildCompareChannelsResponse(mockCompareDb(), {
 			platform: 'twitch',

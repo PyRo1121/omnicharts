@@ -1,12 +1,11 @@
 import { chunkArray } from '../db/d1-batch';
+import {
+	parseYoutubeChannelListResponse,
+	parseYoutubePlaylistItemsResponse,
+	parseYoutubeVideoListResponse,
+} from '../json-guards';
 import { YOUTUBE_API_BASE, YOUTUBE_VIDEOS_BATCH_SIZE, youtubeApiKeyConfigured } from './config';
-import type {
-	YoutubeChannelItem,
-	YoutubeChannelListResponse,
-	YoutubePlaylistItemsResponse,
-	YoutubeVideoItem,
-	YoutubeVideoListResponse,
-} from './types';
+import type { YoutubeChannelItem, YoutubeVideoItem } from './types';
 
 export class YoutubeDataApiClient {
 	constructor(private readonly env: Env) {}
@@ -47,7 +46,7 @@ export class YoutubeDataApiClient {
 			throw new Error(`YouTube videos.list ${res.status}: ${body.slice(0, 200)}`);
 		}
 
-		const json = (await res.json()) as YoutubeVideoListResponse;
+		const json = parseYoutubeVideoListResponse(await res.json());
 		return json.items ?? [];
 	}
 
@@ -71,7 +70,7 @@ export class YoutubeDataApiClient {
 			throw new Error(`YouTube channels.list ${res.status}: ${body.slice(0, 200)}`);
 		}
 
-		const json = (await res.json()) as YoutubeChannelListResponse;
+		const json = parseYoutubeChannelListResponse(await res.json());
 		return json.items ?? [];
 	}
 
@@ -96,7 +95,7 @@ export class YoutubeDataApiClient {
 			throw new Error(`YouTube channels.list ${res.status}: ${body.slice(0, 200)}`);
 		}
 
-		const json = (await res.json()) as YoutubeChannelListResponse;
+		const json = parseYoutubeChannelListResponse(await res.json());
 		return json.items?.[0] ?? null;
 	}
 
@@ -117,7 +116,7 @@ export class YoutubeDataApiClient {
 			throw new Error(`YouTube channels.list ${res.status}: ${body.slice(0, 200)}`);
 		}
 
-		const json = (await res.json()) as YoutubeChannelListResponse;
+		const json = parseYoutubeChannelListResponse(await res.json());
 		const uploads = json.items?.[0]?.contentDetails?.relatedPlaylists?.uploads?.trim();
 		return uploads || null;
 	}
@@ -140,7 +139,7 @@ export class YoutubeDataApiClient {
 			throw new Error(`YouTube playlistItems.list ${res.status}: ${body.slice(0, 200)}`);
 		}
 
-		const json = (await res.json()) as YoutubePlaylistItemsResponse;
+		const json = parseYoutubePlaylistItemsResponse(await res.json());
 		return json.items ?? [];
 	}
 }

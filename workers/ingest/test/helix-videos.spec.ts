@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { testEnv } from './helpers';
 import { TwitchHelixClient } from '../src/twitch/helix';
 import { HelixRateBudget } from '../src/twitch/rate-limit';
 import * as auth from '../src/twitch/auth';
@@ -17,7 +18,7 @@ describe('TwitchHelixClient archive videos', () => {
 			}),
 		);
 
-		const client = new TwitchHelixClient({ TWITCH_CLIENT_ID: 'id' } as Env);
+		const client = new TwitchHelixClient(testEnv({ TWITCH_CLIENT_ID: 'id' }));
 		const page = await client.getArchiveVideosPage('12345');
 		expect(page.data).toEqual([]);
 	});
@@ -43,7 +44,7 @@ describe('TwitchHelixClient archive videos', () => {
 
 		vi.spyOn(globalThis, 'fetch').mockImplementation(fetchMock);
 
-		const client = new TwitchHelixClient({ TWITCH_CLIENT_ID: 'id' } as Env);
+		const client = new TwitchHelixClient(testEnv({ TWITCH_CLIENT_ID: 'id' }));
 		const page1 = await client.getArchiveVideosPage('12345', { first: 1 });
 		expect(page1.data?.[0]?.id).toBe('v1');
 		const page2 = await client.getArchiveVideosPage('12345', { first: 1, after: 'page2' });
@@ -69,7 +70,7 @@ describe('TwitchHelixClient archive videos', () => {
 			);
 		vi.spyOn(globalThis, 'fetch').mockImplementation(fetchMock);
 
-		const client = new TwitchHelixClient({ TWITCH_CLIENT_ID: 'id' } as Env);
+		const client = new TwitchHelixClient(testEnv({ TWITCH_CLIENT_ID: 'id' }));
 		const page = await client.getArchiveVideosPage('99');
 		expect(page.data?.[0]?.id).toBe('v1');
 		expect(fetchMock).toHaveBeenCalledTimes(2);

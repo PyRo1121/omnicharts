@@ -16,5 +16,9 @@ export function coverageMessagesForPlatform(platform: IngestPlatform): IngestQue
 			return [{ type: 'poll_kick_tracked' }];
 		case 'youtube':
 			return [{ type: 'poll_youtube_tracked' }];
+		default: {
+			const exhaustiveCheck: never = platform;
+			return exhaustiveCheck;
+		}
 	}
 }

@@ -1,4 +1,5 @@
 import { PLATFORM_KICK } from '@omnicharts/domain';
+import { isRecord, readBoolean, readNumber, readString } from '../../json-guards';
 import { closeStaleOpenSessionsForChannel } from '../../db/session-lifecycle';
 import { recordKickApiChannelId, resolveKickApiChannelId } from '../api-channel-id';
 import { kickPlatformStreamIdFromChannelId, kickSessionRowIdFromChannelId } from '../stream-fields';
@@ -8,34 +9,35 @@ import { requireDb } from '../../worker-bindings';
 const nowIso = () => new Date().toISOString();
 
 function parseLivestreamStatusUpdated(body: unknown): KickLivestreamStatusUpdatedEvent | null {
-	if (!body || typeof body !== 'object') return null;
-	const event = body as Record<string, unknown>;
-	const broadcaster = event.broadcaster;
-	if (!broadcaster || typeof broadcaster !== 'object') return null;
-	const b = broadcaster as Record<string, unknown>;
-	if (typeof b.user_id !== 'number' || !Number.isFinite(b.user_id)) return null;
-	if (typeof b.channel_slug !== 'string' || !b.channel_slug.trim()) return null;
-	if (typeof event.is_live !== 'boolean') return null;
+	if (!isRecord(body)) return null;
+	const broadcaster = body.broadcaster;
+	if (!isRecord(broadcaster)) return null;
+	const user_id = readNumber(broadcaster, 'user_id');
+	const channel_slug = readString(broadcaster, 'channel_slug');
+	const is_live = readBoolean(body, 'is_live');
+	if (user_id == null || !channel_slug?.trim() || is_live == null) return null;
 
 	let channelId: number | undefined;
-	if (typeof event.channel_id === 'number' && Number.isFinite(event.channel_id)) {
-		channelId = event.channel_id;
-	} else if (typeof b.channel_id === 'number' && Number.isFinite(b.channel_id)) {
-		channelId = b.channel_id;
-	}
+	const eventChannelId = readNumber(body, 'channel_id');
+	const broadcasterChannelId = readNumber(broadcaster, 'channel_id');
+	if (eventChannelId != null) channelId = eventChannelId;
+	else if (broadcasterChannelId != null) channelId = broadcasterChannelId;
+
+	const endedAtRaw = body.ended_at;
+	const ended_at = endedAtRaw === null || typeof endedAtRaw === 'string' ? endedAtRaw : undefined;
 
 	return {
 		broadcaster: {
-			user_id: b.user_id,
-			username: typeof b.username === 'string' ? b.username : undefined,
-			channel_slug: b.channel_slug.trim(),
+			user_id,
+			username: readString(broadcaster, 'username'),
+			channel_slug: channel_slug.trim(),
 			channel_id: channelId,
 		},
 		channel_id: channelId,
-		is_live: event.is_live,
-		title: typeof event.title === 'string' ? event.title : undefined,
-		started_at: typeof event.started_at === 'string' ? event.started_at : undefined,
-		ended_at: event.ended_at === null || typeof event.ended_at === 'string' ? event.ended_at : undefined,
+		is_live,
+		title: readString(body, 'title'),
+		started_at: readString(body, 'started_at'),
+		ended_at,
 	};
 }
 

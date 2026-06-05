@@ -13,7 +13,7 @@ function mockDb(rows: { platform_channel_id: string }[], captureSql = false) {
 					}),
 				};
 			},
-		} as unknown as D1Database,
+		},
 		sql,
 	};
 }

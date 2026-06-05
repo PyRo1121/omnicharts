@@ -1,6 +1,7 @@
-import { describe, it, expect, vi, afterEach } from 'bun:test';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import * as topChannels from '../src/top-channels';
 import { buildRankingsChannelsResponse, parseRankingsChannelsQuery } from '../src/channels-api';
+import { unusedMockD1 } from './mock-d1';
 
 describe('parseRankingsChannelsQuery', () => {
 	it('defaults platform twitch and period 7d', () => {
@@ -66,13 +67,15 @@ describe('buildRankingsChannelsResponse', () => {
 			},
 		]);
 
-		const res = await buildRankingsChannelsResponse({} as D1Database, {
+		const db = unusedMockD1();
+
+		const res = await buildRankingsChannelsResponse(db, {
 			platform: 'kick',
 			period: '7d',
 			limit: 20,
 		});
 
-		expect(spy).toHaveBeenCalledWith({}, expect.objectContaining({ platformId: 'kick', days: 7, limit: 20 }));
+		expect(spy).toHaveBeenCalledWith(db, expect.objectContaining({ platformId: 'kick', days: 7, limit: 20 }));
 		expect(res.platform).toBe('kick');
 		expect(res.items[0]).toMatchObject({
 			rank: 1,
@@ -98,7 +101,9 @@ describe('buildRankingsChannelsResponse', () => {
 			},
 		]);
 
-		const res = await buildRankingsChannelsResponse({} as D1Database, {
+		const db = unusedMockD1();
+
+		const res = await buildRankingsChannelsResponse(db, {
 			platform: 'twitch',
 			period: '7d',
 			limit: 20,
@@ -119,45 +124,49 @@ describe('buildRankingsChannelsResponse', () => {
 	it('queries 90-day rollups when period is 90d', async () => {
 		const spy = vi.spyOn(topChannels, 'getTopChannelsByHoursWatched').mockResolvedValue([]);
 
-		await buildRankingsChannelsResponse({} as D1Database, {
+		const db = unusedMockD1();
+
+		await buildRankingsChannelsResponse(db, {
 			platform: 'youtube',
 			period: '90d',
 			limit: 20,
 		});
 
-		expect(spy).toHaveBeenCalledWith({}, expect.objectContaining({ platformId: 'youtube', days: 90, limit: 20 }));
+		expect(spy).toHaveBeenCalledWith(db, expect.objectContaining({ platformId: 'youtube', days: 90, limit: 20 }));
 	});
 
 	it('uses platform-specific min viewers from env', async () => {
 		const spy = vi.spyOn(topChannels, 'getTopChannelsByHoursWatched').mockResolvedValue([]);
 
-		await buildRankingsChannelsResponse(
-			{} as D1Database,
-			{ platform: 'kick', period: '7d', limit: 20 },
-			{ KICK_MIN_VIEWERS: 50, TWITCH_MIN_VIEWERS: 2 },
-		);
+		const db = unusedMockD1();
 
-		expect(spy).toHaveBeenCalledWith({}, expect.objectContaining({ platformId: 'kick', minAverageViewers: 50 }));
+		await buildRankingsChannelsResponse(db, { platform: 'kick', period: '7d', limit: 20 }, { KICK_MIN_VIEWERS: 50, TWITCH_MIN_VIEWERS: 2 });
+
+		expect(spy).toHaveBeenCalledWith(db, expect.objectContaining({ platformId: 'kick', minAverageViewers: 50 }));
 	});
 
 	it('passes language filter to top channels query', async () => {
 		const spy = vi.spyOn(topChannels, 'getTopChannelsByHoursWatched').mockResolvedValue([]);
 
-		const res = await buildRankingsChannelsResponse({} as D1Database, {
+		const db = unusedMockD1();
+
+		const res = await buildRankingsChannelsResponse(db, {
 			platform: 'twitch',
 			period: '7d',
 			limit: 20,
 			language: 'es',
 		});
 
-		expect(spy).toHaveBeenCalledWith({}, expect.objectContaining({ platformId: 'twitch', language: 'es' }));
+		expect(spy).toHaveBeenCalledWith(db, expect.objectContaining({ platformId: 'twitch', language: 'es' }));
 		expect(res.language).toBe('es');
 	});
 
 	it('omits language field when unfiltered', async () => {
 		vi.spyOn(topChannels, 'getTopChannelsByHoursWatched').mockResolvedValue([]);
 
-		const res = await buildRankingsChannelsResponse({} as D1Database, {
+		const db = unusedMockD1();
+
+		const res = await buildRankingsChannelsResponse(db, {
 			platform: 'twitch',
 			period: '7d',
 			limit: 20,

@@ -22,7 +22,7 @@
 	} from '$lib/ui/platform.svelte';
 	import type { RankingPeriod } from '@omnicharts/domain';
 
-	let { data } = $props();
+	const { data } = $props();
 
 	const liveRollupPlatformName = $derived(
 		platforms.find((p) => p.id === searchPlatformId(data.platform))?.label ?? 'Twitch'

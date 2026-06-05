@@ -1,3 +1,4 @@
+import { isRecord, parseHelixGame, readArray, readString } from '../json-guards';
 import type { HelixGame, TwitchHelixClient } from './helix';
 
 export const TWITCH_TOP_GAMES_CACHE_KEY = 'twitch_top_games';
@@ -17,11 +18,14 @@ export async function readCachedTopGames(db: D1Database): Promise<HelixGame[] | 
 		.first<{ value: string }>();
 	if (!row?.value) return null;
 	try {
-		const parsed = JSON.parse(row.value) as CachedTopGames;
-		if (!parsed.cachedAt || !Array.isArray(parsed.games)) return null;
-		const age = Date.now() - Date.parse(parsed.cachedAt);
+		const parsed: unknown = JSON.parse(row.value);
+		if (!isRecord(parsed)) return null;
+		const cachedAt = readString(parsed, 'cachedAt');
+		const games = readArray(parsed, 'games');
+		if (!cachedAt || !games) return null;
+		const age = Date.now() - Date.parse(cachedAt);
 		if (!Number.isFinite(age) || age > TOP_GAMES_CACHE_TTL_MS) return null;
-		return parsed.games;
+		return games.map(parseHelixGame).filter((game): game is HelixGame => game !== null);
 	} catch {
 		return null;
 	}

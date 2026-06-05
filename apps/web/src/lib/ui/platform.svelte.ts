@@ -1,4 +1,5 @@
 import {
+	isRankingPeriod,
 	isUiPlatformFilter,
 	parseOptionalLanguageParam,
 	PLATFORM_TWITCH,
@@ -55,8 +56,8 @@ export function routeWithPlatform(path: string, platform: UiPlatformFilter, extr
 }
 
 export function parseUiPeriod(raw: string | null): { period: RankingPeriod; periodNote: string | null } {
-	if (raw && (uiRankingPeriods as readonly string[]).includes(raw)) {
-		return { period: raw as RankingPeriod, periodNote: null };
+	if (raw && isRankingPeriod(raw)) {
+		return { period: raw, periodNote: null };
 	}
 	return { period: '7d', periodNote: null };
 }

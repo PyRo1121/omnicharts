@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { testEnv } from './helpers';
 import worker from '../src/index';
 import { buildPublicHealth } from '../src/health/status';
 
@@ -6,8 +7,8 @@ function mockEnv(): Env {
 	const db = {
 		prepare(_sql: string) {
 			const stmt = {
-				async first<T>(): Promise<T | null> {
-					return {} as T;
+				async first() {
+					return null;
 				},
 				bind() {
 					return stmt;
@@ -28,13 +29,13 @@ function mockEnv(): Env {
 				{ results: [{ max_sampled_at: new Date().toISOString() }] },
 			];
 		},
-	} as unknown as D1Database;
+	};
 
-	return {
+	return testEnv({
 		DB: db,
 		TWITCH_CLIENT_ID: 'id',
 		TWITCH_CLIENT_SECRET: 'secret',
-	} as Env;
+	});
 }
 
 describe('public health', () => {
@@ -51,16 +52,20 @@ describe('public health', () => {
 	it('GET /health returns public payload without admin key', async () => {
 		const res = await worker.fetch(new Request('http://ingest/health'), mockEnv());
 		expect(res.status).toBe(200);
-		const body = (await res.json()) as Record<string, unknown>;
-		expect(body).toHaveProperty('eventsub');
-		expect(body).toHaveProperty('kick');
-		expect(body).toHaveProperty('youtube');
-		expect(body).toHaveProperty('tracked_channels');
+		const body = await res.json();
+		expect(body).toEqual(
+			expect.objectContaining({
+				eventsub: expect.any(String),
+				kick: expect.any(String),
+				youtube: expect.any(String),
+				tracked_channels: expect.any(Object),
+			}),
+		);
 		expect(body).not.toHaveProperty('ingest_state_counts');
 	});
 
 	it('GET /health?detailed=1 requires admin key', async () => {
-		const res = await worker.fetch(new Request('http://ingest/health?detailed=1'), { ...mockEnv(), ADMIN_API_KEY: 'secret' } as Env);
+		const res = await worker.fetch(new Request('http://ingest/health?detailed=1'), testEnv({ ...mockEnv(), ADMIN_API_KEY: 'secret' }));
 		expect(res.status).toBe(401);
 	});
 

@@ -1,6 +1,7 @@
 import { parseRankingPeriod, type PlatformId } from '@omnicharts/domain';
 import { buildRankingsGamesResponse, formatCompactMetric, type RankingsGamesResponse } from '@omnicharts/rollup';
 import { getIngestBaseUrl } from '$lib/server/ingest';
+import { parseRankingsGamesResponse } from '$lib/server/json-guards';
 import type { ServerLoadContext } from '$lib/server/load-context';
 import { resolveWebRankingEnv } from '$lib/server/ranking-env';
 import { topGames, type GameRow, type RankingPeriod } from '$lib/mock/home';
@@ -63,7 +64,8 @@ async function loadFromIngest(
 	const url = `${getIngestBaseUrl()}/v1/rankings/games?platform=${encodeURIComponent(platform)}&period=${apiPeriod}&limit=${limit}`;
 	const res = await fetchFn(url, { headers: { accept: 'application/json' } });
 	if (!res.ok) return null;
-	const body = (await res.json()) as RankingsGamesResponse;
+	const body = parseRankingsGamesResponse(await res.json());
+	if (!body) return null;
 	return mapGameRankingsBody(body, period, limit, platform);
 }
 

@@ -1,18 +1,25 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { testEnv } from './helpers';
 import { TwitchHelixClient } from '../src/twitch/helix';
+
+function requestUrl(input: RequestInfo | URL): string {
+	if (typeof input === 'string') return input;
+	if (input instanceof URL) return input.href;
+	return input.url;
+}
 
 vi.mock('../src/twitch/auth', () => ({
 	getAppAccessToken: vi.fn().mockResolvedValue('test-token'),
 }));
 
 describe('TwitchHelixClient followers and stream batches', () => {
-	const env = { TWITCH_CLIENT_ID: 'cid', TWITCH_CLIENT_SECRET: 'sec' } as Env;
+	const env = testEnv({ TWITCH_CLIENT_ID: 'cid', TWITCH_CLIENT_SECRET: 'sec' });
 
 	beforeEach(() => {
 		vi.stubGlobal(
 			'fetch',
 			vi.fn().mockImplementation((input: RequestInfo | URL) => {
-				const url = String(input);
+				const url = requestUrl(input);
 				if (url.includes('/channels/followers')) {
 					return Promise.resolve(
 						new Response(JSON.stringify({ total: 42, data: [] }), {

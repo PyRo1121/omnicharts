@@ -54,7 +54,7 @@ export async function archiveSampleBatch(env: Env, rows: SampleArchiveRow[]): Pr
 	if (skip) return { archived: 0, skipped: skip };
 
 	const bucket = env.SAMPLES!;
-	const key = sampleArchiveObjectKey(rows[0]!);
+	const key = sampleArchiveObjectKey(rows[0]);
 	const body = rows.map((r) => JSON.stringify(r)).join('\n');
 	await bucket.put(key, body, {
 		httpMetadata: { contentType: 'application/x-ndjson' },

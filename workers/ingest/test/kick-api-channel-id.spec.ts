@@ -4,7 +4,7 @@ import { recordKickApiChannelId, resolveKickApiChannelId } from '../src/kick/api
 describe('kick api-channel-id metadata', () => {
 	it('recordKickApiChannelId no-ops for non-finite channelId', async () => {
 		const run = vi.fn();
-		const db = { prepare: () => ({ bind: () => ({ run }) }) } as unknown as D1Database;
+		const db = { prepare: () => ({ bind: () => ({ run }) }) };
 		await recordKickApiChannelId(db, '42', Number.NaN);
 		expect(run).not.toHaveBeenCalled();
 	});
@@ -16,7 +16,7 @@ describe('kick api-channel-id metadata', () => {
 					first: async () => null,
 				}),
 			}),
-		} as unknown as D1Database;
+		};
 		await expect(resolveKickApiChannelId(db, '42')).resolves.toBeNull();
 
 		const badDb = {
@@ -25,7 +25,7 @@ describe('kick api-channel-id metadata', () => {
 					first: async () => ({ value: 'not-a-number' }),
 				}),
 			}),
-		} as unknown as D1Database;
+		};
 		await expect(resolveKickApiChannelId(badDb, '42')).resolves.toBeNull();
 	});
 
@@ -36,7 +36,7 @@ describe('kick api-channel-id metadata', () => {
 					first: async () => ({ value: '420' }),
 				}),
 			}),
-		} as unknown as D1Database;
+		};
 		await expect(resolveKickApiChannelId(db, '42')).resolves.toBe(420);
 	});
 });

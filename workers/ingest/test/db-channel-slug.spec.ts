@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { mockIngestD1 } from './helpers';
 import type { HelixStream } from '../src/twitch/helix';
 import { upsertChannelFromStream } from '../src/db/twitch';
 
@@ -18,8 +19,8 @@ const baseStream: HelixStream = {
 describe('upsertChannelFromStream slug branches', () => {
 	it('uses platform id suffix when slug collides with another channel', async () => {
 		const binds: unknown[][] = [];
-		const db = {
-			prepare(sql: string) {
+		const db = mockIngestD1(
+			(sql) => {
 				if (sql.includes('INSERT INTO channels')) {
 					return {
 						bind: (...args: unknown[]) => {
@@ -45,11 +46,11 @@ describe('upsertChannelFromStream slug branches', () => {
 					},
 				};
 			},
-			async batch(statements: { run: () => Promise<unknown> }[]) {
+			async (statements) => {
 				for (const stmt of statements) await stmt.run();
 				return [];
 			},
-		} as unknown as D1Database;
+		);
 
 		await upsertChannelFromStream(db, baseStream, { minViewers: 10, promoteToTracked: false });
 		const insertBind = binds.find((b) => b[2] === '111');

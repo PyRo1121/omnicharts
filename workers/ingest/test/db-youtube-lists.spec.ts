@@ -17,7 +17,7 @@ describe('listYoutubePollTargets', () => {
 					}),
 				}),
 			}),
-		} as unknown as D1Database;
+		};
 
 		const rows = await listYoutubePollTargets(db, 10);
 		expect(rows).toEqual([

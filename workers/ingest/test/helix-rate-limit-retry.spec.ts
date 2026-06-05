@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { testEnv } from './helpers';
 import { HELIX_429_MAX_RETRIES, TwitchHelixClient } from '../src/twitch/helix';
 import { helixRateLimitWaitMs } from '../src/twitch/rate-limit';
 
@@ -23,7 +24,7 @@ describe('helixRateLimitWaitMs', () => {
 });
 
 describe('TwitchHelixClient 429 handling', () => {
-	const env = { TWITCH_CLIENT_ID: 'cid', TWITCH_CLIENT_SECRET: 'sec' } as Env;
+	const env = testEnv({ TWITCH_CLIENT_ID: 'cid', TWITCH_CLIENT_SECRET: 'sec' });
 
 	beforeEach(() => {
 		vi.useFakeTimers();

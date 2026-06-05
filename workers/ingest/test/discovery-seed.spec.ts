@@ -22,7 +22,7 @@ describe('discovery seed metadata', () => {
 					},
 				};
 			},
-		} as unknown as D1Database;
+		};
 
 		await recordDiscoverySeed(db, {
 			gamesScanned: 5,

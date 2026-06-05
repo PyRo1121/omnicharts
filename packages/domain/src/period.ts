@@ -42,6 +42,10 @@ export function periodToDays(period: RankingPeriod): number {
 			return 30;
 		case '90d':
 			return 90;
+		default: {
+			const exhaustiveCheck: never = period;
+			return exhaustiveCheck;
+		}
 	}
 }
 

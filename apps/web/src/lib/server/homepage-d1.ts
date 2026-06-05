@@ -3,15 +3,13 @@ import {
 	countFromBatchRow,
 	formatCompactMetric,
 	formatHoursWatched,
-	prepareTopChannelsByHoursWatched,
-	prepareTopGamesByAverageViewers,
+	normalizeBatchResult,
+	queryTopChannelsByHoursWatched,
+	queryTopGamesByAverageViewers,
 	rankTopChannelsFromRollupRows,
 	rankTopGamesFromRollupRows,
 	TWITCH_LIVE_COUNT_SQL,
 	TWITCH_TRACKED_COUNT_SQL,
-	type ChannelRollupQueryRow,
-	type D1BatchResult,
-	type GameRollupQueryRow,
 } from '@omnicharts/rollup';
 import type { ChannelRankingsLoad } from '$lib/server/rankings';
 import type { GameRankingsLoad } from '$lib/server/game-rankings';
@@ -41,39 +39,32 @@ export async function loadHomepageFromD1(
 	const eligibility = webRankingEligibility(cfEnv, PLATFORM_TWITCH);
 	const channelQueryLimit = Math.min(channelLimit * 2, 200);
 	const updatedAt = new Date().toISOString();
+	const rankingOpts = {
+		platformId: PLATFORM_TWITCH,
+		days,
+		minAirtimeMinutes: eligibility.minAirtimeMinutes,
+		minAverageViewers: eligibility.minAverageViewers,
+	};
 
-	type CfStmt = ReturnType<D1Database['prepare']>;
-	const [trackedBatch, liveBatch, channelsBatch, gamesBatch] = await db.batch([
-		db.prepare(TWITCH_TRACKED_COUNT_SQL).bind(PLATFORM_TWITCH),
-		db.prepare(TWITCH_LIVE_COUNT_SQL).bind(PLATFORM_TWITCH),
-		prepareTopChannelsByHoursWatched(db, {
-			platformId: PLATFORM_TWITCH,
-			days,
-			limit: channelQueryLimit,
-			minAirtimeMinutes: eligibility.minAirtimeMinutes,
-			minAverageViewers: eligibility.minAverageViewers,
-		}) as unknown as CfStmt,
-		prepareTopGamesByAverageViewers(db, {
-			platformId: PLATFORM_TWITCH,
-			days,
-			limit: gameLimit,
-			minAirtimeMinutes: eligibility.minAirtimeMinutes,
-			minAverageViewers: eligibility.minAverageViewers,
-		}) as unknown as CfStmt,
+	const [trackedBatch, liveBatch, channelRows, gameRows] = await Promise.all([
+		db.prepare(TWITCH_TRACKED_COUNT_SQL).bind(PLATFORM_TWITCH).all(),
+		db.prepare(TWITCH_LIVE_COUNT_SQL).bind(PLATFORM_TWITCH).all(),
+		queryTopChannelsByHoursWatched(db, { ...rankingOpts, limit: channelQueryLimit }),
+		queryTopGamesByAverageViewers(db, { ...rankingOpts, limit: gameLimit }),
 	]);
 
-	const channelRows = rankTopChannelsFromRollupRows((channelsBatch.results ?? []) as ChannelRollupQueryRow[], channelLimit);
-	const gameRows = rankTopGamesFromRollupRows((gamesBatch.results ?? []) as GameRollupQueryRow[], gameLimit);
+	const rankedChannels = rankTopChannelsFromRollupRows(channelRows, channelLimit);
+	const rankedGames = rankTopGamesFromRollupRows(gameRows, gameLimit);
 
 	return {
 		status: 'ok',
-		trackedChannels: countFromBatchRow(trackedBatch as D1BatchResult),
-		channelsLive: countFromBatchRow(liveBatch as D1BatchResult),
+		trackedChannels: countFromBatchRow(normalizeBatchResult(trackedBatch)),
+		channelsLive: countFromBatchRow(normalizeBatchResult(liveBatch)),
 		channelRankings: {
 			source: 'live',
 			period,
 			updatedAt,
-			rows: channelRows.map((item) => ({
+			rows: rankedChannels.map((item) => ({
 				rank: item.rank,
 				slug: item.slug,
 				displayName: item.displayName,
@@ -87,7 +78,7 @@ export async function loadHomepageFromD1(
 			source: 'live',
 			period,
 			updatedAt,
-			rows: gameRows.map((item) => ({
+			rows: rankedGames.map((item) => ({
 				rank: item.rank,
 				slug: item.slug,
 				name: item.name,

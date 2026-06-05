@@ -12,7 +12,7 @@
 		suggestions?: ChannelSuggestion[];
 	};
 
-	let { error, status }: { error: App.Error; status: number } = $props();
+	const { error, status }: { error: App.Error; status: number } = $props();
 
 	const appError = $derived((error ?? {}) as AppError);
 

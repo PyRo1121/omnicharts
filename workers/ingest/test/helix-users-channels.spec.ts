@@ -2,24 +2,31 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { testEnv } from './helpers';
 import { TwitchHelixClient } from '../src/twitch/helix';
 
 const fixtureDir = dirname(fileURLToPath(import.meta.url));
 const usersJson = readFileSync(join(fixtureDir, 'fixtures/helix-users-sample.json'), 'utf8');
 const channelsJson = readFileSync(join(fixtureDir, 'fixtures/helix-channels-sample.json'), 'utf8');
 
+function fetchInputHref(input: RequestInfo | URL): string {
+	if (typeof input === 'string') return input;
+	if (input instanceof URL) return input.href;
+	return input.url;
+}
+
 vi.mock('../src/twitch/auth', () => ({
 	getAppAccessToken: vi.fn().mockResolvedValue('test-token'),
 }));
 
 describe('TwitchHelixClient users/channels batches', () => {
-	const env = { TWITCH_CLIENT_ID: 'cid', TWITCH_CLIENT_SECRET: 'sec' } as Env;
+	const env = testEnv({ TWITCH_CLIENT_ID: 'cid', TWITCH_CLIENT_SECRET: 'sec' });
 
 	beforeEach(() => {
 		vi.stubGlobal(
 			'fetch',
 			vi.fn().mockImplementation((input: RequestInfo | URL) => {
-				const url = String(input);
+				const url = fetchInputHref(input);
 				if (url.includes('/helix/users')) {
 					return Promise.resolve(
 						new Response(usersJson, {
@@ -55,10 +62,12 @@ describe('TwitchHelixClient users/channels batches', () => {
 		const client = new TwitchHelixClient(env);
 		const users = await client.getUsersByIds(['545050196', '141981764']);
 		expect(users).toHaveLength(2);
-		expect(users[0]!.profile_image_url).toContain('jtvnw.net');
+		expect(users[0].profile_image_url).toContain('jtvnw.net');
 
 		const fetchMock = vi.mocked(fetch);
-		const usersUrl = String(fetchMock.mock.calls[0]![0]);
+		const usersCall = fetchMock.mock.calls[0];
+		if (!usersCall) throw new Error('expected fetch call');
+		const usersUrl = fetchInputHref(usersCall[0]);
 		expect(usersUrl).toContain('id=545050196');
 		expect(usersUrl).toContain('id=141981764');
 	});
@@ -66,11 +75,13 @@ describe('TwitchHelixClient users/channels batches', () => {
 	it('GET /channels appends broadcaster_id query params', async () => {
 		const client = new TwitchHelixClient(env);
 		const channels = await client.getChannelsByBroadcasterIds(['545050196']);
-		expect(channels[0]!.title).toBe('Offline channel title');
-		expect(channels[0]!.tags).toContain('日本語');
+		expect(channels[0].title).toBe('Offline channel title');
+		expect(channels[0].tags).toContain('日本語');
 
 		const fetchMock = vi.mocked(fetch);
-		const chUrl = String(fetchMock.mock.calls[0]![0]);
+		const channelsCall = fetchMock.mock.calls[0];
+		if (!channelsCall) throw new Error('expected fetch call');
+		const chUrl = fetchInputHref(channelsCall[0]);
 		expect(chUrl).toContain('broadcaster_id=545050196');
 	});
 
@@ -80,7 +91,9 @@ describe('TwitchHelixClient users/channels batches', () => {
 		expect(users.length).toBeGreaterThan(0);
 
 		const fetchMock = vi.mocked(fetch);
-		const usersUrl = String(fetchMock.mock.calls[0]![0]);
+		const loginsCall = fetchMock.mock.calls[0];
+		if (!loginsCall) throw new Error('expected fetch call');
+		const usersUrl = fetchInputHref(loginsCall[0]);
 		expect(usersUrl).toContain('login=shroud');
 		expect(usersUrl).toContain('login=ninja');
 	});

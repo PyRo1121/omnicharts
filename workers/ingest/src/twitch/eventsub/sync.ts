@@ -83,7 +83,7 @@ export async function syncTwitchEventSubSubscriptions(env: Env): Promise<EventSu
 	let pos = cursor % broadcasterIds.length;
 
 	while (examined < broadcasterIds.length && createsBudgetUsed < maxCreatesPerRun) {
-		const broadcasterUserId = broadcasterIds[pos]!;
+		const broadcasterUserId = broadcasterIds[pos];
 		const needsAny = LIFECYCLE_TYPES.some((type) => !remoteKeys.has(`${type}:${broadcasterUserId}`));
 
 		if (!needsAny) {

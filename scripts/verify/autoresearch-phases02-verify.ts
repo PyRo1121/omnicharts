@@ -17,7 +17,7 @@ type RunResult = { ok: boolean; output: string };
 
 function run(cmd: string[], cwd = REPO_ROOT, env?: Record<string, string>): Promise<RunResult> {
 	return new Promise((resolve) => {
-		const proc = spawn(cmd[0]!, cmd.slice(1), {
+		const proc = spawn(cmd[0], cmd.slice(1), {
 			cwd,
 			stdio: ['ignore', 'pipe', 'pipe'],
 			env: { ...process.env, ...env },

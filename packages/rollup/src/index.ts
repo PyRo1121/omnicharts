@@ -1,5 +1,5 @@
 export type { D1BatchResult, D1Database, D1PreparedStatement } from './d1';
-export { countFromBatchRow, maxSampleFromBatchRow } from './d1';
+export { countFromBatchRow, maxSampleFromBatchRow, normalizeBatchResult } from './d1';
 export { formatCompactMetric, formatHoursWatched } from './format';
 export {
 	LIVE_COUNT_RECENT_SAMPLE_MINUTES,

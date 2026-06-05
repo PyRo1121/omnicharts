@@ -1,10 +1,9 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import SectionHeader from '$lib/components/ui/SectionHeader.svelte';
-	import LeaderboardTable from '$lib/components/ui/LeaderboardTable.svelte';
+	import LeaderboardTable, { gameLeaderboardRows } from '$lib/components/ui/LeaderboardTable.svelte';
 	import PeriodSelector from '$lib/components/ui/PeriodSelector.svelte';
 	import PlatformFilter from '$lib/components/ui/PlatformFilter.svelte';
-	import { gameLeaderboardRows } from '$lib/components/ui/LeaderboardTable.svelte';
 	import {
 		gamesPageSubtitle,
 		uiPeriods,
@@ -14,7 +13,7 @@
 	} from '$lib/ui/platform.svelte';
 	import type { RankingPeriod } from '@omnicharts/domain';
 
-	let { data } = $props();
+	const { data } = $props();
 
 	const rows = $derived(gameLeaderboardRows(data.rows));
 	const subtitle = $derived(gamesPageSubtitle(data.platform, data.source));

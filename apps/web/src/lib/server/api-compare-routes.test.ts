@@ -1,55 +1,54 @@
 import { describe, it, expect, vi } from 'vitest';
 import { GET as getCompareChannels } from '../../routes/api/v1/compare/channels/+server';
+import { mockD1Database } from './mock-d1';
 
-function mockD1WithChannels(): D1Database {
-	return {
-		prepare(sql: string) {
-			if (sql.includes('lower(slug)')) {
-				return {
-					bind: (_platform: string, slug: string) => ({
-						first: async () => ({ slug }),
+function mockD1WithChannels() {
+	return mockD1Database((sql: string) => {
+		if (sql.includes('lower(slug)')) {
+			return {
+				bind: (_platform: string, slug: string) => ({
+					first: async () => ({ slug }),
+				}),
+			};
+		}
+		if (sql.includes('FROM channels') && sql.includes('display_name')) {
+			return {
+				bind: (_platform: string, slug: string) => ({
+					first: async () => ({
+						id: `id-${slug}`,
+						slug,
+						display_name: slug,
+						avatar_url: null,
+						language: null,
+						first_observed_at: '2026-01-01T00:00:00Z',
+						ingest_state: 'tracked',
+						follower_count: null,
+						description: null,
 					}),
-				};
-			}
-			if (sql.includes('FROM channels') && sql.includes('display_name')) {
-				return {
-					bind: (_platform: string, slug: string) => ({
-						first: async () => ({
-							id: `id-${slug}`,
-							slug,
-							display_name: slug,
-							avatar_url: null,
-							language: null,
-							first_observed_at: '2026-01-01T00:00:00Z',
-							ingest_state: 'tracked',
-							follower_count: null,
-							description: null,
-						}),
+				}),
+			};
+		}
+		if (sql.includes('channel_daily_rollups')) {
+			return {
+				bind: () => ({
+					all: async () => ({
+						results: [
+							{
+								date: '2026-06-01',
+								hours_watched: 50,
+								average_viewers: 5,
+								peak_viewers: 10,
+								airtime_minutes: 60,
+								stream_count: 1,
+								followers_delta: null,
+							},
+						],
 					}),
-				};
-			}
-			if (sql.includes('channel_daily_rollups')) {
-				return {
-					bind: () => ({
-						all: async () => ({
-							results: [
-								{
-									date: '2026-06-01',
-									hours_watched: 50,
-									average_viewers: 5,
-									peak_viewers: 10,
-									airtime_minutes: 60,
-									stream_count: 1,
-									followers_delta: null,
-								},
-							],
-						}),
-					}),
-				};
-			}
-			return { bind: () => ({ first: async () => null, all: async () => ({ results: [] }) }) };
-		},
-	} as unknown as D1Database;
+				}),
+			};
+		}
+		return { bind: () => ({ first: async () => null, all: async () => ({ results: [] }) }) };
+	});
 }
 
 describe('GET /api/v1/compare/channels', () => {

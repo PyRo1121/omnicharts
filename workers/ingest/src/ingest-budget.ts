@@ -56,6 +56,10 @@ export function messagesPerTwitchCronTick(mode: IngestCoverageMode, tracked: num
 		case 'shards_only':
 			if (tracked <= CATALOG_CONSOLIDATED_MAX_TRACKED) return 1;
 			return PLATFORM_QUEUE_FANOUT.twitch;
+		default: {
+			const exhaustiveCheck: never = mode;
+			return exhaustiveCheck;
+		}
 	}
 }
 
@@ -74,6 +78,10 @@ export function twitchCronEnqueueMessages(env: Env): IngestQueueMessage[] {
 				return [{ type: 'poll_twitch_catalog' }];
 			}
 			return coverageMessagesForPlatform('twitch');
+		default: {
+			const exhaustiveCheck: never = mode;
+			return exhaustiveCheck;
+		}
 	}
 }
 

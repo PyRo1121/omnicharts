@@ -1,4 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
+import { testEnv } from './helpers';
+import type { Mock } from 'vitest';
 import {
 	coldArchiveObjectKey,
 	encodeRowsToParquet,
@@ -6,6 +8,23 @@ import {
 	shouldColdArchive,
 	type ColdArchiveKind,
 } from '../src/r2/cold-archive';
+
+function samplesBucket(put: R2Bucket['put']): R2Bucket {
+	const stub: R2Bucket = {
+		head: async () => null,
+		get: async () => null,
+		put,
+		createMultipartUpload: async () => {
+			throw new Error('unexpected createMultipartUpload');
+		},
+		resumeMultipartUpload: () => {
+			throw new Error('unexpected resumeMultipartUpload');
+		},
+		delete: async () => {},
+		list: async () => ({ objects: [], delimitedPrefixes: [], truncated: false }),
+	};
+	return stub;
+}
 
 describe('coldArchiveObjectKey', () => {
 	const cases: [ColdArchiveKind, string, string][] = [
@@ -21,13 +40,13 @@ describe('coldArchiveObjectKey', () => {
 
 describe('shouldColdArchive', () => {
 	it('blocks when disabled or bucket missing', () => {
-		expect(shouldColdArchive({} as Env)).toBe('disabled');
-		expect(shouldColdArchive({ COLD_ARCHIVE_ENABLED: '0', SAMPLES: {} } as Env)).toBe('disabled');
-		expect(shouldColdArchive({ COLD_ARCHIVE_ENABLED: '1' } as Env)).toBe('no_bucket');
+		expect(shouldColdArchive(testEnv())).toBe('disabled');
+		expect(shouldColdArchive(testEnv({ COLD_ARCHIVE_ENABLED: '0' }))).toBe('disabled');
+		expect(shouldColdArchive(testEnv({ COLD_ARCHIVE_ENABLED: '1' }))).toBe('no_bucket');
 	});
 
 	it('allows when enabled and bucket bound', () => {
-		expect(shouldColdArchive({ COLD_ARCHIVE_ENABLED: '1', SAMPLES: {} } as Env)).toBeNull();
+		expect(shouldColdArchive(testEnv({ COLD_ARCHIVE_ENABLED: '1', SAMPLES: samplesBucket(vi.fn()) }))).toBeNull();
 	});
 });
 
@@ -83,7 +102,7 @@ describe('putColdArchiveParquet', () => {
 	it('no-ops when disabled', async () => {
 		const put = vi.fn();
 		const result = await putColdArchiveParquet(
-			{ COLD_ARCHIVE_ENABLED: '0', SAMPLES: { put } } as unknown as Env,
+			testEnv({ COLD_ARCHIVE_ENABLED: '0', SAMPLES: samplesBucket(put) }),
 			'viewer_samples',
 			'2026-03-01',
 			'twitch',
@@ -97,7 +116,7 @@ describe('putColdArchiveParquet', () => {
 		const put = vi.fn();
 		expect(
 			await putColdArchiveParquet(
-				{ COLD_ARCHIVE_ENABLED: '1', SAMPLES: { put } } as unknown as Env,
+				testEnv({ COLD_ARCHIVE_ENABLED: '1', SAMPLES: samplesBucket(put) }),
 				'viewer_samples',
 				'2026-03-01',
 				'twitch',
@@ -108,10 +127,10 @@ describe('putColdArchiveParquet', () => {
 	});
 
 	it('writes parquet to R2 when enabled', async () => {
-		const put = vi.fn().mockResolvedValue(undefined);
+		const put: Mock<R2Bucket['put']> = vi.fn().mockResolvedValue(null);
 		const body = new Uint8Array([0x50, 0x41, 0x52, 0x31]);
 		const result = await putColdArchiveParquet(
-			{ COLD_ARCHIVE_ENABLED: '1', SAMPLES: { put } } as unknown as Env,
+			testEnv({ COLD_ARCHIVE_ENABLED: '1', SAMPLES: samplesBucket(put) }),
 			'viewer_samples',
 			'2026-03-01',
 			'twitch',
@@ -120,16 +139,16 @@ describe('putColdArchiveParquet', () => {
 		expect(result.archived).toBe(4);
 		expect(result.key).toMatch(/^samples\/year=2026\/month=03\/day=01\/platform=twitch\/part-.+\.parquet$/);
 		expect(put).toHaveBeenCalledOnce();
-		const [key, value, opts] = put.mock.calls[0] as [string, Uint8Array, { httpMetadata: object }];
-		expect(key).toBe(result.key);
-		expect(value).toBe(body);
-		expect(opts.httpMetadata).toEqual({ contentType: 'application/vnd.apache.parquet' });
+		const firstCall = put.mock.calls[0];
+		expect(firstCall?.[0]).toBe(result.key);
+		expect(firstCall?.[1]).toBe(body);
+		expect(firstCall?.[2]).toEqual({ httpMetadata: { contentType: 'application/vnd.apache.parquet' } });
 	});
 });
 
 describe('archiveRowsToColdStorage', () => {
 	it('delegates to encode and put when enabled', async () => {
-		const put = vi.fn().mockResolvedValue(undefined);
+		const put: Mock<R2Bucket['put']> = vi.fn().mockResolvedValue(null);
 		const rows = [
 			{
 				stream_session_id: 'sess-1',
@@ -141,7 +160,7 @@ describe('archiveRowsToColdStorage', () => {
 		];
 		const { archiveRowsToColdStorage } = await import('../src/r2/cold-archive');
 		const result = await archiveRowsToColdStorage(
-			{ COLD_ARCHIVE_ENABLED: '1', SAMPLES: { put } } as unknown as Env,
+			testEnv({ COLD_ARCHIVE_ENABLED: '1', SAMPLES: samplesBucket(put) }),
 			'viewer_samples',
 			rows,
 		);
@@ -152,12 +171,12 @@ describe('archiveRowsToColdStorage', () => {
 
 	it('skips when disabled or empty', async () => {
 		const { archiveRowsToColdStorage } = await import('../src/r2/cold-archive');
-		expect(await archiveRowsToColdStorage({} as Env, 'viewer_samples', [])).toEqual({
+		expect(await archiveRowsToColdStorage(testEnv(), 'viewer_samples', [])).toEqual({
 			archived: 0,
 			skipped: 'empty',
 		});
 		expect(
-			await archiveRowsToColdStorage({ COLD_ARCHIVE_ENABLED: '0', SAMPLES: {} } as Env, 'viewer_samples', [
+			await archiveRowsToColdStorage(testEnv({ COLD_ARCHIVE_ENABLED: '0' }), 'viewer_samples', [
 				{
 					stream_session_id: 's',
 					sampled_at: '2026-03-01T00:00:00.000Z',
@@ -168,7 +187,7 @@ describe('archiveRowsToColdStorage', () => {
 			]),
 		).toEqual({ archived: 0, skipped: 'disabled' });
 		expect(
-			await archiveRowsToColdStorage({ COLD_ARCHIVE_ENABLED: '1' } as Env, 'viewer_samples', [
+			await archiveRowsToColdStorage(testEnv({ COLD_ARCHIVE_ENABLED: '1' }), 'viewer_samples', [
 				{
 					stream_session_id: 's',
 					sampled_at: '2026-03-01T00:00:00.000Z',

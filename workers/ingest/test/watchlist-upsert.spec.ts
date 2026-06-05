@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { mockIngestD1 } from './helpers';
 import { upsertKickChannelFromLookup, upsertTwitchChannelFromUser } from '../src/watchlist/upsert';
 
 function createMemoryDb() {
@@ -14,66 +15,76 @@ function createMemoryDb() {
 		}
 	>();
 
-	const db = {
-		prepare: (sql: string) => ({
-			bind: (...args: unknown[]) => ({
-				first: async () => {
-					if (sql.includes('lower(slug) = lower')) {
-						const platform = args[0] as string;
-						const slug = (args[1] as string).toLowerCase();
-						for (const row of channels.values()) {
-							if (row.platform_id === platform && row.slug.toLowerCase() === slug) {
-								return { id: row.id, ingest_state: row.ingest_state, slug: row.slug };
-							}
+	const db = mockIngestD1((sql) => ({
+		bind: (...args: unknown[]) => ({
+			first: async () => {
+				if (sql.includes('lower(slug) = lower')) {
+					const platform = args[0];
+					const slugArg = args[1];
+					if (typeof platform !== 'string' || typeof slugArg !== 'string') return null;
+					const slug = slugArg.toLowerCase();
+					for (const row of channels.values()) {
+						if (row.platform_id === platform && row.slug.toLowerCase() === slug) {
+							return { id: row.id, ingest_state: row.ingest_state, slug: row.slug };
 						}
-						return null;
-					}
-					if (sql.includes('platform_channel_id = ?')) {
-						const platform = args[0] as string;
-						const platformChannelId = args[1] as string;
-						for (const row of channels.values()) {
-							if (row.platform_id === platform && row.platform_channel_id === platformChannelId) {
-								return { id: row.id, ingest_state: row.ingest_state };
-							}
-						}
-						return null;
 					}
 					return null;
-				},
-				run: async () => {
-					if (!sql.includes('INSERT INTO channels')) return {};
-					const id = args[0] as string;
-					const platform_id = args[1] as string;
-					const platform_channel_id = args[2] as string;
-					const slug = args[3] as string;
-					const display_name = args[4] as string;
-					const ingest_state = 'tracked';
-
-					const existing = [...channels.values()].find(
-						(row) => row.platform_id === platform_id && row.platform_channel_id === platform_channel_id,
-					);
-
-					if (existing && sql.includes('ON CONFLICT')) {
-						existing.slug = slug;
-						existing.display_name = display_name;
-						if (existing.ingest_state !== 'retired') {
-							existing.ingest_state = 'tracked';
+				}
+				if (sql.includes('platform_channel_id = ?')) {
+					const platform = args[0];
+					const platformChannelId = args[1];
+					if (typeof platform !== 'string' || typeof platformChannelId !== 'string') return null;
+					for (const row of channels.values()) {
+						if (row.platform_id === platform && row.platform_channel_id === platformChannelId) {
+							return { id: row.id, ingest_state: row.ingest_state };
 						}
-					} else {
-						channels.set(id, {
-							id,
-							platform_id,
-							platform_channel_id,
-							slug,
-							display_name,
-							ingest_state,
-						});
 					}
+					return null;
+				}
+				return null;
+			},
+			run: async () => {
+				if (!sql.includes('INSERT INTO channels')) return {};
+				const id = args[0];
+				const platform_id = args[1];
+				const platform_channel_id = args[2];
+				const slug = args[3];
+				const display_name = args[4];
+				if (
+					typeof id !== 'string' ||
+					typeof platform_id !== 'string' ||
+					typeof platform_channel_id !== 'string' ||
+					typeof slug !== 'string' ||
+					typeof display_name !== 'string'
+				) {
 					return {};
-				},
-			}),
+				}
+				const ingest_state = 'tracked';
+
+				const existing = [...channels.values()].find(
+					(row) => row.platform_id === platform_id && row.platform_channel_id === platform_channel_id,
+				);
+
+				if (existing && sql.includes('ON CONFLICT')) {
+					existing.slug = slug;
+					existing.display_name = display_name;
+					if (existing.ingest_state !== 'retired') {
+						existing.ingest_state = 'tracked';
+					}
+				} else {
+					channels.set(id, {
+						id,
+						platform_id,
+						platform_channel_id,
+						slug,
+						display_name,
+						ingest_state,
+					});
+				}
+				return {};
+			},
 		}),
-	} as unknown as D1Database;
+	}));
 
 	return { db, channels };
 }

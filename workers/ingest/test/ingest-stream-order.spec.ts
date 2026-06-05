@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { noopBatchD1, testEnv } from './helpers';
 import type { HelixStream } from '../src/twitch/helix';
 import { ingestHelixStream } from '../src/twitch/ingest-stream';
 
@@ -36,11 +37,11 @@ describe('ingestHelixStream ordering', () => {
 	});
 
 	it('batch upserts game, channel, then live sample', async () => {
-		const env = { DB: {} } as Env;
+		const env = testEnv({ DB: noopBatchD1() });
 		await ingestHelixStream(env, stream, 20);
 
-		expect(batchUpsertGameCategories).toHaveBeenCalledBefore(batchUpsertChannelsFromStreams as never);
-		expect(batchUpsertChannelsFromStreams).toHaveBeenCalledBefore(batchRecordLiveSamples as never);
+		expect(batchUpsertGameCategories).toHaveBeenCalledBefore(batchUpsertChannelsFromStreams);
+		expect(batchUpsertChannelsFromStreams).toHaveBeenCalledBefore(batchRecordLiveSamples);
 		expect(batchRecordLiveSamples).toHaveBeenCalledWith(
 			env.DB,
 			[

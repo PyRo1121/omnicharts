@@ -1,3 +1,4 @@
+import { parseMetadataAtJson } from '../json-guards';
 import type { DiscoveryStats } from '../db/twitch';
 import type { KickDiscoveryStats } from '../kick/discover';
 
@@ -23,12 +24,7 @@ export async function recordKickDiscoverySeed(db: D1Database, stats: KickDiscove
 export async function getKickDiscoverySeedAt(db: D1Database): Promise<string | null> {
 	const row = await db.prepare(`SELECT value FROM ingest_metadata WHERE key = ?`).bind(KICK_DISCOVERY_SEED_KEY).first<{ value: string }>();
 	if (!row?.value) return null;
-	try {
-		const parsed = JSON.parse(row.value) as { at?: string };
-		return parsed.at ?? row.value;
-	} catch {
-		return row.value;
-	}
+	return parseMetadataAtJson(row.value);
 }
 
 export async function recordDiscoverySeed(db: D1Database, stats: DiscoveryStats): Promise<void> {
@@ -50,10 +46,5 @@ export async function recordDiscoverySeed(db: D1Database, stats: DiscoveryStats)
 export async function getDiscoverySeedAt(db: D1Database): Promise<string | null> {
 	const row = await db.prepare(`SELECT value FROM ingest_metadata WHERE key = ?`).bind(DISCOVERY_SEED_KEY).first<{ value: string }>();
 	if (!row?.value) return null;
-	try {
-		const parsed = JSON.parse(row.value) as { at?: string };
-		return parsed.at ?? row.value;
-	} catch {
-		return row.value;
-	}
+	return parseMetadataAtJson(row.value);
 }

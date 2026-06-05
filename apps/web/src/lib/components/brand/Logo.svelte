@@ -6,7 +6,7 @@
 		class?: string;
 	}
 
-	let { compact = false, class: className }: Props = $props();
+	const { compact = false, class: className }: Props = $props();
 </script>
 
 <a href="/" aria-label="OmniCharts home" class={cn('group inline-flex items-center gap-2.5', className)}>

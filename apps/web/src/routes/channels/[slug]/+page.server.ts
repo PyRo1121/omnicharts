@@ -12,13 +12,13 @@ export const load: PageServerLoad = async ({ fetch, params, url, setHeaders, pla
 	const ctx = serverLoadContext(fetch, cfPlatform);
 	const platformId = searchPlatformId(parseUiPlatform(url.searchParams.get('platform')));
 	const { period, periodNote } = await resolvePeriodContext(url.searchParams.get('period'), ctx.db);
-	let channel = await loadChannelDetail(ctx, params.slug, platformId, period);
+	const channel = await loadChannelDetail(ctx, params.slug, platformId, period);
 
 	if (channel.source === 'not_found') {
 		const canonical = await resolveChannelSlugFromHistory(ctx, params.slug, platformId);
 		if (canonical) {
 			const q = new URLSearchParams({ platform: platformId, period });
-			throw redirect(301, `/channels/${encodeURIComponent(canonical)}?${q}`);
+			redirect(301, `/channels/${encodeURIComponent(canonical)}?${q}`);
 		}
 		const suggestions = await findChannelOnOtherPlatforms(ctx, params.slug, platformId);
 		error(404, {

@@ -1,4 +1,5 @@
 import { PLATFORM_TWITCH } from '@omnicharts/domain';
+import { isIngestStateKey } from '../json-guards';
 
 export type IngestStateCounts = {
 	discovered: number;
@@ -30,8 +31,8 @@ export async function fetchIngestStateCounts(db: D1Database): Promise<PlatformIn
 
 	const twitch = { ...empty };
 	for (const row of results ?? []) {
-		if (row.ingest_state in twitch) {
-			twitch[row.ingest_state as keyof IngestStateCounts] = row.n;
+		if (isIngestStateKey(row.ingest_state)) {
+			twitch[row.ingest_state] = row.n;
 		}
 	}
 

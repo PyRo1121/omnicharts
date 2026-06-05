@@ -11,7 +11,7 @@
 		type UiPlatformFilter
 	} from '$lib/ui/platform.svelte';
 
-	let { data } = $props();
+	const { data } = $props();
 
 	const platformLabel: Record<string, string> = {
 		twitch: 'Twitch',

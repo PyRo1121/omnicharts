@@ -2,16 +2,25 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
+import { mockIngestD1, testEnv } from './helpers';
+import { parseHelixListResponse, parseHelixStream } from '../src/json-guards';
 import type { HelixStream } from '../src/twitch/helix';
 import { helixStreamSessionPersist, helixTagsJson } from '../src/twitch/stream-fields';
 import { recordLiveSample, upsertChannelFromStream } from '../src/db/twitch';
 import { ingestHelixStream } from '../src/twitch/ingest-stream';
 
 const fixtureDir = dirname(fileURLToPath(import.meta.url));
-const samplePayload = JSON.parse(readFileSync(join(fixtureDir, 'fixtures/helix-streams-sample.json'), 'utf8')) as { data: HelixStream[] };
+
+function loadFixtureStream(): HelixStream {
+	const raw: unknown = JSON.parse(readFileSync(join(fixtureDir, 'fixtures/helix-streams-sample.json'), 'utf8'));
+	const list = parseHelixListResponse(raw);
+	const stream = parseHelixStream(list.data[0]);
+	if (!stream) throw new Error('missing helix stream fixture');
+	return stream;
+}
 
 const sampleStream = (): HelixStream => ({
-	...samplePayload.data[0],
+	...loadFixtureStream(),
 	user_login: 'kato_junichi0817',
 	user_name: 'Kato',
 	game_name: 'Just Chatting',
@@ -64,8 +73,7 @@ function createChannelDbMock(opts: { existingChannel?: boolean; openSession?: bo
 	const viewerSamples: unknown[][] = [];
 	let sightings = opts.sightingCount ?? 0;
 
-	const db = {
-		prepare(sql: string) {
+	const db = mockIngestD1((sql) => {
 			if (sql.includes('platform_channel_id IN')) {
 				return {
 					bind: () => ({
@@ -192,14 +200,10 @@ function createChannelDbMock(opts: { existingChannel?: boolean; openSession?: bo
 			return {
 				bind: () => ({ run: async () => ({}), first: async () => null, all: async () => ({}) }),
 			};
-		},
-		async batch(statements: { run: () => Promise<unknown> }[]) {
-			for (const stmt of statements) {
-				await stmt.run();
-			}
-			return [];
-		},
-	} as unknown as D1Database;
+	}, async (statements) => {
+		await Promise.all(statements.map((stmt) => stmt.run()));
+		return [];
+	});
 
 	return { db, channelUpserts, sessionWrites, viewerSamples };
 }
@@ -211,8 +215,9 @@ describe('Helix stream → D1', () => {
 			minViewers: 0,
 			promoteToTracked: false,
 		});
-		expect(channelUpserts[0]).toHaveLength(9);
-		expect(channelUpserts[0]![8]).toBe('ja');
+		const upsert = channelUpserts[0];
+		expect(upsert).toHaveLength(9);
+		expect(upsert?.[8]).toBe('ja');
 	});
 
 	it('keeps discovered after first qualifying live sighting', async () => {
@@ -222,7 +227,7 @@ describe('Helix stream → D1', () => {
 			minViewers: 20,
 			promoteToTracked: true,
 		});
-		expect(channelUpserts[0]![7]).toBe('discovered');
+		expect(channelUpserts[0]?.[7]).toBe('discovered');
 	});
 
 	it('promotes discovered to tracked after second sighting in 14d', async () => {
@@ -235,7 +240,7 @@ describe('Helix stream → D1', () => {
 			minViewers: 20,
 			promoteToTracked: true,
 		});
-		expect(channelUpserts[0]![7]).toBe('discovered');
+		expect(channelUpserts[0]?.[7]).toBe('discovered');
 	});
 
 	it('promotes dormant to tracked on qualifying live', async () => {
@@ -251,12 +256,12 @@ describe('Helix stream → D1', () => {
 				promoteToTracked: true,
 			},
 		);
-		expect(channelUpserts[0]![7]).toBe('tracked');
+		expect(channelUpserts[0]?.[7]).toBe('tracked');
 	});
 
 	it('ingestHelixStream records sample when viewers meet threshold', async () => {
 		const { db, sessionWrites, viewerSamples } = createChannelDbMock({ openSession: false });
-		const env = { DB: db } as Env;
+		const env = testEnv({ DB: db });
 		await ingestHelixStream(env, { ...sampleStream(), viewer_count: 100 }, 20);
 		expect(sessionWrites.length).toBeGreaterThan(0);
 		expect(viewerSamples.length).toBe(1);
@@ -264,7 +269,7 @@ describe('Helix stream → D1', () => {
 
 	it('ingestHelixStream skips viewer sample below min viewers', async () => {
 		const { db, viewerSamples } = createChannelDbMock({ openSession: false });
-		const env = { DB: db } as Env;
+		const env = testEnv({ DB: db });
 		await ingestHelixStream(env, { ...sampleStream(), viewer_count: 5 }, 20);
 		expect(viewerSamples.length).toBe(0);
 	});
@@ -275,8 +280,9 @@ describe('Helix stream → D1', () => {
 		await recordLiveSample(db, 'twitch-ch-545050196', stream, 'game-1');
 
 		expect(sessionWrites).toHaveLength(1);
-		expect(sessionWrites[0]!.sql).toContain('tags_json');
-		const args = sessionWrites[0]!.args;
+		const write = sessionWrites[0];
+		expect(write?.sql).toContain('tags_json');
+		const args = write?.args;
 		expect(args[6]).toBe('ja');
 		expect(args[7]).toBe(JSON.stringify(['日本語', 'Drops有効']));
 		expect(args[8]).toContain('previews-ttv');
@@ -287,8 +293,9 @@ describe('Helix stream → D1', () => {
 		const { db, sessionWrites } = createChannelDbMock({ openSession: true });
 		await recordLiveSample(db, 'twitch-ch-545050196', sampleStream(), null);
 
-		expect(sessionWrites[0]!.sql).toContain('UPDATE stream_sessions');
-		const args = sessionWrites[0]!.args;
+		const update = sessionWrites[0];
+		expect(update?.sql).toContain('UPDATE stream_sessions');
+		const args = update?.args;
 		expect(args[2]).toBe('ja');
 		expect(args[3]).toBe(JSON.stringify(['日本語', 'Drops有効']));
 	});

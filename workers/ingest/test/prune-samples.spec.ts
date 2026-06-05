@@ -26,7 +26,7 @@ describe('pruneViewerSamplesOlderThanRetention', () => {
 					},
 				};
 			},
-		} as unknown as D1Database;
+		};
 
 		const pruned = await pruneViewerSamplesOlderThanRetention(db, new Date('2026-06-03T12:00:00.000Z'));
 		expect(pruned).toBe(VIEWER_SAMPLE_DELETE_BATCH_SIZE + 12);
@@ -40,7 +40,7 @@ describe('pruneViewerSamplesOlderThanRetention', () => {
 					run: async () => ({ meta: { changes: 0 } }),
 				}),
 			}),
-		} as unknown as D1Database;
+		};
 
 		await expect(pruneViewerSamplesOlderThanRetention(db)).resolves.toBe(0);
 	});

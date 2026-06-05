@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { testEnv } from './helpers';
 import * as seed from '../src/youtube/seed';
 import { searchChannelsWithYoutubeSeed } from '../src/search/channels';
 
@@ -24,10 +25,10 @@ describe('searchChannelsWithYoutubeSeed', () => {
 					}),
 				}),
 			}),
-		} as unknown as D1Database;
+		};
 
 		const seedSpy = vi.spyOn(seed, 'seedYoutubeChannelByQuery');
-		const rows = await searchChannelsWithYoutubeSeed(db, {} as Env, {
+		const rows = await searchChannelsWithYoutubeSeed(db, testEnv(), {
 			platformId: 'youtube',
 			query: 'mrbeast',
 		});
@@ -43,7 +44,7 @@ describe('searchChannelsWithYoutubeSeed', () => {
 					all: async () => ({ results: [] }),
 				}),
 			}),
-		} as unknown as D1Database;
+		};
 
 		vi.spyOn(seed, 'seedYoutubeChannelByQuery').mockResolvedValue({
 			id: 'youtube-ch-UCabcdefghijklmnopqrstuv',
@@ -53,7 +54,7 @@ describe('searchChannelsWithYoutubeSeed', () => {
 			platform_id: 'youtube',
 		});
 
-		const rows = await searchChannelsWithYoutubeSeed(db, {} as Env, {
+		const rows = await searchChannelsWithYoutubeSeed(db, testEnv(), {
 			platformId: 'youtube',
 			query: 'mrbeast',
 		});

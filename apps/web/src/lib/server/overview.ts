@@ -1,4 +1,5 @@
 import { getIngestBaseUrl } from '$lib/server/ingest';
+import { parseIngestHealth } from '$lib/server/json-guards';
 import type { ServerLoadContext } from '$lib/server/load-context';
 import { loadHomepageFromD1 } from '$lib/server/homepage-d1';
 import { loadChannelRankings, type ChannelRankingsLoad } from '$lib/server/rankings';
@@ -30,14 +31,6 @@ export type OverviewLoadOptions = {
 	period?: RankingPeriod;
 	channelLimit?: number;
 	gameLimit?: number;
-};
-
-type IngestHealth = {
-	status: string;
-	tracked_channels: { twitch: number; kick: number; youtube: number };
-	channels_live: number;
-	channels_live_by_platform?: { twitch: number; kick: number; youtube: number };
-	discovery_new_24h: number;
 };
 
 function formatCount(n: number): string {
@@ -164,7 +157,8 @@ async function loadRollupPlatformOverview(
 				headers: { accept: 'application/json' },
 			});
 			if (healthRes.ok) {
-				const health = (await healthRes.json()) as IngestHealth;
+				const health = parseIngestHealth(await healthRes.json());
+				if (!health) throw new Error('invalid health payload');
 				const tracked = health.tracked_channels[platform];
 				const live =
 					health.channels_live_by_platform?.[platform] ?? (platform === 'kick' || platform === 'youtube' ? 0 : health.channels_live);
@@ -220,7 +214,7 @@ export async function loadOverview(ctx: ServerLoadContext, mockEnabled = false, 
 	const period = opts.period ?? '7d';
 	const channelLimit = opts.channelLimit ?? 20;
 	const gameLimit = opts.gameLimit ?? 1;
-	const mockStats: OverviewStat[] = heroStats.map((s) => ({ ...s, source: 'mock' as const }));
+	const mockStats: OverviewStat[] = heroStats.map((s) => Object.assign({}, s, { source: 'mock' as const }));
 
 	if (ctx.db) {
 		try {
@@ -273,7 +267,8 @@ export async function loadOverview(ctx: ServerLoadContext, mockEnabled = false, 
 			};
 		}
 
-		const health = (await healthRes.json()) as IngestHealth;
+		const health = parseIngestHealth(await healthRes.json());
+		if (!health) throw new Error('invalid health payload');
 		const [channels, games] = await Promise.all([
 			loadChannelRankings(ctx, 'twitch', period, channelLimit, mockEnabled),
 			loadGameRankings(ctx, 'twitch', period, gameLimit, mockEnabled),

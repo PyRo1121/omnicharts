@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { noopBatchD1, testEnv } from './helpers';
 import * as twitchDb from '../src/db/twitch';
 import { TwitchHelixClient } from '../src/twitch/helix';
 import { runTwitchReconcileRecent } from '../src/twitch/reconcile';
@@ -34,12 +35,13 @@ describe('runTwitchReconcileRecent', () => {
 		]);
 		const getUsers = vi.spyOn(TwitchHelixClient.prototype, 'getUsersByIds');
 
-		const batch = vi.fn().mockResolvedValue([]);
-		const prepare = vi.fn(() => ({
-			bind: vi.fn().mockReturnThis(),
-			run: vi.fn().mockResolvedValue({ success: true }),
-		}));
-		const stats = await runTwitchReconcileRecent({ DB: { prepare, batch } } as Env);
+		const stats = await runTwitchReconcileRecent(
+			testEnv({
+				TWITCH_CLIENT_ID: 'id',
+				TWITCH_CLIENT_SECRET: 'secret',
+				DB: noopBatchD1(),
+			}),
+		);
 		expect(stats.retired).toBe(0);
 		expect(getUsers).not.toHaveBeenCalled();
 	});

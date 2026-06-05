@@ -53,10 +53,10 @@ type ErrorResponseOpts = {
 	cacheControl?: string;
 };
 
-function jsonApiErrorResponse<E extends string>(code: E, message: string, opts?: ErrorResponseOpts): Response {
+function jsonApiErrorResponse(code: string, message: string, opts?: ErrorResponseOpts): Response {
 	const headers: Record<string, string> = {};
 	if (opts?.cacheControl) headers['cache-control'] = opts.cacheControl;
-	return Response.json({ error: { code, message } } satisfies ApiErrorBody<E>, {
+	return Response.json({ error: { code, message } } satisfies ApiErrorBody<string>, {
 		status: opts?.status ?? 400,
 		headers: Object.keys(headers).length > 0 ? headers : undefined,
 	});
