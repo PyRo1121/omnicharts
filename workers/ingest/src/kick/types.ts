@@ -24,3 +24,17 @@ export type KickApiListResponse<T> = {
 	data: T[];
 	message?: string;
 };
+
+/** GET /public/v2/categories — paginated category list */
+export type KickCategoryWithTags = {
+	id: number;
+	name: string;
+	tags?: string[];
+	thumbnail?: string;
+};
+
+export type KickPaginatedResponse<T> = {
+	data: T[];
+	message?: string;
+	pagination?: { next_cursor?: string };
+};

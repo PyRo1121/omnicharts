@@ -61,10 +61,11 @@ describe('cronToMessages', () => {
 		expect(cronToMessages(ROLLUP_CRON)).toEqual([{ type: 'rollup_daily' }]);
 	});
 
-	it('discover cron enqueues twitch discover + eventsub sync', () => {
+	it('discover cron enqueues twitch discover + eventsub sync + kick discover', () => {
 		expect(cronToMessages(DISCOVER_TWITCH_CRON)).toEqual([
 			{ type: 'discover_twitch' },
-			{ type: 'sync_eventsub_twitch' }
+			{ type: 'sync_eventsub_twitch' },
+			{ type: 'discover_kick' }
 		]);
 	});
 

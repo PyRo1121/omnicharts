@@ -16,6 +16,7 @@ import { runTwitchGamePass } from './twitch/game-pass';
 import { runTwitchSweepAndGamePass } from './twitch/sweep-game-pass';
 import { runTwitchReconcileRecent } from './twitch/reconcile';
 import { runTwitchPollPlatform } from './twitch/poll-platform';
+import { runKickDiscovery } from './kick/discover';
 import { runKickPollPlatform } from './kick/poll-platform';
 import { checkPublicRateLimit } from './http/rate-limit';
 import { corsAllowOrigin } from './http/cors';
@@ -61,7 +62,7 @@ import { hasTwitchAppCredentials, twitchAppCredentialsErrorResponse } from './tw
 import { isDevAdminRouteAllowed } from './dev/admin-guard';
 import { clearDevSeedChannels } from './dev/clear-seed';
 import { seedDevRankings } from './dev/seed-rankings';
-import { recordDiscoverySeed } from './discovery/seed';
+import { recordDiscoverySeed, recordKickDiscoverySeed } from './discovery/seed';
 import { rankingQueryOptionsFromEnv } from './ranking/rollup-queries';
 import { isAdminPostPath, isAdminRankingsGetPath, requireAdminApiKey } from './admin/auth';
 import { ingestNonFatalError, ingestWarn } from './log';
@@ -89,6 +90,10 @@ export default {
 
 		if (url.pathname === '/admin/twitch/discover' && request.method === 'POST') {
 			return adminTwitchDiscover(request, env);
+		}
+
+		if (url.pathname === '/admin/kick/discover' && request.method === 'POST') {
+			return adminKickDiscover(request, env);
 		}
 
 		if (url.pathname === '/admin/twitch/poll' && request.method === 'POST') {
@@ -231,6 +236,9 @@ async function handleQueueMessage(payload: IngestQueueMessage, env: Env): Promis
 		case 'discover_twitch':
 			await runTwitchDiscovery(env);
 			break;
+		case 'discover_kick':
+			await runKickDiscovery(env);
+			break;
 		case 'sync_eventsub_twitch':
 			await syncTwitchEventSubSubscriptions(env);
 			break;
@@ -280,6 +288,21 @@ async function adminTwitchDiscover(request: Request, env: Env): Promise<Response
 	const stats = await runTwitchDiscovery(env, { quick });
 	await recordDiscoverySeed(requireDb(env), stats);
 	return Response.json({ ok: true, stats, quick });
+}
+
+async function adminKickDiscover(request: Request, env: Env): Promise<Response> {
+	let quick = false;
+	try {
+		const body = (await request.json()) as { quick?: boolean };
+		quick = body.quick === true;
+	} catch {
+		/* empty body */
+	}
+	const stats = await runKickDiscovery(env, { quick });
+	if (stats.categoriesScanned > 0 || stats.streamsSeen > 0) {
+		await recordKickDiscoverySeed(requireDb(env), stats);
+	}
+	return Response.json({ ok: true, stats, quick, skipped: stats.categoriesScanned === 0 });
 }
 
 async function adminTwitchPoll(request: Request, env: Env): Promise<Response> {

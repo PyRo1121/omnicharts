@@ -4,7 +4,7 @@
 
 Accepted (2026-06-01) — supersedes “Kick may be blocked” notes  
 **Amended:** 2026-06-01 — OAuth hosts, batching, webhooks, compliance  
-**Implementation (2026-06-05):** Tracked poll vertical slice — `workers/ingest/src/kick/{auth,api,poll}.ts`; queue `poll_kick_tracked` wired; `NEEDS_API` when secrets absent.
+**Implementation (2026-06-05):** Tracked poll + category discovery — `workers/ingest/src/kick/{auth,api,poll,discover}.ts`; queue `poll_kick_tracked` + `discover_kick` wired; `NEEDS_API` when secrets absent.
 
 ## Context
 

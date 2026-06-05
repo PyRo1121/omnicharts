@@ -179,7 +179,12 @@ export async function batchUpsertKickGameCategories(
 export async function batchUpsertKickChannelsFromLivestreams(
 	db: D1Database,
 	streams: KickLivestream[],
-	opts: { minViewers: number; promoteToTracked: boolean },
+	opts: {
+		minViewers: number;
+		promoteToTracked: boolean;
+		/** Category/game directory top-N — promote discovered → tracked (docs/12) */
+		directoryListing?: boolean;
+	},
 	batchOpts?: { env?: Env; scope?: string }
 ): Promise<Map<string, string>> {
 	const channelIdByBroadcaster = new Map<string, string>();
@@ -241,7 +246,9 @@ export async function batchUpsertKickChannelsFromLivestreams(
 			isKickViewerCountKnown(stream.viewer_count) &&
 			viewerCount >= opts.minViewers
 		) {
-			if (ingestState === 'dormant') {
+			if (opts.directoryListing && ingestState === 'discovered') {
+				ingestState = 'tracked';
+			} else if (ingestState === 'dormant') {
 				ingestState = 'tracked';
 			} else {
 				recordSighting = true;

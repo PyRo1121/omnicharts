@@ -1,7 +1,12 @@
 import { getKickAppAccessToken, invalidateKickTokenCache } from './auth';
 import { KICK_API_BASE, KICK_LIVESTREAMS_BATCH_SIZE } from './config';
 import { KickRateBudget, kickRetryAfterMs, sleepMs } from './rate-limit';
-import type { KickApiListResponse, KickLivestream } from './types';
+import type {
+	KickApiListResponse,
+	KickCategoryWithTags,
+	KickLivestream,
+	KickPaginatedResponse
+} from './types';
 import { chunkArray } from '../db/d1-batch';
 
 const KICK_429_MAX_RETRIES = 5;
@@ -19,6 +24,32 @@ export class KickPublicApiClient {
 
 	getBudget(): KickRateBudget {
 		return this.budget;
+	}
+
+	async getCategoriesV2(opts: {
+		cursor?: string;
+		limit?: number;
+	} = {}): Promise<KickPaginatedResponse<KickCategoryWithTags>> {
+		const params = new URLSearchParams();
+		if (opts.cursor) params.set('cursor', opts.cursor);
+		params.set('limit', String(opts.limit ?? 100));
+		return this.get<KickPaginatedResponse<KickCategoryWithTags>>('/public/v2/categories', params);
+	}
+
+	async getLivestreamsByCategoryId(
+		categoryId: number,
+		opts: { limit?: number; sort?: 'viewer_count' | 'started_at' } = {}
+	): Promise<KickLivestream[]> {
+		const params = new URLSearchParams();
+		params.set('category_id', String(categoryId));
+		params.set('limit', String(opts.limit ?? 100));
+		params.set('sort', opts.sort ?? 'viewer_count');
+
+		const json = await this.get<KickApiListResponse<KickLivestream>>(
+			'/public/v1/livestreams',
+			params
+		);
+		return json.data ?? [];
 	}
 
 	async getLivestreamsByBroadcasterIds(broadcasterIds: string[]): Promise<KickLivestream[]> {

@@ -24,7 +24,11 @@ export function cronToMessages(cron: string, env?: Env): IngestQueueMessage[] {
 		case ROLLUP_CRON:
 			return [{ type: 'rollup_daily' }];
 		case DISCOVER_TWITCH_CRON:
-			return [{ type: 'discover_twitch' }, { type: 'sync_eventsub_twitch' }];
+			return [
+				{ type: 'discover_twitch' },
+				{ type: 'sync_eventsub_twitch' },
+				{ type: 'discover_kick' }
+			];
 		default:
 			return [];
 	}

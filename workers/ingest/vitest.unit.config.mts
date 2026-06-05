@@ -84,6 +84,7 @@ export default defineConfig({
 			'test/kick-auth.spec.ts',
 			'test/kick-api.spec.ts',
 			'test/kick-poll.spec.ts',
+			'test/kick-discover.spec.ts',
 			'test/kick-stream-fields.spec.ts',
 			'test/eventsub-subscriptions.spec.ts',
 			'test/eventsub-sync-cursor.spec.ts',

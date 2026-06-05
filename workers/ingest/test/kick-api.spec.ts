@@ -57,4 +57,83 @@ describe('KickPublicApiClient', () => {
 		const client = new KickPublicApiClient({} as Env);
 		await expect(client.getLivestreamsByBroadcasterIds([])).resolves.toEqual([]);
 	});
+
+	it('getCategoriesV2 hits /public/v2/categories with cursor pagination', async () => {
+		const fetchMock = vi.fn().mockImplementation((url: string) => {
+			if (url.includes('id.kick.com')) {
+				return Promise.resolve(
+					new Response(JSON.stringify({ access_token: 'tok', expires_in: 3600 }), {
+						status: 200
+					})
+				);
+			}
+			expect(url).toContain('api.kick.com/public/v2/categories');
+			expect(url).toContain('limit=50');
+			return Promise.resolve(
+				new Response(
+					JSON.stringify({
+						data: [{ id: 9, name: 'Rust', tags: ['survival'] }],
+						message: 'OK',
+						pagination: { next_cursor: 'abc' }
+					}),
+					{ status: 200 }
+				)
+			);
+		});
+		vi.stubGlobal('fetch', fetchMock);
+
+		const client = new KickPublicApiClient({
+			KICK_CLIENT_ID: 'id',
+			KICK_CLIENT_SECRET: 'secret'
+		} as Env);
+		const page = await client.getCategoriesV2({ limit: 50 });
+
+		expect(page.data).toHaveLength(1);
+		expect(page.pagination?.next_cursor).toBe('abc');
+	});
+
+	it('getLivestreamsByCategoryId uses category_id sort and limit', async () => {
+		const fetchMock = vi.fn().mockImplementation((url: string) => {
+			if (url.includes('id.kick.com')) {
+				return Promise.resolve(
+					new Response(JSON.stringify({ access_token: 'tok', expires_in: 3600 }), {
+						status: 200
+					})
+				);
+			}
+			expect(url).toContain('category_id=42');
+			expect(url).toContain('limit=100');
+			expect(url).toContain('sort=viewer_count');
+			return Promise.resolve(
+				new Response(
+					JSON.stringify({
+						data: [
+							{
+								broadcaster_user_id: 7,
+								channel_id: 70,
+								slug: 'seven',
+								stream_title: 'Live',
+								started_at: '2026-06-01T00:00:00Z',
+								viewer_count: 50
+							}
+						]
+					}),
+					{ status: 200 }
+				)
+			);
+		});
+		vi.stubGlobal('fetch', fetchMock);
+
+		const client = new KickPublicApiClient({
+			KICK_CLIENT_ID: 'id',
+			KICK_CLIENT_SECRET: 'secret'
+		} as Env);
+		const streams = await client.getLivestreamsByCategoryId(42, {
+			limit: 100,
+			sort: 'viewer_count'
+		});
+
+		expect(streams).toHaveLength(1);
+		expect(streams[0]?.slug).toBe('seven');
+	});
 });

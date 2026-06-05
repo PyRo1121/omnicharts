@@ -15,6 +15,7 @@ export type IngestQueueMessage =
 	  }
 	| { type: 'rollup_daily'; date?: string }
 	| { type: 'discover_twitch' }
+	| { type: 'discover_kick' }
 	| { type: 'sync_eventsub_twitch' };
 
 const INGEST_PLATFORMS = ['twitch', 'kick', 'youtube'] as const;
@@ -42,6 +43,7 @@ function isIngestQueueMessage(data: unknown): data is IngestQueueMessage {
 		case 'poll_kick_tracked':
 		case 'poll_youtube_tracked':
 		case 'discover_twitch':
+		case 'discover_kick':
 		case 'sync_eventsub_twitch':
 			return true;
 		case 'poll_twitch_enrich':

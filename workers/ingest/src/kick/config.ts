@@ -10,6 +10,15 @@ export const DEFAULT_KICK_MAX_TRACKED = 800;
 
 export const DEFAULT_KICK_MIN_VIEWERS = 2;
 
+/** Category discovery — mirror twitch DISCOVERY_GAMES_TO_SCAN (docs/12) */
+export const DISCOVERY_CATEGORIES_TO_SCAN = 40;
+
+/** GET /public/v1/livestreams max limit (OpenAPI) */
+export const DISCOVERY_CATEGORY_LIVESTREAMS_LIMIT = 100;
+
+/** GET /public/v2/categories page size when building scan list */
+export const DISCOVERY_CATEGORY_LIST_LIMIT = 100;
+
 export const KICK_API_BASE = 'https://api.kick.com';
 export const KICK_OAUTH_TOKEN_URL = 'https://id.kick.com/oauth/token';
 
