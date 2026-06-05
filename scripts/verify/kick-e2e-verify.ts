@@ -91,6 +91,52 @@ function isValidRankingsGamesBody(body: RankingsGamesBody): boolean {
 	);
 }
 
+async function kickRankingsChannelsCheckpoint(): Promise<Step> {
+	try {
+		const res = await fetch(
+			`${INGEST_BASE}/v1/rankings/channels?platform=kick&period=7d&limit=5`,
+			{ signal: AbortSignal.timeout(15_000) }
+		);
+		const body = (await res.json()) as RankingsGamesBody;
+		if (!res.ok) {
+			return {
+				name: 'kick rankings channels',
+				pass: false,
+				detail: `HTTP ${res.status}: ${JSON.stringify(body).slice(0, 200)}`
+			};
+		}
+		if (!isValidRankingsGamesBody(body)) {
+			return {
+				name: 'kick rankings channels',
+				pass: false,
+				detail: `invalid JSON shape: ${JSON.stringify(body).slice(0, 200)}`
+			};
+		}
+		if (body.platform !== 'kick') {
+			return {
+				name: 'kick rankings channels',
+				pass: false,
+				detail: `expected platform kick, got ${body.platform}`
+			};
+		}
+		const count = body.items?.length ?? 0;
+		return {
+			name: 'kick rankings channels',
+			pass: true,
+			detail:
+				count > 0
+					? `GET /v1/rankings/channels ok — ${count} item(s)`
+					: 'GET /v1/rankings/channels ok — empty items (no rollups yet)'
+		};
+	} catch (err) {
+		return {
+			name: 'kick rankings channels',
+			pass: false,
+			detail: err instanceof Error ? err.message : String(err)
+		};
+	}
+}
+
 async function kickRankingsGamesCheckpoint(): Promise<Step> {
 	try {
 		const res = await fetch(
@@ -206,6 +252,11 @@ async function main() {
 			detail: skipDetail
 		});
 		log({
+			name: 'kick rankings channels',
+			pass: true,
+			detail: skipDetail
+		});
+		log({
 			name: 'kick rankings games',
 			pass: true,
 			detail: skipDetail
@@ -233,6 +284,13 @@ async function main() {
 		const discover = await kickDiscoverCheckpoint();
 		log(discover);
 		if (!discover.pass) {
+			printSummary();
+			process.exit(1);
+		}
+
+		const channels = await kickRankingsChannelsCheckpoint();
+		log(channels);
+		if (!channels.pass) {
 			printSummary();
 			process.exit(1);
 		}

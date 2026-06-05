@@ -10,7 +10,7 @@
 <article class="prose-oc mt-8 max-w-2xl space-y-6 text-sm leading-relaxed text-[var(--color-oc-text-muted)]">
 	<section class="rounded-xl border border-[var(--color-oc-border)] bg-[var(--color-oc-bg-card)] p-5">
 		<h2 class="font-[family-name:var(--font-display)] text-base font-semibold text-[var(--color-oc-text)]">
-			Data sources
+			Introduction
 		</h2>
 		<p class="mt-2">
 			We collect public data from <strong class="text-[var(--color-oc-text)]">Twitch</strong>,
@@ -22,6 +22,10 @@
 			Numbers are <strong class="text-[var(--color-oc-text)]">estimates of viewership activity</strong> from
 			how many people were watching at sample moments — not platform-internal dashboards or unique-people
 			counts unless stated.
+		</p>
+		<p class="mt-2">
+			<strong class="text-[var(--color-oc-text)]">Tracked since</strong> on each channel profile is the date we
+			first started recording that channel. We cannot show minute-by-minute history from before that date.
 		</p>
 	</section>
 
@@ -67,25 +71,52 @@
 			Follower change
 		</h2>
 		<p class="mt-2">
-			When the API provides follower totals, we store daily snapshots and compute
-			<strong class="text-[var(--color-oc-text)]">followers gain</strong> as the sum of day-over-day
-			<code class="text-xs">followers_delta</code> over the period. Missing snapshots show as “—” on the site.
+			When the API provides follower totals, we store snapshots and show the difference over the period. If data
+			is missing, we show “—”.
 		</p>
 	</section>
 
 	<section class="rounded-xl border border-[var(--color-oc-border)] bg-[var(--color-oc-bg-card)] p-5">
 		<h2 class="font-[family-name:var(--font-display)] text-base font-semibold text-[var(--color-oc-text)]">
-			Sampling and hot retention
+			How often we update (by platform)
 		</h2>
-		<p class="mt-2">
-			Twitch live channels are typically sampled about <strong class="text-[var(--color-oc-text)]">once per minute</strong>
-			while online (Helix + EventSub where available). Rankings and charts use <strong class="text-[var(--color-oc-text)]">daily rollups</strong>
-			built from those samples.
+		<div class="mt-3 overflow-x-auto">
+			<table class="w-full text-left text-xs">
+				<thead>
+					<tr class="border-b border-[var(--color-oc-border)] text-[var(--color-oc-text)]">
+						<th class="py-2 pr-3 font-semibold">Platform</th>
+						<th class="py-2 pr-3 font-semibold">Sample interval (live)</th>
+						<th class="py-2 font-semibold">Status</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr class="border-b border-[var(--color-oc-border)]">
+						<td class="py-2 pr-3">Twitch</td>
+						<td class="py-2 pr-3">~60 seconds</td>
+						<td class="py-2">Helix poll + EventSub lifecycle</td>
+					</tr>
+					<tr class="border-b border-[var(--color-oc-border)]">
+						<td class="py-2 pr-3">Kick</td>
+						<td class="py-2 pr-3">~60–120 seconds</td>
+						<td class="py-2">Livestreams poll when API credentials configured; optional webhooks for session boundaries</td>
+					</tr>
+					<tr>
+						<td class="py-2 pr-3">YouTube</td>
+						<td class="py-2 pr-3">~120 seconds (target)</td>
+						<td class="py-2">Tracked poll not shipped — leaderboards empty until <code class="text-xs">videos.list</code> ingest lands</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		<p class="mt-3">
+			Rankings and charts use <strong class="text-[var(--color-oc-text)]">daily rollups</strong> built from samples.
+			Public pages may cache for up to <strong class="text-[var(--color-oc-text)]">60 seconds</strong>. We do not poll
+			offline channels every minute.
 		</p>
 		<p class="mt-2">
-			Raw <code class="text-xs">viewer_samples</code> rows are kept in our database for a
-			<strong class="text-[var(--color-oc-text)]">14-day hot window</strong>, then pruned after the daily rollup.
-			Older detail is not shown on public pages until cold archive (Phase 4).
+			Raw <code class="text-xs">viewer_samples</code> for Twitch are kept in a
+			<strong class="text-[var(--color-oc-text)]">14-day hot window</strong>, then pruned after daily rollup. Older
+			detail is not on public pages until cold archive (Phase 4).
 		</p>
 	</section>
 
@@ -96,8 +127,8 @@
 		<p class="mt-2">Public leaderboards include channels that meet all of:</p>
 		<ul class="mt-2 list-disc space-y-1 pl-5">
 			<li>Actively <strong class="text-[var(--color-oc-text)]">tracked</strong> in our system</li>
-			<li>At least <strong class="text-[var(--color-oc-text)]">60 minutes</strong> of live airtime in the selected period (production default)</li>
-			<li>Period average viewers at least the platform track threshold (20+ on Twitch at launch)</li>
+			<li>At least <strong class="text-[var(--color-oc-text)]">60 minutes</strong> of live airtime in the selected period</li>
+			<li>Period average viewers at least about <strong class="text-[var(--color-oc-text)]">2</strong> concurrent viewers (platform thresholds may differ)</li>
 		</ul>
 		<p class="mt-2">
 			Smaller or newly discovered channels may still have a profile with limited history. We discover from live
@@ -107,32 +138,74 @@
 
 	<section class="rounded-xl border border-[var(--color-oc-border)] bg-[var(--color-oc-bg-card)] p-5">
 		<h2 class="font-[family-name:var(--font-display)] text-base font-semibold text-[var(--color-oc-text)]">
-			Tracked since and history limits
+			History and tracked since
 		</h2>
 		<p class="mt-2">
-			<strong class="text-[var(--color-oc-text)]">Tracked since</strong> is the date we first recorded the channel.
-			We only have minute-level viewer curves from that date forward — platforms do not expose full lifetime
-			third-party history.
+			We only have detailed viewer curves from the day we started tracking a channel forward. Platforms do not expose
+			full lifetime third-party history. Twitch VODs expire after a short window; Kick and YouTube do not provide years
+			of concurrent viewer curves via public APIs.
 		</p>
 	</section>
 
 	<section class="rounded-xl border border-[var(--color-oc-border)] bg-[var(--color-oc-bg-card)] p-5">
 		<h2 class="font-[family-name:var(--font-display)] text-base font-semibold text-[var(--color-oc-text)]">
-			Live discovery
+			Discovery (how channels enter the catalog)
 		</h2>
-		<p class="mt-2">
-			Each minute we sweep the global live directory, rotate game-category passes, and reconcile recently
-			tracked channels — see ADR-0006 for pagination coverage.
-		</p>
+		<ul class="mt-2 list-disc space-y-2 pl-5">
+			<li>
+				<strong class="text-[var(--color-oc-text)]">Twitch</strong> — global live directory sweep, rotating game-category
+				passes, and reconcile of recently tracked channels (see ADR-0006 for pagination coverage).
+			</li>
+			<li>
+				<strong class="text-[var(--color-oc-text)]">Kick</strong> — category discovery from the public API plus tracked
+				livestream polling (≤50 broadcaster IDs per request). Without developer API credentials, discover/poll no-op.
+			</li>
+			<li>
+				<strong class="text-[var(--color-oc-text)]">YouTube</strong> — design: known channel IDs and live video IDs via
+				Data API; no sitewide search cron. Ingest not live yet.
+			</li>
+		</ul>
 	</section>
 
 	<section class="rounded-xl border border-[var(--color-oc-border)] bg-[var(--color-oc-bg-card)] p-5">
 		<h2 class="font-[family-name:var(--font-display)] text-base font-semibold text-[var(--color-oc-text)]">
-			Cross-platform and affiliation
+			Known limitations
+		</h2>
+		<ul class="mt-2 list-disc space-y-1 pl-5">
+			<li>We generally show concurrent viewers and Hours Watched, not unique people.</li>
+			<li>Raids and hosts are included in samples during the live window.</li>
+			<li>Some Kick or YouTube streams hide viewer counts — we may show gaps.</li>
+			<li>YouTube Gaming coverage is a subset, not the entire site; leaderboards stay empty until ingest ships.</li>
+			<li>Other analytics sites use different ingest — numbers may disagree.</li>
+		</ul>
+	</section>
+
+	<section class="rounded-xl border border-[var(--color-oc-border)] bg-[var(--color-oc-bg-card)] p-5">
+		<h2 class="font-[family-name:var(--font-display)] text-base font-semibold text-[var(--color-oc-text)]">
+			Cross-platform, sources, affiliation
 		</h2>
 		<p class="mt-2">
 			Twitch, Kick, and YouTube use separate tables and pages. Do not add Hours Watched across platforms unless
-			labeled as combined.
+			explicitly labeled as combined.
+		</p>
+		<p class="mt-2">
+			Data sources:
+			<a
+				href="https://dev.twitch.tv/docs/api/"
+				class="text-[var(--color-oc-accent)] hover:underline"
+				rel="noopener noreferrer">Twitch Helix</a
+			>
+			and EventSub;
+			<a
+				href="https://docs.kick.com/"
+				class="text-[var(--color-oc-accent)] hover:underline"
+				rel="noopener noreferrer">Kick Developer API</a
+			>;
+			<a
+				href="https://developers.google.com/youtube/v3"
+				class="text-[var(--color-oc-accent)] hover:underline"
+				rel="noopener noreferrer">YouTube Data API</a
+			> (when implemented).
 		</p>
 		<p class="mt-2">
 			OmniCharts is not affiliated with, endorsed by, or sponsored by Twitch, Kick, YouTube, or Google.

@@ -64,15 +64,15 @@ When the platform API provides follower totals, we store snapshots and show the 
 
 ## Section 3 — How often we update
 
-| Platform | Typical sample interval (while live) |
-|----------|--------------------------------------|
-| Twitch | About every 60 seconds |
-| Kick | About every 60–120 seconds |
-| YouTube | About every 120 seconds |
+| Platform | Typical sample interval (while live) | Phase 3 ingest |
+|----------|--------------------------------------|----------------|
+| Twitch | About every 60 seconds | Shipped — Helix poll + EventSub lifecycle |
+| Kick | About every 60–120 seconds | Shipped when API credentials configured — livestreams poll + optional webhooks |
+| YouTube | About every 120 seconds (design) | **Not shipped yet** — public pages and API return empty leaderboards until `videos.list` tracked poll lands |
 
 Rankings and charts use **daily rollups** built from these samples. The site may cache public pages for up to **60 seconds**.
 
-We detect when a channel goes live or offline using platform signals (including Twitch EventSub where available). We do not poll offline channels every minute.
+We detect when a channel goes live or offline using platform signals (Twitch EventSub; Kick optional `livestream.status.updated` webhook; YouTube inferred from `videos.list` when implemented). We do not poll offline channels every minute.
 
 ---
 
@@ -119,7 +119,8 @@ The same person may have different accounts on different platforms. We treat tho
 | Unique viewers | We generally show concurrent viewers and Hours Watched, not unique people |
 | Raids and hosts | Included in viewer counts during our samples; we may refine this later |
 | Hidden view counts | Some Kick or YouTube streams hide viewer numbers; we may show gaps |
-| YouTube quota | We track a subset of YouTube Gaming channels, not the entire site |
+| YouTube ingest | Tracked poll not implemented yet — rankings empty; search/profile only when channel rows exist |
+| YouTube quota | When live, we track a subset of YouTube Gaming channels, not the entire site |
 | Restreams / bots | We do not manually audit every channel; unusual patterns may affect rankings |
 | Comparison to other sites | Other analytics sites have their own ingest and may disagree with our numbers |
 
@@ -178,3 +179,4 @@ We aim to correct metadata errors when platforms update their APIs.
 | Date | Change |
 |------|--------|
 | 2026-06-01 | Initial public copy (doc v2 P1) |
+| 2026-06-05 | Phase 3 — Kick ingest status, YouTube not shipped, platform table in §3 |

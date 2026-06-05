@@ -70,7 +70,8 @@ Root `package.json` scripts — **do not duplicate bash blocks** in docs 23/24/2
 |--------|------|----------|
 | `bun run test` | Fast unit gate (ingest + web) | — |
 | `bun run verify:twitch` | Full Twitch gate before claiming ingest/web work done; freeze **G1** | Local: `dev:ingest` for checkpoint; CI: `VERIFY_SKIP_CHECKPOINT=1` unless `VERIFY_FULL=1` |
-| `bun run verify:kick` | Kick Phase 3 gate (ingest unit tests + optional live discover) | Local: `dev:ingest` + `KICK_*` in `.dev.vars`; CI: `VERIFY_SKIP_KICK_LIVE=1` unless `VERIFY_KICK_FULL=1` |
+| `bun run verify:kick` | Kick Phase 3 gate (ingest unit tests + optional live discover + rankings shape) | Local: `dev:ingest` + `KICK_*` in `.dev.vars`; CI: `VERIFY_SKIP_KICK_LIVE=1` unless `VERIFY_KICK_FULL=1` |
+| `bun run verify:youtube` | YouTube stub (ingest unit tests + optional empty rankings shape check) | Full gate deferred until `poll_youtube_tracked` ships; CI skips live unless `VERIFY_YOUTUBE_FULL=1` |
 | `bun run twitch:freeze-proof` | M1 operational proof matrix (health → schema → cron → checkpoint → optional EventSub) | `dev:ingest` with `--test-scheduled` |
 | `bun run twitch:checkpoint --no-start-ingest` | Deep ingest pipeline smoke (subset of verify) | `dev:ingest` + `ADMIN_API_KEY` in `.dev.vars` |
 | `bun run twitch:checkpoint:full` | Slow coverage poll path | Same as checkpoint |
@@ -80,7 +81,7 @@ Root `package.json` scripts — **do not duplicate bash blocks** in docs 23/24/2
 | `bun run check:web` | Wrangler types + svelte-check | — |
 | `bun run build:web` | Production Pages build | — |
 
-Implementation: `scripts/verify/twitch-e2e-verify.ts` (`verify:twitch` and `twitch:freeze-proof` share one script; `--proof-matrix` selects M1 path). Kick: `scripts/verify/kick-e2e-verify.ts`. All verify scripts: [`scripts/verify/`](../scripts/verify/) · [`scripts/README.md`](../scripts/README.md).
+Implementation: `scripts/verify/twitch-e2e-verify.ts` (`verify:twitch` and `twitch:freeze-proof` share one script; `--proof-matrix` selects M1 path). Kick: `scripts/verify/kick-e2e-verify.ts`. YouTube stub: `scripts/verify/youtube-e2e-verify.ts`. All verify scripts: [`scripts/verify/`](../scripts/verify/) · [`scripts/README.md`](../scripts/README.md).
 
 ### `verify:kick` (agents)
 
@@ -95,7 +96,24 @@ From repo root:
 | `CI=true` without `VERIFY_KICK_FULL=1` | Same as skip (default in CI) |
 | `VERIFY_KICK_FULL=1` | Run kick discover checkpoint when ingest is reachable |
 
-**Known gap (defer):** `verify:kick` passes when ingest unit tests pass even if Kick rollup rankings / web BFF are untested end-to-end — a future gate should assert `GET /v1/rankings/channels?platform=kick` non-empty after discover + `rollup_daily` (same pattern as Twitch checkpoint).
+**Live (when not skipped):** `verify:kick` runs `POST /admin/kick/discover` `{ "quick": true }` then asserts `GET /v1/rankings/channels?platform=kick` and `GET /v1/rankings/games?platform=kick` return valid JSON (empty `items` allowed before rollups).
+
+**Known gap (defer):** non-empty Kick rankings after discover + `rollup_daily` (Twitch checkpoint parity); web BFF not in this script.
+
+### `verify:youtube` (stub)
+
+From repo root:
+
+1. `bun run test:ingest` — includes YouTube API empty-ranking tests
+2. Optional live: when ingest is up, `GET /v1/rankings/channels?platform=youtube` must return `{ items: [] }` with valid shape until tracked poll ships
+
+| Env | Effect |
+|-----|--------|
+| `VERIFY_SKIP_YOUTUBE_LIVE=1` | Unit tests only |
+| `CI=true` without `VERIFY_YOUTUBE_FULL=1` | Skip live shape check |
+| `VERIFY_YOUTUBE_FULL=1` | Run rankings shape check when ingest is reachable |
+
+**Deferred:** discover, poll, rollup, and non-empty YouTube leaderboards — replace stub when `poll_youtube_tracked` is implemented per [05-ingestion](./05-ingestion-per-platform.md).
 
 ### `verify:twitch` (agents)
 
@@ -142,6 +160,7 @@ Pre–Kick freeze: [23 §2](./23-audit-remediation-plan.md#2-freeze-gate-twitch-
 |------|---------|
 | Full Twitch smoke | `bun run verify:twitch` |
 | Kick Phase 3 gate | `bun run verify:kick` |
+| YouTube stub (pre-ingest) | `bun run verify:youtube` |
 | M1 proof matrix | `bun run twitch:freeze-proof` |
 | D1 schema (local) | `bun run d1:verify-schema` (after `d1:migrate:local`) — migrations **0001–0008** |
 | D1 schema (pre-deploy) | `bun run d1:verify-schema:remote` — freeze G2; indexes **0007–0008** |

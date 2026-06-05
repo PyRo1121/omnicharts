@@ -21,6 +21,7 @@
     "test:e2e": "bun run --filter web test:e2e",
     "verify:twitch": "bun run scripts/verify/twitch-e2e-verify.ts",
     "verify:kick": "bun run scripts/verify/kick-e2e-verify.ts",
+    "verify:youtube": "bun run scripts/verify/youtube-e2e-verify.ts",
     "lighthouse:smoke": "bun run scripts/verify/lighthouse-smoke.ts",
     "twitch:freeze-proof": "bun run scripts/verify/twitch-e2e-verify.ts --proof-matrix",
     "types:ingest": "bun run --cwd workers/ingest cf-typegen",

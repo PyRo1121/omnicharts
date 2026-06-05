@@ -27,7 +27,7 @@ paths:
   /rankings/channels:
     get:
       tags: [rankings]
-      summary: Top channels by hours watched (Twitch)
+      summary: Top channels by hours watched
       operationId: listChannelRankings
       parameters:
         - $ref: '#/components/parameters/platform'
@@ -46,7 +46,7 @@ paths:
   /rankings/games:
     get:
       tags: [rankings]
-      summary: Top games by average viewers (Twitch)
+      summary: Top games by average viewers
       operationId: listGameRankings
       parameters:
         - $ref: '#/components/parameters/platform'
@@ -115,7 +115,7 @@ paths:
   /games/{slug}:
     get:
       tags: [games]
-      summary: Game/category summary (Twitch)
+      summary: Game/category summary
       operationId: getGame
       parameters:
         - $ref: '#/components/parameters/slug'
@@ -169,7 +169,9 @@ components:
       in: query
       schema:
         $ref: '#/components/schemas/Platform'
-      description: Only `twitch` returns data today.
+      description: |
+        `twitch` and `kick` return rollup-backed rankings when ingest has data.
+        `youtube` returns valid empty `items` or `results` until YouTube tracked poll is implemented.
     period:
       name: period
       in: query

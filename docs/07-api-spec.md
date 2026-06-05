@@ -23,16 +23,19 @@
 | `not_found` | 404 | Channel/game resolve or detail missing |
 | `bad_request` | 400 | Missing required query param |
 
-### Platform behavior before Phase 3 (Kick/YouTube)
+### Platform behavior (Phase 3)
 
-| Endpoint | `platform=twitch` | `platform=kick` or `youtube` |
-|----------|-------------------|------------------------------|
-| `GET /v1/rankings/channels` | Rollup-backed items | `{ items: [] }` — empty, not an error |
-| `GET /v1/rankings/games` | Rollup-backed items | `{ items: [] }` |
-| `GET /v1/search/channels` | FTS/LIKE results | Empty `results` when ingest has no rows (Phase 3 adds data) |
-| `GET /v1/channels/{slug}` | 200 or 404 | 404 until Phase 3 ingest |
+| Endpoint | `platform=twitch` | `platform=kick` | `platform=youtube` |
+|----------|-------------------|-----------------|---------------------|
+| `GET /v1/rankings/channels` | Rollup-backed items | Rollup-backed when Kick discover + poll + `rollup_daily` have run | `{ items: [] }` — valid empty until YouTube ingest ships |
+| `GET /v1/rankings/games` | Rollup-backed items | Same as channels | `{ items: [] }` |
+| `GET /v1/search/channels` | Prefix / LIKE on tracked catalog | Same when Kick channels exist in D1 | Same when YouTube channels exist; often empty today |
+| `GET /v1/channels/{slug}` | 200 or 404 | 200 when channel row + rollups exist | 404 until tracked poll + rollups exist |
+| `GET /v1/games/{slug}` | 200 or 404 | 200 when game rollups exist | 404 or empty series until ingest |
 
-No breaking change for Twitch clients. Full platform error matrix ships with Kick API (Phase 3).
+Kick needs `KICK_CLIENT_ID` / `KICK_CLIENT_SECRET` in the ingest Worker; without credentials discover/poll no-op (`NEEDS_API`) and rankings stay empty. YouTube `poll_youtube_tracked` is queued on `*/2` cron but not yet implemented — API shape is stable, data is not.
+
+No breaking change for Twitch clients. Same error codes for all platforms (`invalid_platform`, `not_found`, etc.).
 
 ---
 
