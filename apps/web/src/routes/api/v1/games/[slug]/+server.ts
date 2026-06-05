@@ -19,8 +19,11 @@ export const GET: RequestHandler = async ({ params, url, fetch, platform }) => {
 		);
 	}
 
-	if (db && (query.platform === 'twitch' || query.platform === 'kick')) {
-		const eligibility = webRankingEligibility(platform?.env);
+	if (
+		db &&
+		(query.platform === 'twitch' || query.platform === 'kick' || query.platform === 'youtube')
+	) {
+		const eligibility = webRankingEligibility(platform?.env, query.platform);
 		const body = await buildGameDetailResponse(
 			db,
 			{

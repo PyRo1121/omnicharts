@@ -10,12 +10,13 @@ export type TrendingSearch = {
 	platform: Exclude<PlatformId, 'all'>;
 };
 
-/** Top-N channel rankings for search chips; static mock when ingest has no rollups yet. */
+/** Top-N channel rankings for search chips; mock fallback only when `mockEnabled`. */
 export function trendingFromRankings(
 	rows: ChannelRow[],
-	options?: { platform?: Exclude<PlatformId, 'all'> }
+	options?: { platform?: Exclude<PlatformId, 'all'>; mockEnabled?: boolean }
 ): TrendingSearch[] {
 	if (!rows.length) {
+		if (!options?.mockEnabled) return [];
 		const platform = options?.platform;
 		const scoped = platform
 			? fallbackTrendingSearches.filter((entry) => entry.platform === platform)

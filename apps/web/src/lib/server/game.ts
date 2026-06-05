@@ -140,9 +140,9 @@ export async function loadGameDetail(
 	const apiPeriod = parseRankingPeriod(periodForApi(period));
 
 	try {
-		if (ctx.db && (platform === 'twitch' || platform === 'kick')) {
+		if (ctx.db && (platform === 'twitch' || platform === 'kick' || platform === 'youtube')) {
 			try {
-				const eligibility = webRankingEligibility(ctx.cfEnv);
+				const eligibility = webRankingEligibility(ctx.cfEnv, platform);
 				const body = await buildGameDetailResponse(
 					ctx.db,
 					{ platform, slug, period: apiPeriod },

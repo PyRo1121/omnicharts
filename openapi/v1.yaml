@@ -5,7 +5,7 @@ info:
   description: |
     Public REST API for OmniCharts streaming analytics (implemented subset).
 
-    **Platform (Phase 3):** Twitch and Kick have rollup-backed channel and game rankings when ingest has data. Kick also has search + optional webhook session boundaries. YouTube returns empty leaderboards and search-only UX until ingest exists.
+    **Platform (Phase 3):** Twitch, Kick, and YouTube have rollup-backed channel and game rankings when ingest has tracked channels and rollups. Kick also has search + optional webhook session boundaries. YouTube uses tracked UC catalog poll (no discover cron).
 
     **Periods:** `24h`, `7d`, `30d`, `90d` (rankings and channel detail). Web UI hides `90d` until Phase 4 retention.
 
@@ -170,8 +170,8 @@ components:
       schema:
         $ref: '#/components/schemas/Platform'
       description: |
-        `twitch` and `kick` return rollup-backed rankings when ingest has data.
-        `youtube` returns valid empty `items` or `results` until YouTube tracked poll is implemented.
+        `twitch`, `kick`, and `youtube` return rollup-backed rankings when ingest has data.
+        Empty `items` or `results` are valid when no tracked channels meet eligibility gates.
     period:
       name: period
       in: query

@@ -57,12 +57,13 @@ export async function applyStreamOnline(env: Env, event: StreamOnlineEvent): Pro
 		.bind(sessionId, resolvedChannelId, event.id, event.started_at)
 		.run();
 
-	// Close any other open sessions for this channel (new stream id)
+	// Close any other open sessions at stream start (not worker receipt time)
+	const closeAt = event.started_at;
 	await db.prepare(
 		`UPDATE stream_sessions SET ended_at = ?
      WHERE channel_id = ? AND ended_at IS NULL AND platform_stream_id != ?`
 	)
-		.bind(now, resolvedChannelId, event.id)
+		.bind(closeAt, resolvedChannelId, event.id)
 		.run();
 }
 

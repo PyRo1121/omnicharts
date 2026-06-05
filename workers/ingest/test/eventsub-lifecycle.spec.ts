@@ -50,6 +50,7 @@ describe('EventSub lifecycle', () => {
 
 		await applyStreamOnline({ DB: db } as Env, onlineEvent);
 		expect(sessionUpdates.some((u) => u.sql.includes('ended_at'))).toBe(true);
+		expect(sessionUpdates.some((u) => u.endedAt === onlineEvent.started_at)).toBe(true);
 	});
 
 	it('applyStreamOffline closes all open sessions for channel', async () => {

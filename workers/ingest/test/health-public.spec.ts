@@ -16,13 +16,15 @@ function mockEnv(): Env {
 			return stmt;
 		},
 		async batch(stmts: unknown[]) {
-			expect(stmts).toHaveLength(6);
+			expect(stmts).toHaveLength(8);
 			return [
 				{ results: [{ ok: 1 }] },
 				{ results: [{ n: 10 }] },
 				{ results: [{ n: 4 }] },
 				{ results: [{ n: 2 }] },
 				{ results: [{ n: 2 }] },
+				{ results: [{ n: 1 }] },
+				{ results: [{ n: 0 }] },
 				{ results: [{ max_sampled_at: new Date().toISOString() }] }
 			];
 		}

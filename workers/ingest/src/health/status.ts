@@ -31,6 +31,7 @@ export type PublicHealthPayload = {
 	eventsub: 'configured' | 'not_configured';
 	tracked_channels: { twitch: number; kick: number; youtube: number };
 	channels_live: number;
+	channels_live_by_platform: { twitch: number; kick: number; youtube: number };
 	timestamp: string;
 };
 
@@ -52,25 +53,44 @@ export async function buildPublicHealth(env: Env): Promise<PublicHealthPayload> 
 	let kickTracked = 0;
 	let youtubeTracked = 0;
 	let channelsLive = 0;
+	let channelsLiveByPlatform = { twitch: 0, kick: 0, youtube: 0 };
 	let twitchLag: number | null = null;
 
 	try {
 		const db = requireDb(env);
-		const [pingBatch, twitchTrackedBatch, kickTrackedBatch, youtubeTrackedBatch, liveBatch, sampleBatch] =
-			await db.batch([
-				db.prepare('SELECT 1 AS ok'),
-				db.prepare(TWITCH_TRACKED_COUNT_SQL).bind(PLATFORM_TWITCH),
-				db.prepare(TWITCH_TRACKED_COUNT_SQL).bind(PLATFORM_KICK),
-				db.prepare(TWITCH_TRACKED_COUNT_SQL).bind(PLATFORM_YOUTUBE),
-				db.prepare(TWITCH_LIVE_COUNT_SQL).bind(PLATFORM_TWITCH),
-				db.prepare(TWITCH_MAX_SAMPLE_SQL).bind(PLATFORM_TWITCH)
-			]);
+		const [
+			pingBatch,
+			twitchTrackedBatch,
+			kickTrackedBatch,
+			youtubeTrackedBatch,
+			twitchLiveBatch,
+			kickLiveBatch,
+			youtubeLiveBatch,
+			sampleBatch
+		] = await db.batch([
+			db.prepare('SELECT 1 AS ok'),
+			db.prepare(TWITCH_TRACKED_COUNT_SQL).bind(PLATFORM_TWITCH),
+			db.prepare(TWITCH_TRACKED_COUNT_SQL).bind(PLATFORM_KICK),
+			db.prepare(TWITCH_TRACKED_COUNT_SQL).bind(PLATFORM_YOUTUBE),
+			db.prepare(TWITCH_LIVE_COUNT_SQL).bind(PLATFORM_TWITCH),
+			db.prepare(TWITCH_LIVE_COUNT_SQL).bind(PLATFORM_KICK),
+			db.prepare(TWITCH_LIVE_COUNT_SQL).bind(PLATFORM_YOUTUBE),
+			db.prepare(TWITCH_MAX_SAMPLE_SQL).bind(PLATFORM_TWITCH)
+		]);
 		if (!pingBatch.results?.length) throw new Error('db ping failed');
 		dbConnected = true;
 		twitchTracked = countFromBatchRow(twitchTrackedBatch as D1BatchResult);
 		kickTracked = countFromBatchRow(kickTrackedBatch as D1BatchResult);
 		youtubeTracked = countFromBatchRow(youtubeTrackedBatch as D1BatchResult);
-		channelsLive = countFromBatchRow(liveBatch as D1BatchResult);
+		channelsLiveByPlatform = {
+			twitch: countFromBatchRow(twitchLiveBatch as D1BatchResult),
+			kick: countFromBatchRow(kickLiveBatch as D1BatchResult),
+			youtube: countFromBatchRow(youtubeLiveBatch as D1BatchResult)
+		};
+		channelsLive =
+			channelsLiveByPlatform.twitch +
+			channelsLiveByPlatform.kick +
+			channelsLiveByPlatform.youtube;
 		twitchLag = ingestLagSecondsFromMaxSample(maxSampleFromBatchRow(sampleBatch as D1BatchResult));
 	} catch {
 		dbConnected = false;
@@ -89,6 +109,7 @@ export async function buildPublicHealth(env: Env): Promise<PublicHealthPayload> 
 		eventsub: eventsubConfigured ? 'configured' : 'not_configured',
 		tracked_channels: { twitch: twitchTracked, kick: kickTracked, youtube: youtubeTracked },
 		channels_live: channelsLive,
+		channels_live_by_platform: channelsLiveByPlatform,
 		timestamp: new Date().toISOString()
 	};
 }
@@ -130,6 +151,7 @@ export async function buildIngestHealth(env: Env): Promise<IngestHealthPayload> 
 	};
 	let discoverySeedAt: string | null = null;
 	let channelsLive = 0;
+	let channelsLiveByPlatform = { twitch: 0, kick: 0, youtube: 0 };
 	let discoveryNew24h = 0;
 	let ingestLagSeconds: IngestOperationalMetrics['ingest_lag_seconds'] = { twitch: null };
 
@@ -169,6 +191,7 @@ export async function buildIngestHealth(env: Env): Promise<IngestHealthPayload> 
 		discoverySeedAt = parseDiscoverySeedAt(seedRow?.value);
 
 		channelsLive = ops.channels_live;
+		channelsLiveByPlatform = ops.channels_live_by_platform;
 		discoveryNew24h = ops.discovery_new_24h;
 		ingestLagSeconds = ops.ingest_lag_seconds;
 	} catch {
@@ -188,6 +211,7 @@ export async function buildIngestHealth(env: Env): Promise<IngestHealthPayload> 
 		eventsub: eventsubConfigured ? 'configured' : 'not_configured',
 		tracked_channels: { twitch: twitchTracked, kick: kickTracked, youtube: youtubeTracked },
 		channels_live: channelsLive,
+		channels_live_by_platform: channelsLiveByPlatform,
 		timestamp: new Date().toISOString(),
 		last_rollup_at: lastRollupAt,
 		discovery_seed_at: discoverySeedAt,

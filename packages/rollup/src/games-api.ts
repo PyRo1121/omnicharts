@@ -8,7 +8,7 @@ import {
 	type RankingPeriod
 } from '@omnicharts/domain';
 import { MIN_RANKING_AIRTIME_MINUTES } from './eligibility';
-import { rankingQueryOptionsFromEnv, type RankingEligibilityEnv } from './ranking-env';
+import { rankingQueryOptionsForPlatform, type RankingEligibilityEnv } from './ranking-env';
 import { getTopGamesByAverageViewers } from './top-games';
 import type { RankingsQueryError } from './channels-api';
 
@@ -59,7 +59,7 @@ export async function buildRankingsGamesResponse(
 ): Promise<RankingsGamesResponse> {
 	const days = periodToDays(opts.period);
 	const eligibility = env
-		? rankingQueryOptionsFromEnv(env)
+		? rankingQueryOptionsForPlatform(env, opts.platform)
 		: { minAirtimeMinutes: MIN_RANKING_AIRTIME_MINUTES, minAverageViewers: 0 };
 	const rankings = await getTopGamesByAverageViewers(db, {
 		platformId: opts.platform,

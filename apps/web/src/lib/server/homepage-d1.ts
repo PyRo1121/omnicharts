@@ -42,7 +42,7 @@ export async function loadHomepageFromD1(
 ): Promise<HomepageD1Snapshot> {
 	const apiPeriod = parseRankingPeriod(periodForApi(period));
 	const days = periodToDays(apiPeriod);
-	const eligibility = webRankingEligibility(cfEnv);
+	const eligibility = webRankingEligibility(cfEnv, PLATFORM_TWITCH);
 	const channelQueryLimit = Math.min(channelLimit * 2, 200);
 	const updatedAt = new Date().toISOString();
 

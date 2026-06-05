@@ -12,12 +12,16 @@ describe('trendingFromRankings', () => {
 		]);
 	});
 
-	it('falls back to static mock when rankings empty', () => {
-		expect(trendingFromRankings([])).toEqual([...trendingSearches]);
+	it('returns empty when rankings empty and mock disabled', () => {
+		expect(trendingFromRankings([])).toEqual([]);
+	});
+
+	it('falls back to static mock when rankings empty and mock enabled', () => {
+		expect(trendingFromRankings([], { mockEnabled: true })).toEqual([...trendingSearches]);
 	});
 
 	it('scopes static fallback to requested platform when rollups empty', () => {
-		const kickOnly = trendingFromRankings([], { platform: 'kick' });
+		const kickOnly = trendingFromRankings([], { platform: 'kick', mockEnabled: true });
 		expect(kickOnly.every((t) => t.platform === 'kick')).toBe(true);
 		expect(kickOnly.length).toBeGreaterThan(0);
 	});

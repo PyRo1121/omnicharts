@@ -155,7 +155,11 @@ async function waitForStableIngest(): Promise<void> {
 		}
 		await sleep(2000);
 	}
-	console.log('  (ingest health not stable 3× — continuing anyway)');
+	if (process.env.CHECKPOINT_ALLOW_UNSTABLE === '1') {
+		console.log('  (ingest health not stable 3× — continuing anyway)');
+		return;
+	}
+	throw new Error('ingest health not stable 3× before checkpoint');
 }
 
 function startIngestBackground(): void {

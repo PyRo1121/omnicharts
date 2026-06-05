@@ -5,5 +5,6 @@ export {
 	prepareTopGamesByAverageViewers,
 	queryTopChannelsByHoursWatched,
 	queryTopGamesByAverageViewers,
+	rankingQueryOptionsForPlatform,
 	rankingQueryOptionsFromEnv
 } from '@omnicharts/rollup';

@@ -27,8 +27,12 @@ export const GET: RequestHandler = async ({ url, fetch, platform }) => {
 	const db = getD1(platform);
 	const parsed = parseRankingsChannelsQuery(url);
 
-	if (parsed.ok && db && (parsed.platform === 'twitch' || parsed.platform === 'kick')) {
-		const eligibility = webRankingEligibility(platform?.env);
+	if (
+		parsed.ok &&
+		db &&
+		(parsed.platform === 'twitch' || parsed.platform === 'kick' || parsed.platform === 'youtube')
+	) {
+		const eligibility = webRankingEligibility(platform?.env, parsed.platform);
 		const body = await buildRankingsChannelsResponse(db, {
 			platform: parsed.platform,
 			period: parsed.period,

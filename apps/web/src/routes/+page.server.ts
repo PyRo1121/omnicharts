@@ -47,7 +47,7 @@ export const load: PageServerLoad = async ({ fetch, url, setHeaders, platform: c
 			channelRankings,
 			gameRankings,
 			platformUnsupported: false,
-			trending: trendingFromRankings(channelRankings.rows, { platform })
+			trending: trendingFromRankings(channelRankings.rows, { platform, mockEnabled })
 		};
 	}
 
@@ -61,6 +61,6 @@ export const load: PageServerLoad = async ({ fetch, url, setHeaders, platform: c
 		channelRankings,
 		gameRankings: overview.gameRankings ?? emptyGameRankings,
 		platformUnsupported: false,
-		trending: trendingFromRankings(channelRankings.rows)
+		trending: trendingFromRankings(channelRankings.rows, { mockEnabled })
 	};
 };

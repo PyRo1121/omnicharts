@@ -64,7 +64,7 @@ export async function getTopChannelsByHoursWatched(
 	const rows = await queryTopChannelsByHoursWatched(db, {
 		platformId: opts.platformId,
 		days,
-		limit: limit * 2,
+		limit,
 		minAirtimeMinutes: opts.minAirtimeMinutes,
 		minAverageViewers: opts.minAverageViewers ?? 0
 	});

@@ -204,7 +204,7 @@ export async function resolveChannelSlugFromHistory(
 	slug: string,
 	platform: string
 ): Promise<string | null> {
-	if (ctx.db && (platform === 'twitch' || platform === 'kick')) {
+	if (ctx.db && (platform === 'twitch' || platform === 'kick' || platform === 'youtube')) {
 		const resolved = await resolveChannelSlug(ctx.db, { platform, slug });
 		if (resolved?.from_history && resolved.slug !== slug) return resolved.slug;
 		return null;
@@ -238,7 +238,7 @@ export async function loadChannelDetail(
 	const apiPeriod = parseRankingPeriod(periodForApi(period));
 
 	try {
-		if (ctx.db && (platform === 'twitch' || platform === 'kick')) {
+		if (ctx.db && (platform === 'twitch' || platform === 'kick' || platform === 'youtube')) {
 			try {
 				const body = await buildChannelDetailResponse(ctx.db, {
 					platform,

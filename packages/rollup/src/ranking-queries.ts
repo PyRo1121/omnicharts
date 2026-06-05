@@ -27,7 +27,7 @@ const TOP_CHANNELS_BY_HW_SQL = `SELECT c.slug, c.display_name, c.avatar_url, c.f
        GROUP BY c.id
        HAVING SUM(r.airtime_minutes) >= ?
          AND (SUM(r.hours_watched) * 60.0 / NULLIF(SUM(r.airtime_minutes), 0)) >= ?
-       ORDER BY hours_watched DESC
+       ORDER BY hours_watched DESC, average_viewers DESC, slug ASC
        LIMIT ?`;
 
 export function prepareTopChannelsByHoursWatched(

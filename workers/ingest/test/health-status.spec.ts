@@ -28,7 +28,9 @@ function mockEnv(overrides: Partial<Env> = {}): Env {
 				return [{ results: [{ n: 5 }] }, { results: [{ n: 2 }] }];
 			}
 			return [
-				{ results: [{ n: 5 }] },
+				{ results: [{ n: 3 }] },
+				{ results: [{ n: 1 }] },
+				{ results: [{ n: 1 }] },
 				{ results: [{ n: 2 }] },
 				{ results: [{ max_sampled_at: new Date().toISOString() }] }
 			];
@@ -53,6 +55,7 @@ describe('buildIngestHealth', () => {
 		expect(payload.youtube).toBe('missing_credentials');
 		expect(payload.ingest_state_counts.twitch.tracked).toBe(42);
 		expect(payload.channels_live).toBe(5);
+		expect(payload.channels_live_by_platform).toEqual({ twitch: 3, kick: 1, youtube: 1 });
 		expect(payload.discovery_new_24h).toBe(2);
 		expect(payload.ingest_lag_seconds.twitch).toBeLessThan(5);
 		expect(ingestHealthHttpStatus(payload)).toBe(200);

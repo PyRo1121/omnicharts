@@ -1,4 +1,4 @@
-import { PLATFORM_TWITCH } from '@omnicharts/domain';
+import { PLATFORM_KICK, PLATFORM_TWITCH, PLATFORM_YOUTUBE } from '@omnicharts/domain';
 import {
 	countFromBatchRow,
 	maxSampleFromBatchRow,
@@ -10,6 +10,7 @@ import {
 
 export type IngestOperationalMetrics = {
 	channels_live: number;
+	channels_live_by_platform: { twitch: number; kick: number; youtube: number };
 	discovery_new_24h: number;
 	ingest_lag_seconds: { twitch: number | null };
 };
@@ -31,14 +32,27 @@ export function ingestLagSecondsFromMaxSample(
 export async function fetchIngestOperationalMetrics(
 	db: D1Database
 ): Promise<IngestOperationalMetrics> {
-	const [liveBatch, discoveryBatch, sampleBatch] = await db.batch([
-		db.prepare(TWITCH_LIVE_COUNT_SQL).bind(PLATFORM_TWITCH),
-		db.prepare(TWITCH_DISCOVERY_24H_SQL).bind(PLATFORM_TWITCH),
-		db.prepare(TWITCH_MAX_SAMPLE_SQL).bind(PLATFORM_TWITCH)
-	]);
+	const [twitchLiveBatch, kickLiveBatch, youtubeLiveBatch, discoveryBatch, sampleBatch] =
+		await db.batch([
+			db.prepare(TWITCH_LIVE_COUNT_SQL).bind(PLATFORM_TWITCH),
+			db.prepare(TWITCH_LIVE_COUNT_SQL).bind(PLATFORM_KICK),
+			db.prepare(TWITCH_LIVE_COUNT_SQL).bind(PLATFORM_YOUTUBE),
+			db.prepare(TWITCH_DISCOVERY_24H_SQL).bind(PLATFORM_TWITCH),
+			db.prepare(TWITCH_MAX_SAMPLE_SQL).bind(PLATFORM_TWITCH)
+		]);
+
+	const channelsLiveByPlatform = {
+		twitch: countFromBatchRow(twitchLiveBatch as D1BatchResult),
+		kick: countFromBatchRow(kickLiveBatch as D1BatchResult),
+		youtube: countFromBatchRow(youtubeLiveBatch as D1BatchResult)
+	};
 
 	return {
-		channels_live: countFromBatchRow(liveBatch as D1BatchResult),
+		channels_live:
+			channelsLiveByPlatform.twitch +
+			channelsLiveByPlatform.kick +
+			channelsLiveByPlatform.youtube,
+		channels_live_by_platform: channelsLiveByPlatform,
 		discovery_new_24h: countFromBatchRow(discoveryBatch as D1BatchResult),
 		ingest_lag_seconds: {
 			twitch: ingestLagSecondsFromMaxSample(maxSampleFromBatchRow(sampleBatch as D1BatchResult))

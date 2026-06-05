@@ -67,7 +67,7 @@ import { isDevAdminRouteAllowed } from './dev/admin-guard';
 import { clearDevSeedChannels } from './dev/clear-seed';
 import { seedDevRankings } from './dev/seed-rankings';
 import { recordDiscoverySeed, recordKickDiscoverySeed } from './discovery/seed';
-import { rankingQueryOptionsFromEnv } from './ranking/rollup-queries';
+import { rankingQueryOptionsForPlatform } from './ranking/rollup-queries';
 import { isAdminPostPath, isAdminRankingsGetPath, requireAdminApiKey } from './admin/auth';
 import { ingestNonFatalError, ingestWarn } from './log';
 import { cronToMessages } from './cron-messages';
@@ -436,7 +436,7 @@ async function publicRankingsChannels(request: Request, env: Env): Promise<Respo
 	if (!parsed.ok) {
 		return rankingsQueryErrorResponse(parsed.error);
 	}
-	const eligibility = rankingQueryOptionsFromEnv(env);
+	const eligibility = rankingQueryOptionsForPlatform(env, parsed.platform);
 	const cacheKey = rankingsChannelsCacheKey({
 		platform: parsed.platform,
 		period: parsed.period,
@@ -467,7 +467,7 @@ async function publicRankingsGames(request: Request, env: Env): Promise<Response
 	if (!parsed.ok) {
 		return rankingsQueryErrorResponse(parsed.error);
 	}
-	const eligibility = rankingQueryOptionsFromEnv(env);
+	const eligibility = rankingQueryOptionsForPlatform(env, parsed.platform);
 	const cacheKey = rankingsGamesCacheKey({
 		platform: parsed.platform,
 		period: parsed.period,
@@ -579,7 +579,7 @@ async function publicGameDetail(
 	if (!query.ok) {
 		return rankingsQueryErrorResponse(query.error);
 	}
-	const rankingOpts = rankingQueryOptionsFromEnv(env);
+	const rankingOpts = rankingQueryOptionsForPlatform(env, query.platform);
 	const body = await buildGameDetailResponse(
 		requireDb(env),
 		{

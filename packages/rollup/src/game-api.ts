@@ -116,7 +116,9 @@ export async function buildGameTopChannels(
          AND ss.started_at >= date('now', '-' || ? || ' days')
        GROUP BY c.id
        HAVING SUM(r.airtime_minutes) >= ?
-       ORDER BY hours_watched DESC
+       ORDER BY hours_watched DESC,
+                (SUM(r.hours_watched) * 60.0 / NULLIF(SUM(r.airtime_minutes), 0)) DESC,
+                c.slug ASC
        LIMIT ?`
 		)
 		.bind(opts.platform, opts.gameSlug, String(days), String(days), minAirtime, limit)

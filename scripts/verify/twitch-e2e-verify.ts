@@ -129,10 +129,34 @@ async function ingestHealthStep(): Promise<boolean> {
 	let detail = 'GET /health ok';
 	try {
 		const res = await fetch(`${INGEST_BASE}/health`, { signal: AbortSignal.timeout(5000) });
-		const body = (await res.text()).slice(0, 120);
-		detail = res.ok ? `GET /health ok (${body || 'empty body'})` : `HTTP ${res.status}`;
+		const raw = await res.text();
+		const snippet = raw.slice(0, 120);
+		detail = res.ok ? `GET /health ok (${snippet || 'empty body'})` : `HTTP ${res.status}`;
 		if (!res.ok) {
 			log({ name: 'ingest health', pass: false, detail });
+			return false;
+		}
+		let parsed: { status?: string; db?: string } | null = null;
+		try {
+			parsed = JSON.parse(raw) as { status?: string; db?: string };
+		} catch {
+			log({ name: 'ingest health', pass: false, detail: 'invalid JSON from /health' });
+			return false;
+		}
+		if (parsed.status === 'degraded') {
+			log({
+				name: 'ingest health',
+				pass: false,
+				detail: `status degraded — ingest lag > threshold (${snippet})`
+			});
+			return false;
+		}
+		if (parsed.status !== 'ok' || parsed.db !== 'connected') {
+			log({
+				name: 'ingest health',
+				pass: false,
+				detail: `status=${parsed.status ?? 'unknown'} db=${parsed.db ?? 'unknown'}`
+			});
 			return false;
 		}
 	} catch (err) {
@@ -160,7 +184,7 @@ async function runProofMatrix(): Promise<void> {
 	log({
 		name: 'd1:verify-schema (local)',
 		pass: schema.ok,
-		detail: schema.ok ? 'migrations 0001–0008 tables/columns/indexes ok' : schema.output.slice(-500)
+		detail: schema.ok ? 'migrations 0001–0009 tables/columns/indexes ok' : schema.output.slice(-500)
 	});
 	if (!schema.ok) {
 		printSummary();

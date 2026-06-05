@@ -30,7 +30,10 @@ export const GET: RequestHandler = async ({ params, url, fetch, platform }) => {
 		return channelQueryErrorResponse(query.error);
 	}
 
-	if (db && (query.platform === 'twitch' || query.platform === 'kick')) {
+	if (
+		db &&
+		(query.platform === 'twitch' || query.platform === 'kick' || query.platform === 'youtube')
+	) {
 		const body = await buildChannelDetailResponse(db, {
 			platform: query.platform,
 			slug: query.slug,

@@ -62,7 +62,7 @@ async function loadFromD1(
 	cfEnv: ServerLoadContext['cfEnv']
 ): Promise<ChannelRankingsLoad> {
 	const apiPeriod = parseRankingPeriod(periodForApi(period));
-	const eligibility = webRankingEligibility(cfEnv);
+	const eligibility = webRankingEligibility(cfEnv, platform);
 	const body = await buildRankingsChannelsResponse(db, {
 		platform,
 		period: apiPeriod,

@@ -23,7 +23,9 @@ export {
 } from './ranking-queries';
 export {
 	rankingMinAirtimeMinutesFromRankingEnv,
+	rankingQueryOptionsForPlatform,
 	rankingQueryOptionsFromEnv,
+	minViewersForPlatformFromRankingEnv,
 	minViewersFromRankingEnv,
 	type RankingEligibilityEnv
 } from './ranking-env';

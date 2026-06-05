@@ -88,7 +88,7 @@ export function channelsPageSubtitle(platform: PlatformId, source: RankingsSourc
 }
 
 export const platforms: { id: PlatformId; label: string }[] = [
-	{ id: 'all', label: 'All platforms' },
+	{ id: 'all', label: 'All (Twitch default)' },
 	{ id: 'twitch', label: 'Twitch' },
 	{ id: 'kick', label: 'Kick' },
 	{ id: 'youtube', label: 'YouTube' }

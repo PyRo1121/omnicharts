@@ -34,8 +34,9 @@ export type OverviewLoadOptions = {
 
 type IngestHealth = {
 	status: string;
-	tracked_channels: { twitch: number };
+	tracked_channels: { twitch: number; kick: number; youtube: number };
 	channels_live: number;
+	channels_live_by_platform?: { twitch: number; kick: number; youtube: number };
 	discovery_new_24h: number;
 };
 
@@ -155,13 +156,50 @@ async function loadRollupPlatformOverview(
 				source: channels.source
 			};
 
-	const stats: OverviewStat[] = [...rollupPlatformHealthUnavailableStats(), rankedStat];
+	let healthStats = rollupPlatformHealthUnavailableStats();
+	let channelsLive: number | null = null;
+	let ingestStatus: string | null = null;
+
+	if (rankingsLive) {
+		try {
+			const healthRes = await ctx.fetch(`${getIngestBaseUrl()}/health`, {
+				headers: { accept: 'application/json' }
+			});
+			if (healthRes.ok) {
+				const health = (await healthRes.json()) as IngestHealth;
+				const tracked = health.tracked_channels[platform];
+				const live =
+					health.channels_live_by_platform?.[platform] ??
+					(platform === 'kick' || platform === 'youtube' ? 0 : health.channels_live);
+				healthStats = [
+					{
+						label: 'Channels tracked',
+						value: formatCount(tracked),
+						hint: `${platform === 'kick' ? 'Kick' : 'YouTube'} ingest state tracked`,
+						source: 'live'
+					},
+					{
+						label: 'Live now',
+						value: formatCount(live),
+						hint: 'From latest directory sweep',
+						source: 'live'
+					}
+				];
+				channelsLive = live;
+				ingestStatus = health.status;
+			}
+		} catch {
+			/* keep unavailable health stats */
+		}
+	}
+
+	const stats: OverviewStat[] = [...healthStats, rankedStat];
 
 	return {
 		source: rankingsMock ? 'mock' : rankingsLive ? 'live' : 'unavailable',
-		ingestStatus: null,
+		ingestStatus,
 		stats,
-		channelsLive: null,
+		channelsLive,
 		topChannelName: channels.rows[0]?.displayName ?? null,
 		topGameName: games.rows[0]?.name ?? null,
 		channelRankings: channels,
