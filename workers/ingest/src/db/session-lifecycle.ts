@@ -1,4 +1,4 @@
-import { PLATFORM_TWITCH } from '@omnicharts/domain';
+import { PLATFORM_TWITCH, type PlatformId } from '@omnicharts/domain';
 import { chunkArray, D1_BATCH_MAX_STATEMENTS, runD1Batches } from './d1-batch';
 
 export type StaleSessionClose = {
@@ -27,9 +27,10 @@ export async function batchCloseStaleOpenSessionsForChannels(
 	await runD1Batches(db, statements, batchOpts);
 }
 
-/** Close open stream_sessions for Twitch channels not seen live in a poll/reconcile batch. */
+/** Close open stream_sessions for channels not seen live in a poll/reconcile batch. */
 export async function closeOpenSessionsForPlatformChannelIds(
 	db: D1Database,
+	platformId: PlatformId,
 	platformChannelIds: string[],
 	endedAt: string,
 	batchOpts?: { env?: Env; scope?: string }
@@ -47,11 +48,27 @@ export async function closeOpenSessionsForPlatformChannelIds(
            SELECT id FROM channels WHERE platform_id = ? AND platform_channel_id IN (${placeholders})
          )`
 				)
-				.bind(endedAt, PLATFORM_TWITCH, ...chunk)
+				.bind(endedAt, platformId, ...chunk)
 		);
 	}
 
 	await runD1Batches(db, statements, batchOpts);
+}
+
+/** @deprecated Prefer `closeOpenSessionsForPlatformChannelIds(db, PLATFORM_TWITCH, …)`. */
+export async function closeOpenSessionsForTwitchPlatformChannelIds(
+	db: D1Database,
+	platformChannelIds: string[],
+	endedAt: string,
+	batchOpts?: { env?: Env; scope?: string }
+): Promise<void> {
+	return closeOpenSessionsForPlatformChannelIds(
+		db,
+		PLATFORM_TWITCH,
+		platformChannelIds,
+		endedAt,
+		batchOpts
+	);
 }
 
 /** Close other open sessions when Helix stream id changes (mirrors EventSub stream.online). */

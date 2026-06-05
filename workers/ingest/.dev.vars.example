@@ -15,6 +15,13 @@ TWITCH_EVENTSUB_SECRET=
 # Public HTTPS :443 — e.g. cloudflared tunnel + /webhooks/twitch/eventsub
 TWITCH_EVENTSUB_CALLBACK_URL=
 
+# --- Kick (Phase 3) — register at https://dev.kick.com/ (ADR-003) ---
+# Omit until credentials exist; poll_kick_tracked no-ops with NEEDS_API.
+# KICK_CLIENT_ID=
+# KICK_CLIENT_SECRET=
+# KICK_MAX_TRACKED=800
+# KICK_MIN_VIEWERS=2
+
 # --- Optional local overrides (omit for wrangler auto-defaults) ---
 # INGEST_COVERAGE_MODE=shards_only
 # LIVE_SWEEP_MAX_PAGES=3

@@ -4,7 +4,9 @@
  * @see docs/adr/0003-kick-ingest-strategy.md
  */
 
-/** Reserved queue path — implementation follows Twitch freeze gate (M5). */
-export async function runKickPollPlatform(_env: Env): Promise<void> {
-	// Phase 3: GET /public/v1/livestreams in ≤50-ID batches
+import { runKickCatalogPoll } from './poll';
+
+/** Queue `poll_kick_tracked` handler — GET /public/v1/livestreams in ≤50-ID batches. */
+export async function runKickPollPlatform(env: Env): Promise<void> {
+	await runKickCatalogPoll(env);
 }

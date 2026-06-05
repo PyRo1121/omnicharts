@@ -129,6 +129,10 @@ Default **800 points/min per client ID**; most Helix calls = 1 point. Use `Ratel
 
 Official **Kick Dev Public API** only — no site scraping ([ADR-003](./adr/0003-kick-ingest-strategy.md)). Register at [dev.kick.com](https://dev.kick.com/); accept [Developer ToS](https://dev.kick.com/terms-of-service). Docs: [docs.kick.com](https://docs.kick.com/), [KickDevDocs](https://github.com/KickEngineering/KickDevDocs), OpenAPI: `https://api.kick.com/swagger/doc.yaml`.
 
+**Phase 3 ingest (2026-06):** Tracked-catalog poll shipped in `workers/ingest/src/kick/` — `poll_kick_tracked` → `GET /public/v1/livestreams` (≤50 `broadcaster_user_id`/req). Without `KICK_CLIENT_ID` / `KICK_CLIENT_SECRET`, queue handler no-ops with `NEEDS_API`. Discovery (`GET /public/v2/categories` + category livestreams) and webhooks remain Phase 3 follow-ups.
+
+**Research grounding (2026-06-05):** Exa → [docs.kick.com/apis/livestreams](https://docs.kick.com/apis/livestreams), [KickDevDocs livestreams](https://github.com/KickEngineering/KickDevDocs/blob/main/apis/livestreams.md), [OAuth flow](https://github.com/KickEngineering/KickDevDocs/blob/main/getting-started/generating-tokens-oauth2-flow.md). Context7 quota exceeded — no official npm SDK in repo; ingest uses direct `fetch` (Helix-parity). Rate limits still unpublished; default throttle `KICK_REQUESTS_PER_MIN_BUDGET=60` (~1 req/s); **429** → honour `Retry-After` backoff.
+
 **Historical data:** No API for past minute-level concurrent viewers. Ingest from first observation forward only.
 
 ### APIs (OmniCharts)

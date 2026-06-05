@@ -6,6 +6,7 @@ import {
 } from './config';
 import { TwitchHelixClient } from './helix';
 import { listRecentlyTrackedPlatformIds } from '../db/twitch';
+import { PLATFORM_TWITCH } from '@omnicharts/domain';
 import { closeOpenSessionsForPlatformChannelIds } from '../db/session-lifecycle';
 import { ingestHelixStreamsBatch } from './ingest-stream';
 import { helixBudgetAllowsFetch, helixBudgetReconcileBatches } from './rate-limit';
@@ -70,7 +71,7 @@ export async function runTwitchReconcileRecent(
 		stats.liveFound += liveStreams.length;
 		const archiveRows = await ingestHelixStreamsBatch(env, liveStreams, minViewers);
 		stats.samplesWritten += archiveRows.length;
-		await closeOpenSessionsForPlatformChannelIds(db, offlineIds, now, {
+		await closeOpenSessionsForPlatformChannelIds(db, PLATFORM_TWITCH, offlineIds, now, {
 			env,
 			scope: 'reconcile:offline_close_sessions'
 		});

@@ -1,3 +1,4 @@
+import { PLATFORM_TWITCH } from '@omnicharts/domain';
 import { describe, it, expect, vi } from 'vitest';
 import {
 	batchCloseStaleOpenSessionsForChannels,
@@ -15,7 +16,7 @@ describe('session-lifecycle', () => {
 		const db = { prepare, batch } as unknown as D1Database;
 
 		const ids = Array.from({ length: 75 }, (_, i) => String(i));
-		await closeOpenSessionsForPlatformChannelIds(db, ids, '2026-06-03T00:00:00.000Z', {
+		await closeOpenSessionsForPlatformChannelIds(db, PLATFORM_TWITCH, ids, '2026-06-03T00:00:00.000Z', {
 			scope: 'test'
 		});
 

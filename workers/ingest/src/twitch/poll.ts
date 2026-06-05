@@ -1,3 +1,4 @@
+import { PLATFORM_TWITCH } from '@omnicharts/domain';
 import { maxTrackedFromEnv, minViewersFromEnv, STREAMS_BATCH_SIZE } from './config';
 import { TwitchHelixClient } from './helix';
 import {
@@ -109,7 +110,7 @@ export async function runTwitchPollBatch(
 		env,
 		scope: 'poll:offline_last_seen'
 	});
-	await closeOpenSessionsForPlatformChannelIds(db, offlineIds, now, {
+	await closeOpenSessionsForPlatformChannelIds(db, PLATFORM_TWITCH, offlineIds, now, {
 		env,
 		scope: 'poll:offline_close_sessions'
 	});

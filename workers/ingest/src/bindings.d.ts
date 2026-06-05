@@ -14,4 +14,9 @@ declare interface Env {
 	SAMPLE_ARCHIVE_MIN_ROWS?: string;
 	/** Max EventSub lifecycle subs to create per sync run (default 125). See wrangler.jsonc. */
 	EVENTSUB_SYNC_MAX_CHANNELS_PER_RUN?: string;
+	/** Kick Dev Public API — Phase 3 (ADR-003). Omit locally until dev.kick.com app registered. */
+	KICK_CLIENT_ID?: string;
+	KICK_CLIENT_SECRET?: string;
+	KICK_MAX_TRACKED?: string;
+	KICK_MIN_VIEWERS?: string;
 }

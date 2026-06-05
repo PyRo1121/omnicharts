@@ -16,6 +16,7 @@ import { runTwitchGamePass } from './twitch/game-pass';
 import { runTwitchSweepAndGamePass } from './twitch/sweep-game-pass';
 import { runTwitchReconcileRecent } from './twitch/reconcile';
 import { runTwitchPollPlatform } from './twitch/poll-platform';
+import { runKickPollPlatform } from './kick/poll-platform';
 import { checkPublicRateLimit } from './http/rate-limit';
 import { corsAllowOrigin } from './http/cors';
 import {
@@ -191,8 +192,10 @@ async function handleQueueMessage(payload: IngestQueueMessage, env: Env): Promis
 			// Phase 3: Kick/YouTube poll_platform handlers — no-op until ADR-003 ingest ships.
 			break;
 		case 'poll_kick_tracked':
+			await runKickPollPlatform(env);
+			break;
 		case 'poll_youtube_tracked':
-			// Phase 3: tracked catalog poll — no-op until Kick/YouTube ingest (see kick/poll-platform.ts).
+			// Phase 3: YouTube tracked catalog poll — not yet implemented.
 			break;
 		case 'poll_twitch_sweep':
 			await runTwitchSweepAndGamePass(env);
