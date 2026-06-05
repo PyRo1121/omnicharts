@@ -43,6 +43,7 @@ export type GameDetailResponse = {
 
 export type GameDetailBuildOpts = {
 	minAirtimeMinutes?: number;
+	minAverageViewers?: number;
 	topChannelsLimit?: number;
 };
 
@@ -92,6 +93,7 @@ export async function buildGameTopChannels(
 		gameSlug: string;
 		period: RankingPeriod;
 		minAirtimeMinutes?: number;
+		minAverageViewers?: number;
 		limit?: number;
 	}
 ): Promise<GameTopChannelItem[]> {
@@ -99,6 +101,7 @@ export async function buildGameTopChannels(
 
 	const days = periodToDays(opts.period);
 	const minAirtime = opts.minAirtimeMinutes ?? MIN_RANKING_AIRTIME_MINUTES;
+	const minAv = opts.minAverageViewers ?? 0;
 	const limit = opts.limit ?? 10;
 
 	const { results } = await db
@@ -116,12 +119,13 @@ export async function buildGameTopChannels(
          AND ss.started_at >= date('now', '-' || ? || ' days')
        GROUP BY c.id
        HAVING SUM(r.airtime_minutes) >= ?
+         AND (SUM(r.hours_watched) * 60.0 / NULLIF(SUM(r.airtime_minutes), 0)) >= ?
        ORDER BY hours_watched DESC,
                 (SUM(r.hours_watched) * 60.0 / NULLIF(SUM(r.airtime_minutes), 0)) DESC,
                 c.slug ASC
        LIMIT ?`
 		)
-		.bind(opts.platform, opts.gameSlug, String(days), String(days), minAirtime, limit)
+		.bind(opts.platform, opts.gameSlug, String(days), String(days), minAirtime, minAv, limit)
 		.all<TopChannelQueryRow>();
 
 	return (results ?? []).map((row, index) => ({
@@ -187,6 +191,7 @@ export async function buildGameDetailResponse(
 		gameSlug: game.slug,
 		period: opts.period,
 		minAirtimeMinutes: detailOpts?.minAirtimeMinutes,
+		minAverageViewers: detailOpts?.minAverageViewers,
 		limit: detailOpts?.topChannelsLimit
 	});
 

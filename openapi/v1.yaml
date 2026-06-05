@@ -280,6 +280,9 @@ components:
           type: number
         hours_watched:
           type: number
+        box_art_url:
+          type: [string, 'null']
+          format: uri
 
     GameRankingResponse:
       type: object
@@ -385,6 +388,30 @@ components:
           items:
             $ref: '#/components/schemas/DailyMetricPoint'
 
+    GameDailyMetricPoint:
+      type: object
+      required:
+        - date
+        - hours_watched
+        - average_viewers
+        - peak_viewers
+        - airtime_hours
+        - live_channels
+      properties:
+        date:
+          type: string
+          format: date
+        hours_watched:
+          type: number
+        average_viewers:
+          type: number
+        peak_viewers:
+          type: integer
+        airtime_hours:
+          type: number
+        live_channels:
+          type: integer
+
     GameDetailResponse:
       type: object
       properties:
@@ -401,7 +428,7 @@ components:
         daily:
           type: array
           items:
-            $ref: '#/components/schemas/DailyMetricPoint'
+            $ref: '#/components/schemas/GameDailyMetricPoint'
         top_channels:
           type: array
           description: Top tracked channels for this game in the period (hours watched)

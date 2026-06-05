@@ -7,6 +7,8 @@ import {
 	periodToDays,
 	type RankingPeriod
 } from '@omnicharts/domain';
+import { MIN_RANKING_AIRTIME_MINUTES } from './eligibility';
+import { rankingQueryOptionsForPlatform, type RankingEligibilityEnv } from './ranking-env';
 import { getTopChannelsByHoursWatched } from './top-channels';
 
 export type RankingsChannelsItem = {
@@ -63,15 +65,22 @@ export async function buildRankingsChannelsResponse(
 		limit: number;
 		minAverageViewers?: number;
 		minAirtimeMinutes?: number;
-	}
+	},
+	env?: RankingEligibilityEnv
 ): Promise<RankingsChannelsResponse> {
 	const days = periodToDays(opts.period);
+	const eligibility = env
+		? rankingQueryOptionsForPlatform(env, opts.platform)
+		: {
+				minAirtimeMinutes: opts.minAirtimeMinutes ?? MIN_RANKING_AIRTIME_MINUTES,
+				minAverageViewers: opts.minAverageViewers ?? 0
+			};
 	const rankings = await getTopChannelsByHoursWatched(db, {
 		platformId: opts.platform,
 		days,
 		limit: opts.limit,
-		minAverageViewers: opts.minAverageViewers ?? 0,
-		minAirtimeMinutes: opts.minAirtimeMinutes
+		minAverageViewers: eligibility.minAverageViewers,
+		minAirtimeMinutes: eligibility.minAirtimeMinutes
 	});
 
 	return {

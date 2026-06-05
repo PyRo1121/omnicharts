@@ -31,7 +31,10 @@ export const GET: RequestHandler = async ({ params, url, fetch, platform }) => {
 				slug: query.slug,
 				period: query.period
 			},
-			{ minAirtimeMinutes: eligibility.minAirtimeMinutes }
+			{
+				minAirtimeMinutes: eligibility.minAirtimeMinutes,
+				minAverageViewers: eligibility.minAverageViewers
+			}
 		);
 		if (!body) {
 			return Response.json(

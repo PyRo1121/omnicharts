@@ -58,6 +58,7 @@ describe('loadOverview', () => {
 						kick: 'missing_credentials',
 						youtube: 'missing_credentials',
 						channels_live: 300,
+						channels_live_by_platform: { twitch: 42, kick: 200, youtube: 58 },
 						discovery_new_24h: 5
 					})
 				});
@@ -107,6 +108,8 @@ describe('loadOverview', () => {
 		expect(load.topChannelName).toBe('Alpha');
 		expect(load.topGameName).toBe('VALORANT');
 		expect(load.stats.some((s) => s.label === 'Channels tracked')).toBe(true);
+		expect(load.stats.find((s) => s.label === 'Live now')?.value).toBe('42');
+		expect(load.channelsLive).toBe(42);
 	});
 
 	it('returns unavailable when health fails (default)', async () => {

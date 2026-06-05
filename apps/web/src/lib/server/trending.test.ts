@@ -26,6 +26,10 @@ describe('trendingFromRankings', () => {
 		expect(kickOnly.length).toBeGreaterThan(0);
 	});
 
+	it('returns empty demo fallback when platform has no mock entries', () => {
+		expect(trendingFromRankings([], { platform: 'youtube', mockEnabled: true })).toEqual([]);
+	});
+
 	it('caps at five entries', () => {
 		expect(trendingFromRankings(topChannels)).toHaveLength(5);
 	});

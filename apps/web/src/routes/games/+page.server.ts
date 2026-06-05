@@ -13,19 +13,9 @@ export const load: PageServerLoad = async ({ fetch, url, setHeaders, platform: c
 	const platform = parseUiPlatform(url.searchParams.get('platform'));
 	const mockEnabled = isDevMockEnabled(url.searchParams.get('demo'));
 
-	if (platform === 'all') {
-		return {
-			source: 'live' as const,
-			period,
-			periodNote,
-			platform,
-			platformUnsupported: true,
-			updatedAt: null,
-			rows: []
-		};
-	}
-
-	const rankings = await loadGameRankings(ctx, platform, period, 20, mockEnabled);
+	const rankingsPlatform: Exclude<PlatformId, 'all'> =
+		platform === 'all' ? 'twitch' : platform;
+	const rankings = await loadGameRankings(ctx, rankingsPlatform, period, 20, mockEnabled);
 	return {
 		...rankings,
 		period,

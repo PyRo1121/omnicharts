@@ -290,6 +290,8 @@ export async function loadOverview(
 			loadTwitchGameRankings(ctx, period, gameLimit, mockEnabled)
 		]);
 
+		const twitchLive =
+			health.channels_live_by_platform?.twitch ?? health.channels_live;
 		const stats: OverviewStat[] = [
 			{
 				label: 'Channels tracked',
@@ -299,7 +301,7 @@ export async function loadOverview(
 			},
 			{
 				label: 'Live now',
-				value: formatCount(health.channels_live),
+				value: formatCount(twitchLive),
 				hint: 'From latest directory sweep',
 				source: 'live'
 			},
@@ -315,7 +317,7 @@ export async function loadOverview(
 			source: 'live',
 			ingestStatus: health.status,
 			stats,
-			channelsLive: health.channels_live,
+			channelsLive: twitchLive,
 			topChannelName: channels.rows[0]?.displayName ?? null,
 			topGameName: games.rows[0]?.name ?? null,
 			channelRankings: channels,

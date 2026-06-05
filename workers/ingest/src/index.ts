@@ -587,7 +587,10 @@ async function publicGameDetail(
 			slug: query.slug,
 			period: query.period
 		},
-		{ minAirtimeMinutes: rankingOpts.minAirtimeMinutes }
+		{
+			minAirtimeMinutes: rankingOpts.minAirtimeMinutes,
+			minAverageViewers: rankingOpts.minAverageViewers
+		}
 	);
 	if (!body) {
 		return Response.json(

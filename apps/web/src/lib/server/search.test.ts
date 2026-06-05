@@ -114,15 +114,18 @@ describe('enrichSearchResultsWithRollups', () => {
 		expect(enriched[0]?.hoursWatched7d).toBe('842');
 	});
 
-	it('skips rollup enrichment for youtube', async () => {
-		const fetchFn = vi.fn();
+	it('enriches youtube rows with 7d HW when channel detail exists', async () => {
+		const fetchFn = vi.fn().mockResolvedValue({
+			ok: true,
+			status: 200,
+			json: async () => channelDetailBody('youtube', 512)
+		});
 		const ctx = testLoadContext(fetchFn as typeof fetch);
 
 		const enriched = await enrichSearchResultsWithRollups(ctx, [
 			{ ...kickRow, platform: 'youtube', slug: 'mrbeast', displayName: 'MrBeast' }
 		]);
 
-		expect(enriched[0]?.hoursWatched7d).toBeNull();
-		expect(fetchFn).not.toHaveBeenCalled();
+		expect(enriched[0]?.hoursWatched7d).toBe('512');
 	});
 });

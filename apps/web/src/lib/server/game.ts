@@ -146,7 +146,10 @@ export async function loadGameDetail(
 				const body = await buildGameDetailResponse(
 					ctx.db,
 					{ platform, slug, period: apiPeriod },
-					{ minAirtimeMinutes: eligibility.minAirtimeMinutes }
+					{
+						minAirtimeMinutes: eligibility.minAirtimeMinutes,
+						minAverageViewers: eligibility.minAverageViewers
+					}
 				);
 				if (!body) return emptyGameLoad('not_found', slug, platform, period);
 				return mapGameBody(body as IngestGameResponse, period);

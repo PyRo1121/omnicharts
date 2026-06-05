@@ -4,7 +4,7 @@ import { getIngestBaseUrl } from '$lib/server/ingest';
 import { loadChannelDetail } from '$lib/server/channel';
 import type { ServerLoadContext } from '$lib/server/load-context';
 
-const SEARCH_HW_PLATFORMS = new Set<PlatformId>(['twitch', 'kick']);
+const SEARCH_HW_PLATFORMS = new Set<PlatformId>(['twitch', 'kick', 'youtube']);
 
 export type SearchResultRow = {
 	id: string;
