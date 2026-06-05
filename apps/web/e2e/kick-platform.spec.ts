@@ -12,11 +12,23 @@ async function ingestReachable(): Promise<boolean> {
 }
 
 test.describe('Kick platform UX (docs/09, docs/16)', () => {
-	test('homepage ?platform=kick shows honest Phase 3 banner', async ({ page }) => {
+	test('homepage ?platform=kick shows rankings UI without Phase 3 banner', async ({ page }) => {
 		const res = await page.goto('/?platform=kick');
 		expect(res?.status()).toBe(200);
-		await expect(page.getByText(/Kick rankings ship in Phase 3/i)).toBeVisible();
-		await expect(page.getByText(/Switch to Twitch for live[\s\S]*leaderboards/i)).toBeVisible();
+
+		await expect(page.getByText(/Kick rankings ship in Phase 3/i)).not.toBeVisible();
+		await expect(page.getByText(/Switch to Twitch for live[\s\S]*leaderboards/i)).not.toBeVisible();
+
+		await expect(page.getByRole('heading', { name: 'Top streamers' })).toBeVisible();
+
+		const leaderboard = page.locator('table tbody tr').first();
+		const emptyState = page.getByText(
+			/No channel rollups yet for this period|Channel rankings unavailable/i
+		);
+		await expect(leaderboard.or(emptyState)).toBeVisible({ timeout: 10_000 });
+
+		const statusLine = page.getByText(/Live Kick rollups ·|Ingest unavailable/i);
+		await expect(statusLine).toBeVisible();
 	});
 
 	test('search page accepts platform=kick query param', async ({ page }) => {

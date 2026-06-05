@@ -22,6 +22,10 @@
 		data.channelRankings.source === 'mock' || data.gameRankings.source === 'mock'
 	);
 
+	const liveRollupPlatformName = $derived(
+		platforms.find((p) => p.id === searchPlatformId(data.platform))?.label ?? 'Twitch'
+	);
+
 	const channelRows = $derived(
 		data.platformUnsupported
 			? []
@@ -147,7 +151,7 @@
 		{:else if data.channelRankings.source === 'unavailable' || data.gameRankings.source === 'unavailable'}
 			Ingest unavailable — start <code class="text-[10px]">bun run dev:ingest</code> and run checkpoint for rollups
 		{:else if data.channelRankings.source === 'live' || data.gameRankings.source === 'live'}
-			Live Twitch rollups · {data.period}
+			Live {liveRollupPlatformName} rollups · {data.period}
 		{/if}
 	</p>
 </div>
