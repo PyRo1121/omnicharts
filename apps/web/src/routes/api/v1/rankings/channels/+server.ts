@@ -4,7 +4,8 @@ import {
 	csvAttachmentHeaders,
 	csvDownloadFilename,
 	parseRankingsChannelsQuery,
-	parseResponseFormat
+	parseResponseFormat,
+	rankingsChannelsQueryErrorResponse
 } from '@omnicharts/rollup';
 import { ROLLUP_CACHE_CONTROL } from '$lib/server/cache';
 import { getIngestBaseUrl } from '$lib/server/ingest';
@@ -13,33 +14,12 @@ import { getD1 } from '$lib/server/d1';
 import { webRankingEligibility } from '$lib/server/ranking-env';
 import type { RequestHandler } from './$types';
 
-type RankingsQueryError =
-	| 'invalid_period'
-	| 'invalid_limit'
-	| 'invalid_platform'
-	| 'invalid_format'
-	| 'invalid_language';
-
-function rankingsQueryErrorResponse(error: RankingsQueryError): Response {
-	const messages = {
-		invalid_period: 'period must be one of 24h, 7d, 30d, 90d',
-		invalid_limit: 'limit must be a positive integer',
-		invalid_platform: 'platform must be twitch, kick, or youtube',
-		invalid_format: 'format must be json or csv',
-		invalid_language: 'language must be a valid BCP 47 stream tag (e.g. en, es, zh-tw)'
-	} as const;
-	return Response.json(
-		{ error: { code: error, message: messages[error] } },
-		{ status: 400, headers: { 'cache-control': 'no-store' } }
-	);
-}
-
 /** Rollup rankings — D1 on Pages; ingest proxy fallback (openapi GET /v1/rankings/channels). */
 export const GET: RequestHandler = async ({ url, fetch, platform }) => {
 	const db = getD1(platform);
 	const formatParsed = parseResponseFormat(url);
 	if (!formatParsed.ok) {
-		return rankingsQueryErrorResponse(formatParsed.error);
+		return rankingsChannelsQueryErrorResponse(formatParsed.error, { cacheControl: 'no-store' });
 	}
 	const parsed = parseRankingsChannelsQuery(url);
 
@@ -74,7 +54,7 @@ export const GET: RequestHandler = async ({ url, fetch, platform }) => {
 	}
 
 	if (!parsed.ok) {
-		return rankingsQueryErrorResponse(parsed.error);
+		return rankingsChannelsQueryErrorResponse(parsed.error, { cacheControl: 'no-store' });
 	}
 
 	const target = new URL(`${getIngestBaseUrl()}/v1/rankings/channels`);

@@ -15,12 +15,11 @@
 		platforms,
 		searchPlatformId,
 		platformQueryParam,
-		phase3UnsupportedMessage,
 		homeRankingsFootnote,
 		channelRankingsEmptyMessage,
 		gameRankingsEmptyMessage,
 		type Period,
-		type PlatformId
+		type UiPlatformFilter
 	} from '$lib/ui/platform.svelte';
 
 	let { data } = $props();
@@ -29,13 +28,9 @@
 		platforms.find((p) => p.id === searchPlatformId(data.platform))?.label ?? 'Twitch'
 	);
 
-	const channelRows = $derived(
-		data.platformUnsupported ? [] : channelLeaderboardRows(data.channelRankings.rows)
-	);
+	const channelRows = $derived(channelLeaderboardRows(data.channelRankings.rows));
 
-	const gameRows = $derived(
-		data.platformUnsupported ? [] : gameLeaderboardRows(data.gameRankings.rows)
-	);
+	const gameRows = $derived(gameLeaderboardRows(data.gameRankings.rows));
 
 	const footnoteMode = $derived(
 		homeRankingsFootnote(data.channelRankings.source, data.gameRankings.source)
@@ -43,8 +38,6 @@
 
 	const channelEmpty = $derived(
 		channelRankingsEmptyMessage(
-			data.platformUnsupported,
-			data.platform,
 			channelRows.length > 0,
 			data.channelRankings.source,
 			data.period
@@ -52,16 +45,10 @@
 	);
 
 	const gameEmpty = $derived(
-		gameRankingsEmptyMessage(
-			data.platformUnsupported,
-			data.platform,
-			gameRows.length > 0,
-			data.gameRankings.source,
-			data.period
-		)
+		gameRankingsEmptyMessage(gameRows.length > 0, data.gameRankings.source, data.period)
 	);
 
-	function homeQuery(platform: PlatformId, period: Period): string {
+	function homeQuery(platform: UiPlatformFilter, period: Period): string {
 		const q = new URLSearchParams();
 		q.set('period', period);
 		if (platform === 'kick' || platform === 'youtube' || platform === 'all') {
@@ -70,7 +57,7 @@
 		return `/?${q}`;
 	}
 
-	function platformHref(id: PlatformId): string {
+	function platformHref(id: UiPlatformFilter): string {
 		return homeQuery(id, data.period);
 	}
 
@@ -111,8 +98,7 @@
 			</div>
 		</div>
 
-		{#if !data.platformUnsupported}
-			<ul class="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+		<ul class="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
 				{#each data.overview.stats as stat (stat.label)}
 					<li
 						class="rounded-xl border border-[var(--color-oc-border-subtle)] bg-[var(--color-oc-bg-elevated)] px-4 py-3 oc-glow-accent"
@@ -133,8 +119,7 @@
 						<p class="mt-0.5 text-xs text-[var(--color-oc-text-muted)]">{stat.hint}</p>
 					</li>
 				{/each}
-			</ul>
-		{/if}
+		</ul>
 	</div>
 </section>
 
@@ -167,14 +152,6 @@
 		</p>
 	{/if}
 </div>
-
-{#if data.platformUnsupported}
-	<p
-		class="mt-4 rounded-lg border border-[var(--color-oc-border)] bg-[var(--color-oc-bg-elevated)] px-4 py-3 text-sm text-[var(--color-oc-text-muted)]"
-	>
-		{phase3UnsupportedMessage(data.platform)}
-	</p>
-{/if}
 
 <div class="mt-8 grid gap-8 xl:grid-cols-2">
 	<section>

@@ -16,7 +16,7 @@
 		rankingLanguages,
 		routeWithPlatform,
 		type Period,
-		type PlatformId
+		type UiPlatformFilter
 	} from '$lib/ui/platform.svelte';
 
 	let { data } = $props();
@@ -39,7 +39,7 @@
 			: null
 	);
 
-	function platformHref(id: PlatformId): string {
+	function platformHref(id: UiPlatformFilter): string {
 		return routeWithPlatform('/channels', id, routeQuery());
 	}
 
@@ -70,12 +70,7 @@
 	<PlatformFilter {platforms} value={data.platform} hrefFor={platformHref} />
 </div>
 
-{#if data.platformUnsupported}
-	<p class="mt-4 text-sm text-[var(--color-oc-text-muted)]">
-		{data.platform === 'kick' ? 'Kick' : 'YouTube'} channel rankings ship in Phase 3. Switch to Twitch for
-		live leaderboards.
-	</p>
-{:else if data.rows.length === 0}
+{#if data.rows.length === 0}
 	<p class="mt-4 text-sm text-[var(--color-oc-text-muted)]">
 		{data.source === 'unavailable'
 			? 'Could not load rankings from ingest.'
@@ -116,14 +111,12 @@
 	<LeaderboardTable
 		{rows}
 		metricHeader="Hours watched"
-		emptyMessage={data.platformUnsupported
-			? `${data.platform === 'kick' ? 'Kick' : 'YouTube'} channel rankings ship in Phase 3. Switch to Twitch for live leaderboards.`
-			: data.rows.length === 0
-				? data.source === 'unavailable'
-					? 'Could not load rankings from ingest.'
-					: data.period === '90d'
-						? 'No channels ranked for the 90-day window yet — check back as daily rollups accumulate.'
-						: 'No channels ranked for this period yet.'
-				: null}
+		emptyMessage={data.rows.length === 0
+			? data.source === 'unavailable'
+				? 'Could not load rankings from ingest.'
+				: data.period === '90d'
+					? 'No channels ranked for the 90-day window yet — check back as daily rollups accumulate.'
+					: 'No channels ranked for this period yet.'
+			: null}
 	/>
 </div>

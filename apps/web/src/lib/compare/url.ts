@@ -1,5 +1,6 @@
 import { comparePeriods, parseComparePeriod, type ComparePeriod } from '@omnicharts/domain';
-import { parseUiPlatform, type PlatformId } from '$lib/ui/platform.svelte';
+import type { PlatformId } from '@omnicharts/domain';
+import { parseUiPlatform, searchPlatformId } from '$lib/ui/platform.svelte';
 
 export type ComparePageParams = {
 	a: string | null;
@@ -24,7 +25,7 @@ export function parseComparePageParams(url: URL): ComparePageParams {
 	return {
 		a: normalizeCompareSlug(url.searchParams.get('a')),
 		b: normalizeCompareSlug(url.searchParams.get('b')),
-		platform: parseUiPlatform(url.searchParams.get('platform')),
+		platform: searchPlatformId(parseUiPlatform(url.searchParams.get('platform'))),
 		period: parseComparePeriod(url.searchParams.get('period'))
 	};
 }

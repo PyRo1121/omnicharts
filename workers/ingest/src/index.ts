@@ -68,6 +68,12 @@ import {
 } from './ranking/game-api';
 import { parseSearchChannelsQuery, searchChannelsWithYoutubeSeed } from './search/channels';
 import { PLATFORM_TWITCH } from '@omnicharts/domain';
+import {
+	channelDetailQueryErrorResponse,
+	rankingsChannelsQueryErrorResponse,
+	rankingsGamesQueryErrorResponse,
+	searchQueryErrorResponse
+} from '@omnicharts/rollup';
 import { hasTwitchAppCredentials, twitchAppCredentialsErrorResponse } from './twitch/credentials';
 import { isDevAdminRouteAllowed } from './dev/admin-guard';
 import { clearDevSeedChannels } from './dev/clear-seed';
@@ -493,51 +499,15 @@ async function adminTwitchVodBackfill(request: Request, env: Env): Promise<Respo
 	return Response.json({ ok: stats.ok, mode: 'vod_backfill', stats });
 }
 
-function rankingsQueryErrorResponse(
-	error: 'invalid_period' | 'invalid_limit' | 'invalid_platform' | 'invalid_format' | 'invalid_language'
-): Response {
-	const messages: Record<typeof error, string> = {
-		invalid_period: 'period must be one of 24h, 7d, 30d, 90d',
-		invalid_limit: 'limit must be a positive integer',
-		invalid_platform: 'platform must be twitch, kick, or youtube',
-		invalid_format: 'format must be json or csv',
-		invalid_language: 'language must be a valid BCP 47 stream tag (e.g. en, es, zh-tw)'
-	};
-	return Response.json(
-		{
-			error: {
-				code: error,
-				message: messages[error]
-			}
-		},
-		{ status: 400 }
-	);
-}
-
-function searchQueryErrorResponse(
-	error: 'invalid_query' | 'invalid_limit' | 'invalid_platform' | 'invalid_language'
-): Response {
-	const messages: Record<typeof error, string> = {
-		invalid_query: 'q must be between 2 and 100 characters',
-		invalid_limit: 'limit must be a positive integer',
-		invalid_platform: 'platform must be twitch, kick, or youtube',
-		invalid_language: 'language must be a valid BCP 47 stream tag (e.g. en, es, zh-tw)'
-	};
-	return Response.json(
-		{ error: { code: error, message: messages[error] } },
-		{ status: 400 }
-	);
-}
-
 async function publicRankingsChannels(request: Request, env: Env): Promise<Response> {
 	const url = new URL(request.url);
 	const formatParsed = parseResponseFormat(url);
 	if (!formatParsed.ok) {
-		return rankingsQueryErrorResponse(formatParsed.error);
+		return rankingsChannelsQueryErrorResponse(formatParsed.error);
 	}
 	const parsed = parseRankingsChannelsQuery(url);
 	if (!parsed.ok) {
-		return rankingsQueryErrorResponse(parsed.error);
+		return rankingsChannelsQueryErrorResponse(parsed.error);
 	}
 	const eligibility = rankingQueryOptionsForPlatform(env, parsed.platform);
 	const cacheKey = rankingsChannelsCacheKey({
@@ -584,11 +554,11 @@ async function publicRankingsGames(request: Request, env: Env): Promise<Response
 	const url = new URL(request.url);
 	const formatParsed = parseResponseFormat(url);
 	if (!formatParsed.ok) {
-		return rankingsQueryErrorResponse(formatParsed.error);
+		return rankingsGamesQueryErrorResponse(formatParsed.error);
 	}
 	const parsed = parseRankingsGamesQuery(url);
 	if (!parsed.ok) {
-		return rankingsQueryErrorResponse(parsed.error);
+		return rankingsGamesQueryErrorResponse(parsed.error);
 	}
 	const eligibility = rankingQueryOptionsForPlatform(env, parsed.platform);
 	const cacheKey = rankingsGamesCacheKey({
@@ -682,11 +652,11 @@ async function publicChannelDetail(
 	url.pathname = `/v1/channels/${slug}`;
 	const query = parseChannelDetailQuery(url);
 	if (!query.ok) {
-		return rankingsQueryErrorResponse(query.error);
+		return channelDetailQueryErrorResponse(query.error);
 	}
 	const formatParsed = parseResponseFormat(url);
 	if (!formatParsed.ok) {
-		return rankingsQueryErrorResponse(formatParsed.error);
+		return channelDetailQueryErrorResponse(formatParsed.error);
 	}
 	const body = await buildChannelDetailResponse(requireDb(env), {
 		platform: query.platform,
@@ -729,7 +699,7 @@ async function publicGameDetail(
 	url.pathname = `/v1/games/${slug}`;
 	const query = parseGameDetailQuery(url);
 	if (!query.ok) {
-		return rankingsQueryErrorResponse(query.error);
+		return rankingsGamesQueryErrorResponse(query.error);
 	}
 	const rankingOpts = rankingQueryOptionsForPlatform(env, query.platform);
 	const body = await buildGameDetailResponse(

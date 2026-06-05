@@ -15,7 +15,7 @@ describe('ui periods (Phase 4 slice 4.2)', () => {
 	});
 
 	it('channelRankingsEmptyMessage mentions 90-day window', () => {
-		const msg = channelRankingsEmptyMessage(false, 'twitch', false, 'live', '90d');
+		const msg = channelRankingsEmptyMessage(false, 'live', '90d');
 		expect(msg).toContain('90-day');
 	});
 });

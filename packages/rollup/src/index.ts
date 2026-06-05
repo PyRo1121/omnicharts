@@ -105,3 +105,15 @@ export {
 	type ParsedCompareChannelsQuery
 } from './compare-api';
 export { getRollupCoverageDays } from './rollup-coverage';
+export {
+	channelDetailQueryErrorResponse,
+	compareQueryErrorResponse,
+	rankingsChannelsQueryErrorResponse,
+	rankingsGamesQueryErrorResponse,
+	searchQueryErrorResponse,
+	type ChannelDetailHttpQueryError,
+	type CompareHttpQueryError,
+	type RankingsChannelsHttpQueryError,
+	type RankingsGamesHttpQueryError,
+	type SearchHttpQueryError
+} from './api-errors';

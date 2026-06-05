@@ -1,5 +1,6 @@
 import {
 	buildChannelDetailResponse,
+	channelDetailQueryErrorResponse,
 	channelDetailToCsv,
 	csvAttachmentHeaders,
 	csvDownloadFilename,
@@ -12,25 +13,6 @@ import { proxyIngestResponse } from '$lib/server/proxy-ingest';
 import { getD1 } from '$lib/server/d1';
 import type { RequestHandler } from './$types';
 
-function channelQueryErrorResponse(
-	error: 'invalid_platform' | 'invalid_period' | 'invalid_format'
-): Response {
-	const messages = {
-		invalid_platform: 'platform must be twitch, kick, or youtube',
-		invalid_period: 'period must be one of 24h, 7d, 30d, 90d',
-		invalid_format: 'format must be json or csv'
-	} as const;
-	return Response.json(
-		{
-			error: {
-				code: error,
-				message: messages[error]
-			}
-		},
-		{ status: 400, headers: { 'cache-control': 'no-store' } }
-	);
-}
-
 /** Channel rollup detail — D1 on Pages; ingest proxy fallback (openapi GET /v1/channels/{slug}). */
 export const GET: RequestHandler = async ({ params, url, fetch, platform }) => {
 	const db = getD1(platform);
@@ -38,12 +20,12 @@ export const GET: RequestHandler = async ({ params, url, fetch, platform }) => {
 	detailUrl.pathname = `/v1/channels/${params.slug}`;
 	const formatParsed = parseResponseFormat(url);
 	if (!formatParsed.ok) {
-		return channelQueryErrorResponse(formatParsed.error);
+		return channelDetailQueryErrorResponse(formatParsed.error);
 	}
 	const query = parseChannelDetailQuery(detailUrl);
 
 	if (!query.ok) {
-		return channelQueryErrorResponse(query.error);
+		return channelDetailQueryErrorResponse(query.error);
 	}
 
 	if (

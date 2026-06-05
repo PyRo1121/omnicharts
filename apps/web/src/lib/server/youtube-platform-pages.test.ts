@@ -55,17 +55,15 @@ function gamesLoadArgs(platform: string | null) {
 }
 
 describe('youtube platform page loads (docs/09 Phase 3)', () => {
-	it('channels load does not mark youtube as platformUnsupported', async () => {
+	it('channels load accepts youtube platform filter', async () => {
 		const result = await channelsPageLoad(channelsLoadArgs('youtube'));
 		expect(result.platform).toBe('youtube');
-		expect(result.platformUnsupported).toBe(false);
 		expect(result.rows).toHaveLength(0);
 	});
 
-	it('games load does not mark youtube as platformUnsupported', async () => {
+	it('games load accepts youtube platform filter', async () => {
 		const result = await gamesPageLoad(gamesLoadArgs('youtube'));
 		expect(result.platform).toBe('youtube');
-		expect(result.platformUnsupported).toBe(false);
 		expect(result.rows).toHaveLength(0);
 	});
 });

@@ -1,5 +1,6 @@
 import {
 	buildCompareChannelsResponse,
+	compareQueryErrorResponse,
 	parseCompareChannelsQuery
 } from '@omnicharts/rollup';
 import { ROLLUP_CACHE_CONTROL } from '$lib/server/cache';
@@ -7,32 +8,13 @@ import { getIngestBaseUrl } from '$lib/server/ingest';
 import { getD1 } from '$lib/server/d1';
 import type { RequestHandler } from './$types';
 
-function compareQueryErrorResponse(
-	error: 'invalid_platform' | 'invalid_period' | 'missing_slugs'
-): Response {
-	const messages = {
-		invalid_platform: 'platform must be twitch, kick, or youtube',
-		invalid_period: 'period must be one of 7d, 30d, 90d',
-		missing_slugs: 'query params a and b (channel slugs) are required'
-	} as const;
-	return Response.json(
-		{
-			error: {
-				code: error,
-				message: messages[error]
-			}
-		},
-		{ status: 400, headers: { 'cache-control': 'no-store' } }
-	);
-}
-
 /** Side-by-side channel compare — rollup reads only (openapi GET /v1/compare/channels). */
 export const GET: RequestHandler = async ({ url, fetch, platform }) => {
 	const db = getD1(platform);
 	const query = parseCompareChannelsQuery(url);
 
 	if (!query.ok) {
-		return compareQueryErrorResponse(query.error);
+		return compareQueryErrorResponse(query.error, { cacheControl: 'no-store' });
 	}
 
 	if (

@@ -1,6 +1,6 @@
 <script module lang="ts">
 	import type { ChannelRow, GameRow } from '$lib/mock/home';
-	import type { PlatformId } from '$lib/ui/platform.svelte';
+	import type { PlatformId } from '@omnicharts/domain';
 
 	export type LeaderboardRow = {
 		rank: number;
@@ -11,7 +11,7 @@
 		imageAlt: string;
 		metric: string;
 		metricLabel: string;
-		platform?: Exclude<PlatformId, 'all'>;
+		platform?: PlatformId;
 	};
 
 	export function channelLeaderboardRows(rows: ChannelRow[]): LeaderboardRow[] {

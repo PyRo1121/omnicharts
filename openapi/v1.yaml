@@ -95,7 +95,7 @@ paths:
             text/csv:
               schema:
                 type: string
-              description: Daily rollup series (`date,hours_watched,...`)
+                description: Daily rollup series (`date,hours_watched,...`)
         '404':
           $ref: '#/components/responses/NotFound'
 

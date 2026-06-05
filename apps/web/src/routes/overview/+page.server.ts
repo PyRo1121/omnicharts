@@ -2,7 +2,7 @@ import { applyRollupPageCache } from '$lib/server/cache';
 import { isDevMockEnabled } from '$lib/server/dev-mock';
 import { serverLoadContext } from '$lib/server/load-context';
 import { loadKickOverview, loadOverview, loadYoutubeOverview } from '$lib/server/overview';
-import { parseUiPlatform, type PlatformId } from '$lib/ui/platform.svelte';
+import { parseUiPlatform } from '$lib/ui/platform.svelte';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ fetch, url, setHeaders, platform: cfPlatform }) => {
@@ -15,8 +15,7 @@ export const load: PageServerLoad = async ({ fetch, url, setHeaders, platform: c
 		const overview = await loadKickOverview(ctx, mockEnabled);
 		return {
 			...overview,
-			platform: 'kick' as PlatformId,
-			platformUnsupported: false
+			platform: 'kick' as const
 		};
 	}
 
@@ -24,15 +23,13 @@ export const load: PageServerLoad = async ({ fetch, url, setHeaders, platform: c
 		const overview = await loadYoutubeOverview(ctx, mockEnabled);
 		return {
 			...overview,
-			platform: 'youtube' as PlatformId,
-			platformUnsupported: false
+			platform: 'youtube' as const
 		};
 	}
 
 	const overview = await loadOverview(ctx, mockEnabled);
 	return {
 		...overview,
-		platform: platform === 'all' ? 'all' : ('twitch' as PlatformId),
-		platformUnsupported: false
+		platform: platform === 'all' ? 'all' : ('twitch' as const)
 	};
 };

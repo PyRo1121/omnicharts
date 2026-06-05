@@ -1,4 +1,4 @@
-import type { PlatformId } from '$lib/ui/platform.svelte';
+import type { PlatformId } from '@omnicharts/domain';
 
 export type { PlatformId };
 export type { Period } from '$lib/ui/platform.svelte';
@@ -7,7 +7,7 @@ export type ChannelRow = {
 	rank: number;
 	slug: string;
 	displayName: string;
-	platform: Exclude<PlatformId, 'all'>;
+	platform: PlatformId;
 	avatarUrl: string;
 	metric: string;
 	metricLabel: string;
@@ -17,7 +17,7 @@ export type GameRow = {
 	rank: number;
 	slug: string;
 	name: string;
-	platform: Exclude<PlatformId, 'all'>;
+	platform: PlatformId;
 	boxArtUrl: string;
 	metric: string;
 	metricLabel: string;

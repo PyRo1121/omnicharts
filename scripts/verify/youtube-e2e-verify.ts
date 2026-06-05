@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * YouTube Phase 3 stub — ingest unit tests + optional API shape check when ingest is up.
+ * YouTube ingest verify — unit tests + optional API shape check when ingest is up.
  *
  * Full gate (discover cron, non-empty rankings) deferred — poll + live video id writer ship in ingest.
  *

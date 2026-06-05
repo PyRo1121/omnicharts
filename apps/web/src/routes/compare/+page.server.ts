@@ -21,7 +21,7 @@ export const load: PageServerLoad = async ({ fetch, url, setHeaders, platform: c
 	const compare = await loadChannelCompare(ctx, {
 		a,
 		b,
-		platform: parseUiPlatform(url.searchParams.get('platform')),
+		platform: platformId,
 		period
 	});
 

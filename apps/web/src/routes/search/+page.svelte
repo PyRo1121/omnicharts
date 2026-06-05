@@ -8,7 +8,7 @@
 		routeWithPlatform,
 		searchPageSubtitle,
 		searchPlatformId,
-		type PlatformId
+		type UiPlatformFilter
 	} from '$lib/ui/platform.svelte';
 
 	let { data } = $props();
@@ -19,7 +19,7 @@
 		youtube: 'YouTube'
 	};
 
-	function platformHref(id: PlatformId): string {
+	function platformHref(id: UiPlatformFilter): string {
 		const extra: Record<string, string> = {};
 		if (data.q.trim()) extra.q = data.q.trim();
 		return routeWithPlatform('/search', id, extra);

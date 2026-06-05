@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import type { PlatformId } from '$lib/ui/platform.svelte';
+	import type { PlatformId } from '@omnicharts/domain';
 	import { debounce } from '$lib/utils/debounce';
 
 	interface Trending {
 		slug: string;
 		name: string;
-		platform: Exclude<PlatformId, 'all'>;
+		platform: PlatformId;
 	}
 
 	type SearchHit = {
@@ -18,7 +18,7 @@
 
 	interface Props {
 		trending: Trending[];
-		platform?: Exclude<PlatformId, 'all'>;
+		platform?: PlatformId;
 		initialQuery?: string;
 	}
 

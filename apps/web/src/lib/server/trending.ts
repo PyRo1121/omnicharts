@@ -1,16 +1,16 @@
 import { trendingSearches as fallbackTrendingSearches, type ChannelRow } from '$lib/mock/home';
-import type { PlatformId } from '$lib/ui/platform.svelte';
+import type { PlatformId } from '@omnicharts/domain';
 
 export type TrendingSearch = {
 	slug: string;
 	name: string;
-	platform: Exclude<PlatformId, 'all'>;
+	platform: PlatformId;
 };
 
 /** Top-N channel rankings for search chips; mock fallback only when `mockEnabled`. */
 export function trendingFromRankings(
 	rows: ChannelRow[],
-	options?: { platform?: Exclude<PlatformId, 'all'>; mockEnabled?: boolean }
+	options?: { platform?: PlatformId; mockEnabled?: boolean }
 ): TrendingSearch[] {
 	if (!rows.length) {
 		if (!options?.mockEnabled) return [];

@@ -25,7 +25,7 @@ function overviewLoadArgs(platform: string | null) {
 }
 
 describe('overview load — platform query (docs/09 Phase 3)', () => {
-	it('loads kick overview without platformUnsupported banner', async () => {
+	it('loads kick overview from ingest rankings', async () => {
 		const fetchFn = vi.fn().mockImplementation((input: RequestInfo | URL) => {
 			const url = String(input);
 			if (url.includes('/rankings/games')) {
@@ -67,7 +67,6 @@ describe('overview load — platform query (docs/09 Phase 3)', () => {
 		const result = await overviewLoad(args);
 
 		expect(result.platform).toBe('kick');
-		expect(result.platformUnsupported).toBe(false);
 		expect(result.topChannelName).toBe('xQc');
 		expect(result.stats).toHaveLength(3);
 		expect(
@@ -77,7 +76,7 @@ describe('overview load — platform query (docs/09 Phase 3)', () => {
 		).toBe(true);
 	});
 
-	it('loads youtube overview without platformUnsupported when ingest has no items', async () => {
+	it('loads youtube overview when ingest has no items', async () => {
 		const fetchFn = vi.fn().mockImplementation((input: RequestInfo | URL) => {
 			return Promise.resolve({
 				ok: true,
@@ -95,7 +94,6 @@ describe('overview load — platform query (docs/09 Phase 3)', () => {
 		const result = await overviewLoad(args);
 
 		expect(result.platform).toBe('youtube');
-		expect(result.platformUnsupported).toBe(false);
 		expect(result.stats).toHaveLength(3);
 		expect(
 			fetchFn.mock.calls.some(
@@ -112,7 +110,6 @@ describe('overview load — platform query (docs/09 Phase 3)', () => {
 		const result = await overviewLoad(args);
 
 		expect(result.platform).toBe('twitch');
-		expect(result.platformUnsupported).toBe(false);
 		expect(result.stats.length).toBeGreaterThan(0);
 	});
 });

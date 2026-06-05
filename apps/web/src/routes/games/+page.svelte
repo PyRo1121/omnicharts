@@ -11,7 +11,7 @@
 		platforms,
 		routeWithPlatform,
 		type Period,
-		type PlatformId
+		type UiPlatformFilter
 	} from '$lib/ui/platform.svelte';
 
 	let { data } = $props();
@@ -19,7 +19,7 @@
 	const rows = $derived(gameLeaderboardRows(data.rows));
 	const subtitle = $derived(gamesPageSubtitle(data.platform, data.source));
 
-	function platformHref(id: PlatformId): string {
+	function platformHref(id: UiPlatformFilter): string {
 		return routeWithPlatform('/games', id, { period: data.period });
 	}
 
@@ -41,12 +41,7 @@
 	<PlatformFilter {platforms} value={data.platform} hrefFor={platformHref} />
 </div>
 
-{#if data.platformUnsupported}
-	<p class="mt-4 text-sm text-[var(--color-oc-text-muted)]">
-		YouTube game rankings ship when YouTube ingest is live. Switch to Twitch or Kick for rollup-backed
-		leaderboards.
-	</p>
-{:else if data.rows.length === 0}
+{#if data.rows.length === 0}
 	<p class="mt-4 text-sm text-[var(--color-oc-text-muted)]">
 		{data.source === 'unavailable'
 			? 'Could not load rankings from ingest.'
@@ -73,14 +68,12 @@
 	<LeaderboardTable
 		rows={rows}
 		metricHeader="Avg viewers"
-		emptyMessage={data.platformUnsupported
-			? 'YouTube game rankings ship when YouTube ingest is live. Switch to Twitch or Kick for rollup-backed leaderboards.'
-			: data.rows.length === 0
-				? data.source === 'unavailable'
-					? 'Could not load rankings from ingest.'
-					: data.period === '90d'
-						? 'No games ranked for the 90-day window yet — check back as daily rollups accumulate.'
-						: 'No games ranked for this period yet.'
-				: null}
+		emptyMessage={data.rows.length === 0
+			? data.source === 'unavailable'
+				? 'Could not load rankings from ingest.'
+				: data.period === '90d'
+					? 'No games ranked for the 90-day window yet — check back as daily rollups accumulate.'
+					: 'No games ranked for this period yet.'
+			: null}
 	/>
 </div>

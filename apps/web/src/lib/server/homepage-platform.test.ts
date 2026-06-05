@@ -26,7 +26,7 @@ function homepageLoadArgs(platform: string | null) {
 }
 
 describe('homepage load — non-Twitch platforms (docs/09 Phase 3)', () => {
-	it('loads kick channel rankings without platformUnsupported banner', async () => {
+	it('loads kick channel rankings from ingest', async () => {
 		const fetchFn = vi.fn().mockImplementation((input: RequestInfo | URL) => {
 			const url = String(input);
 			if (url.includes('/health')) {
@@ -75,7 +75,6 @@ describe('homepage load — non-Twitch platforms (docs/09 Phase 3)', () => {
 		const result = await homepageLoad(args);
 
 		expect(result.platform).toBe('kick');
-		expect(result.platformUnsupported).toBe(false);
 		expect(result.overview.topChannelName).toBe('xQc');
 		expect(result.overview.stats.find((s) => s.label === 'Channels tracked')?.value).toBe('15');
 		expect(result.overview.stats.find((s) => s.label === 'Live now')?.value).toBe('4');
@@ -94,7 +93,7 @@ describe('homepage load — non-Twitch platforms (docs/09 Phase 3)', () => {
 		).toBe(true);
 	});
 
-	it('loads youtube rankings without platformUnsupported when ingest has no items', async () => {
+	it('loads youtube rankings when ingest has no items', async () => {
 		const fetchFn = vi.fn().mockImplementation((input: RequestInfo | URL) => {
 			const url = String(input);
 			return Promise.resolve({
@@ -113,7 +112,6 @@ describe('homepage load — non-Twitch platforms (docs/09 Phase 3)', () => {
 		const result = await homepageLoad(args);
 
 		expect(result.platform).toBe('youtube');
-		expect(result.platformUnsupported).toBe(false);
 		expect(result.channelRankings.rows).toHaveLength(0);
 		expect(result.gameRankings.rows).toHaveLength(0);
 		expect(
@@ -161,7 +159,6 @@ describe('homepage load — non-Twitch platforms (docs/09 Phase 3)', () => {
 
 		const result = await homepageLoad(args);
 
-		expect(result.platformUnsupported).toBe(false);
 		expect(result.channelRankings.rows[0]?.slug).toBe('mrbeast');
 		expect(result.overview.topChannelName).toBe('MrBeast');
 	});
@@ -170,6 +167,5 @@ describe('homepage load — non-Twitch platforms (docs/09 Phase 3)', () => {
 		const result = await homepageLoad(homepageLoadArgs(null));
 
 		expect(result.platform).toBe('twitch');
-		expect(result.platformUnsupported).toBe(false);
 	});
 });

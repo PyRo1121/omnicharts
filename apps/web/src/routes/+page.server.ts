@@ -4,7 +4,7 @@ import { serverLoadContext } from '$lib/server/load-context';
 import { loadKickOverview, loadOverview, loadYoutubeOverview } from '$lib/server/overview';
 import { trendingFromRankings } from '$lib/server/trending';
 import { resolvePeriodContext } from '$lib/server/period-context';
-import { parseUiPlatform, type PlatformId } from '$lib/ui/platform.svelte';
+import { parseUiPlatform } from '$lib/ui/platform.svelte';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ fetch, url, setHeaders, platform: cfPlatform }) => {
@@ -50,7 +50,6 @@ export const load: PageServerLoad = async ({ fetch, url, setHeaders, platform: c
 			overview,
 			channelRankings,
 			gameRankings,
-			platformUnsupported: false,
 			trending: trendingFromRankings(channelRankings.rows, { platform, mockEnabled })
 		};
 	}
@@ -64,7 +63,6 @@ export const load: PageServerLoad = async ({ fetch, url, setHeaders, platform: c
 		overview,
 		channelRankings,
 		gameRankings: overview.gameRankings ?? emptyGameRankings,
-		platformUnsupported: false,
 		trending: trendingFromRankings(channelRankings.rows, { mockEnabled })
 	};
 };

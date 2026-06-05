@@ -56,7 +56,6 @@ export async function getTopChannelsByHoursWatched(
 		limit?: number;
 		minAverageViewers?: number;
 		minAirtimeMinutes?: number;
-		minAverageViewers?: number;
 		language?: string | null;
 	}
 ): Promise<TopChannelRanking[]> {

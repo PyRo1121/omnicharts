@@ -1,39 +1,49 @@
-import { parseOptionalLanguageParam } from '@omnicharts/domain';
+import {
+	isUiPlatformFilter,
+	parseOptionalLanguageParam,
+	PLATFORM_TWITCH,
+	uiRankingPeriods,
+	type PlatformId,
+	type RankingPeriod,
+	type UiPlatformFilter
+} from '@omnicharts/domain';
 
-export type PlatformId = 'all' | 'twitch' | 'kick' | 'youtube';
+export type { PlatformId, RankingPeriod, UiPlatformFilter };
+
+/** @deprecated Use `RankingPeriod` from `@omnicharts/domain`. */
+export type Period = RankingPeriod;
 
 export type DataSource = 'live' | 'mock' | 'unavailable';
 
-export const platforms: { id: PlatformId; label: string }[] = [
+export const platforms: { id: UiPlatformFilter; label: string }[] = [
 	{ id: 'all', label: 'All' },
 	{ id: 'twitch', label: 'Twitch' },
 	{ id: 'kick', label: 'Kick' },
 	{ id: 'youtube', label: 'YouTube' }
 ];
 
-export const periods = ['24h', '7d', '30d', '90d'] as const;
-export type Period = (typeof periods)[number];
+/** @deprecated Use `uiRankingPeriods` from `@omnicharts/domain`. */
+export const periods = uiRankingPeriods;
 
-/** Shown in period selectors — Phase 4 adds `90d`. */
-export const uiPeriods = ['24h', '7d', '30d', '90d'] as const satisfies readonly Period[];
+export const uiPeriods = uiRankingPeriods;
 
 /** Active platform filter → ingest search `platform` param (Phase 2: `all` → Twitch data). */
-export function searchPlatformId(platform: PlatformId): Exclude<PlatformId, 'all'> {
+export function searchPlatformId(platform: UiPlatformFilter): PlatformId {
 	if (platform === 'kick' || platform === 'youtube') return platform;
-	return 'twitch';
+	return PLATFORM_TWITCH;
 }
 
-export function parseUiPlatform(raw: string | null): PlatformId {
+export function parseUiPlatform(raw: string | null): UiPlatformFilter {
 	const normalized = raw?.trim().toLowerCase() ?? '';
-	if (normalized && platforms.some((p) => p.id === normalized)) return normalized as PlatformId;
-	return 'twitch';
+	if (normalized && isUiPlatformFilter(normalized)) return normalized;
+	return PLATFORM_TWITCH;
 }
 
-export function platformLabel(platform: PlatformId): string {
+export function platformLabel(platform: UiPlatformFilter): string {
 	return platforms.find((p) => p.id === platform)?.label ?? 'Twitch';
 }
 
-export function platformQueryParam(platform: PlatformId): string {
+export function platformQueryParam(platform: UiPlatformFilter): string {
 	if (platform === 'kick' || platform === 'youtube' || platform === 'all') {
 		return `&platform=${platform}`;
 	}
@@ -43,7 +53,7 @@ export function platformQueryParam(platform: PlatformId): string {
 /** Append `?platform=` when non-default; optional extra query params. */
 export function routeWithPlatform(
 	path: string,
-	platform: PlatformId,
+	platform: UiPlatformFilter,
 	extra?: Record<string, string>
 ): string {
 	const q = new URLSearchParams(extra);
@@ -54,9 +64,9 @@ export function routeWithPlatform(
 	return qs ? `${path}?${qs}` : path;
 }
 
-export function parseUiPeriod(raw: string | null): { period: Period; periodNote: string | null } {
-	if (raw && (periods as readonly string[]).includes(raw)) {
-		return { period: raw as Period, periodNote: null };
+export function parseUiPeriod(raw: string | null): { period: RankingPeriod; periodNote: string | null } {
+	if (raw && (uiRankingPeriods as readonly string[]).includes(raw)) {
+		return { period: raw as RankingPeriod, periodNote: null };
 	}
 	return { period: '7d', periodNote: null };
 }
@@ -81,7 +91,7 @@ export function parseUiLanguage(raw: string | null): string | null {
 	return parsed.language;
 }
 
-export function languageFilterNote(platform: PlatformId, language: string | null): string | null {
+export function languageFilterNote(platform: UiPlatformFilter, language: string | null): string | null {
 	if (!language) return null;
 	const label = rankingLanguages.find((l) => l.code === language)?.label ?? language;
 	if (platform === 'youtube') {
@@ -90,7 +100,7 @@ export function languageFilterNote(platform: PlatformId, language: string | null
 	return `Showing ${label} streamers only (from platform language tags).`;
 }
 
-export function overviewPageSubtitle(platform: PlatformId, source: DataSource): string {
+export function overviewPageSubtitle(platform: UiPlatformFilter, source: DataSource): string {
 	const rollupPlatformName = platform === 'kick' ? 'Kick' : 'YouTube';
 	if (platform === 'kick' || platform === 'youtube') {
 		if (source === 'live') {
@@ -104,14 +114,14 @@ export function overviewPageSubtitle(platform: PlatformId, source: DataSource): 
 	return 'Ingest unavailable — start dev:ingest for live overview.';
 }
 
-export function searchPageSubtitle(platform: PlatformId): string {
+export function searchPageSubtitle(platform: UiPlatformFilter): string {
 	if (platform === 'all') {
 		return 'Find streamers by name or slug across Twitch, Kick, and YouTube.';
 	}
 	return `Find streamers by name or slug on ${platformLabel(platform)}.`;
 }
 
-export function channelsPageSubtitle(platform: PlatformId, source: DataSource): string {
+export function channelsPageSubtitle(platform: UiPlatformFilter, source: DataSource): string {
 	if (source === 'live') {
 		if (platform === 'kick') return 'Top Kick channels by hours watched (ingest rollups).';
 		if (platform === 'youtube') return 'Top YouTube channels by hours watched (ingest rollups).';
@@ -124,7 +134,7 @@ export function channelsPageSubtitle(platform: PlatformId, source: DataSource): 
 	return 'No rollups for this period yet.';
 }
 
-export function gamesPageSubtitle(platform: PlatformId, source: DataSource): string {
+export function gamesPageSubtitle(platform: UiPlatformFilter, source: DataSource): string {
 	if (source === 'live') {
 		if (platform === 'kick') return 'Top Kick categories by average viewers (ingest rollups).';
 		if (platform === 'youtube') return 'Top YouTube categories by average viewers (ingest rollups).';
@@ -135,11 +145,6 @@ export function gamesPageSubtitle(platform: PlatformId, source: DataSource): str
 		return 'Ingest unavailable — start dev:ingest and run twitch:checkpoint.';
 	}
 	return 'No game rollups for this period yet.';
-}
-
-export function phase3UnsupportedMessage(platform: PlatformId): string {
-	const name = platform === 'kick' ? 'Kick' : 'YouTube';
-	return `${name} rankings ship in Phase 3. Switch to Twitch for live leaderboards.`;
 }
 
 export function homeRankingsFootnote(
@@ -153,13 +158,10 @@ export function homeRankingsFootnote(
 }
 
 export function channelRankingsEmptyMessage(
-	platformUnsupported: boolean,
-	platform: PlatformId,
 	hasRows: boolean,
 	source: DataSource,
-	period?: Period
+	period?: RankingPeriod
 ): string | null {
-	if (platformUnsupported) return phase3UnsupportedMessage(platform);
 	if (hasRows) return null;
 	if (source === 'unavailable') return 'Channel rankings unavailable — ingest not reachable.';
 	if (period === '90d') {
@@ -169,13 +171,10 @@ export function channelRankingsEmptyMessage(
 }
 
 export function gameRankingsEmptyMessage(
-	platformUnsupported: boolean,
-	platform: PlatformId,
 	hasRows: boolean,
 	source: DataSource,
-	period?: Period
+	period?: RankingPeriod
 ): string | null {
-	if (platformUnsupported) return phase3UnsupportedMessage(platform);
 	if (hasRows) return null;
 	if (source === 'unavailable') return 'Game rankings unavailable — ingest not reachable.';
 	if (period === '90d') {
@@ -184,6 +183,6 @@ export function gameRankingsEmptyMessage(
 	return 'No game rollups yet for this period.';
 }
 
-export function overviewTopGameLabel(platform: PlatformId): string {
+export function overviewTopGameLabel(platform: UiPlatformFilter): string {
 	return platform === 'kick' ? 'category' : 'game';
 }

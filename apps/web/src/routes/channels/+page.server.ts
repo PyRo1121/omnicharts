@@ -3,7 +3,13 @@ import { isDevMockEnabled } from '$lib/server/dev-mock';
 import { serverLoadContext } from '$lib/server/load-context';
 import { loadChannelRankings } from '$lib/server/rankings';
 import { resolvePeriodContext } from '$lib/server/period-context';
-import { languageFilterNote, parseUiLanguage, parseUiPlatform, type PlatformId } from '$lib/ui/platform.svelte';
+import type { PlatformId } from '@omnicharts/domain';
+import {
+	languageFilterNote,
+	parseUiLanguage,
+	parseUiPlatform,
+	searchPlatformId
+} from '$lib/ui/platform.svelte';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ fetch, url, setHeaders, platform: cfPlatform }) => {
@@ -18,7 +24,7 @@ export const load: PageServerLoad = async ({ fetch, url, setHeaders, platform: c
 	const language = parseUiLanguage(url.searchParams.get('language'));
 	const mockEnabled = isDevMockEnabled(url.searchParams.get('demo'));
 
-	const rankingsPlatform: PlatformId = platform === 'all' ? 'twitch' : platform;
+	const rankingsPlatform: PlatformId = searchPlatformId(platform);
 	const rankings = await loadChannelRankings(
 		ctx,
 		rankingsPlatform,
@@ -34,6 +40,5 @@ export const load: PageServerLoad = async ({ fetch, url, setHeaders, platform: c
 		platform,
 		language,
 		languageNote: languageFilterNote(rankingsPlatform, language),
-		platformUnsupported: false
 	};
 };

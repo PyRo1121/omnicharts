@@ -1,16 +1,16 @@
 <script lang="ts">
 	import { cn } from '$lib/utils/cn';
-	import type { PlatformId } from '$lib/ui/platform.svelte';
+	import type { UiPlatformFilter } from '$lib/ui/platform.svelte';
 
 	interface Props {
-		platforms: { id: PlatformId; label: string }[];
-		value: PlatformId;
-		hrefFor: (id: PlatformId) => string;
+		platforms: { id: UiPlatformFilter; label: string }[];
+		value: UiPlatformFilter;
+		hrefFor: (id: UiPlatformFilter) => string;
 	}
 
 	let { platforms, value, hrefFor }: Props = $props();
 
-	const dotClass: Record<PlatformId, string> = {
+	const dotClass: Record<UiPlatformFilter, string> = {
 		all: 'bg-[var(--color-oc-accent)]',
 		twitch: 'bg-[var(--color-oc-twitch)]',
 		kick: 'bg-[var(--color-oc-kick)]',
