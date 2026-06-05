@@ -4,7 +4,17 @@
 	"categories": {
 		"correctness": "error"
 	},
-	"rules": {},
+	"rules": {
+		"eqeqeq": ["warn", "smart"],
+		"no-console": "warn",
+		"no-debugger": "error",
+		"no-unused-vars": "error",
+		"no-unreachable": "error",
+		"no-dupe-keys": "error",
+		"no-dupe-class-members": "error",
+		"no-duplicate-case": "error",
+		"typescript/no-explicit-any": "warn"
+	},
 	"env": {
 		"builtin": true,
 		"node": true
@@ -23,6 +33,21 @@
 			"files": ["**/*.test.ts", "**/*.spec.ts", "**/test/**"],
 			"env": {
 				"vitest": true
+			},
+			"rules": {
+				"typescript/no-explicit-any": "off"
+			}
+		},
+		{
+			"files": ["scripts/**"],
+			"rules": {
+				"no-console": "off"
+			}
+		},
+		{
+			"files": ["workers/ingest/src/log.ts", "workers/ingest/src/db/d1-meta.ts"],
+			"rules": {
+				"no-console": "off"
 			}
 		}
 	]

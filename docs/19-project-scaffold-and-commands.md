@@ -285,6 +285,22 @@ Root monorepo scripts live in `package.json`. **Verify / test gates:** [13-testi
 | **Verify D1 schema** | `bun run d1:verify-schema` / `d1:verify-schema:remote` | [13-testing](./13-testing-and-verification.md) |
 | **Lint (oxlint)** | `bun run lint` | [Oxlint](https://oxc.rs/docs/guide/usage/linter/cli.html) |
 | **Format (oxfmt)** | `bun run format` / `bun run format:check` | [Oxfmt](https://oxc.rs/docs/guide/usage/formatter/cli.html) |
+
+### Lint philosophy (oxlint)
+
+Root `.oxlintrc.json` targets **common bugs**, not style pedantry (oxfmt owns formatting).
+
+| Group | Level | Rules / intent |
+|-------|-------|----------------|
+| **Correctness** | error | Oxlint default category — outright wrong code (includes unused vars/imports, unreachable code, duplicate keys in objects/switch). |
+| **Strict equality** | warn | `eqeqeq` (`smart`) — catches `==` mistakes; allows idiomatic null checks. |
+| **Debug / prod hygiene** | error / warn | `no-debugger` (error); `no-console` (warn) on app + worker source — **off** in `scripts/**` and ingest logging shims (`log.ts`, `d1-meta.ts`). |
+| **TypeScript hygiene** | warn | `typescript/no-explicit-any` — nudge away from `any`; **off** in `*.test.ts` / `*.spec.ts` / `test/**`. |
+| **Explicit suspicious** | error | `no-unreachable`, `no-dupe-keys`, `no-dupe-class-members`, `no-duplicate-case` — belt-and-suspenders on top of correctness. |
+
+**Not enabled:** full `suspicious` category (noisy unicorn rules like `no-array-sort`), `pedantic` / `style` / `restriction`, or type-aware rules (`typescript/no-floating-promises`) — those need `options.typeAware` + TS program cost across the monorepo; `svelte-check` / Vitest cover typed paths instead.
+
+**Oxfmt:** `.oxfmtrc.json` — tabs, single quotes, semicolons, 140 print width; no extra style rules duplicated in oxlint.
 | **Preview built Pages** | `npm run build && npx wrangler pages dev .svelte-kit/cloudflare` | [adapter-cloudflare](https://svelte.dev/docs/kit/adapter-cloudflare) |
 | **Build** | `npm run build` | [adapter-cloudflare](https://svelte.dev/docs/kit/adapter-cloudflare) |
 | **Deploy Pages** | `npx wrangler pages deploy .svelte-kit/cloudflare --project-name=omnicharts-web` | [pages deploy](https://developers.cloudflare.com/workers/wrangler/commands/pages/#pages-deploy) |
@@ -317,3 +333,4 @@ Root monorepo scripts live in `package.json`. **Verify / test gates:** [13-testi
 | 2026-06-03 | Root scripts grouped; verify SSOT in doc 13; `d1:migrate:*` use `bun run --cwd workers/ingest`; added `test`, `verify:wrangler-production`. |
 | 2026-06-03 | Lane 4/5: `packages/*` in layout; `wrangler.jsonc` (not TOML) for Pages; monorepo import link to doc 27. |
 | 2026-06-05 | **Oxlint + Oxfmt:** root devDeps `oxlint`, `oxfmt`; configs `.oxlintrc.json`, `.oxfmtrc.json`; scripts `lint`, `format`, `format:check` scoped to apps/web, packages, workers/ingest, scripts. |
+| 2026-06-05 | **Oxlint tune:** practical rule set — correctness + eqeqeq/no-console/no-debugger/no-explicit-any + explicit duplicate/unreachable rules; scripts + logging shims exempt from no-console. |

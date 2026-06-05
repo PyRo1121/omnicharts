@@ -79,7 +79,7 @@ Root `package.json` scripts — **do not duplicate bash blocks** in docs 23/24/2
 | `bun run d1:verify-schema:remote` | Pre-deploy / freeze **G2** — parity through **0010** | Wrangler login |
 | `bun run verify:wrangler-production` | Pre-deploy guard: prod vars 60m airtime / 20 min viewers | — |
 | `bun run check:web` | Wrangler types + svelte-check | — |
-| `bun run lint` | Oxlint (apps/web, packages, workers/ingest, scripts) | — |
+| `bun run lint` | Oxlint (apps/web, packages, workers/ingest, scripts) — correctness errors + targeted warns; see [19 § Lint philosophy](./19-project-scaffold-and-commands.md#lint-philosophy-oxlint) | — |
 | `bun run format` | Oxfmt write (same scope) | — |
 | `bun run format:check` | Oxfmt check (CI / verify gate) | — |
 | `bun run build:web` | Production Pages build | — |

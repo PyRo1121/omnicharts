@@ -197,7 +197,7 @@ export default {
 				await handleQueueMessage(payload, env);
 				message.ack();
 			} catch (err) {
-				console.error('queue message failed', err);
+				ingestNonFatalError('queue message failed', err);
 				message.retry();
 			}
 		}
