@@ -1,10 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
-import * as rollupQueries from '../src/ranking/rollup-queries';
+import * as rankingQueries from '../../../packages/rollup/src/ranking-queries';
 import { getTopTwitchChannelsByHoursWatched } from '../src/ranking/top-channels';
 
 describe('getTopTwitchChannelsByHoursWatched', () => {
 	it('sorts SQL results with tie-break rules', async () => {
-		vi.spyOn(rollupQueries, 'queryTopChannelsByHoursWatched').mockResolvedValue([
+		vi.spyOn(rankingQueries, 'queryTopChannelsByHoursWatched').mockResolvedValue([
 			{
 				slug: 'b-stream',
 				display_name: 'B',

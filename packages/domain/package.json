@@ -1,0 +1,19 @@
+{
+	"name": "@omnicharts/domain",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./src/index.ts",
+			"default": "./src/index.ts"
+		}
+	},
+	"scripts": {
+		"check": "tsc -b",
+		"test": "bun test"
+	},
+	"devDependencies": {
+		"typescript": "^5.5.2"
+	}
+}

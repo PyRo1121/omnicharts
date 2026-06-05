@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Local data
+data/
+*.db
+*.db-journal
+
+# Env / secrets
+.env
+.env.*
+.dev.vars
+
+# Build
+.svelte-kit/
+build/
+dist/
+.wrangler/
+*.tsbuildinfo
+
+# OS / editor
+.DS_Store
+*.log
+
+# DuckDB / Parquet scratch
+*.parquet
+duckdb_temp/
+
+# Autoresearch (uncommitted artifacts)
+autoresearch-results/

@@ -1,10 +1,22 @@
 # Cloudflare free-tier audit — OmniCharts
 
+> **Current state:** [cloudflare-hardening-complete.md](./cloudflare-hardening-complete.md) — do not treat severity tables below as open gaps without checking that checklist.
+
 **Date:** 2026-06-03  
 **Scope:** `workers/ingest/**`, `apps/web/**`, `wrangler.jsonc`, `migrations/d1/**`, `docs/adr/*`, `docs/11-cloudflare-deployment.md`  
-**Goal:** Maximize value on Cloudflare **Free** where possible; document gaps vs production ingest (Paid per [ADR-004](./adr/0004-cloudflare-free-vs-paid.md)).
+**Goal:** Maximize value on Cloudflare **Free** where possible; document gaps vs production ingest (Paid per [ADR-004](../adr/0004-cloudflare-free-vs-paid.md)).
 
 Official references used: [Workers limits](https://developers.cloudflare.com/workers/platform/limits/), [Workers pricing](https://developers.cloudflare.com/workers/platform/pricing/), [D1 pricing](https://developers.cloudflare.com/d1/platform/pricing/), [Queues pricing](https://developers.cloudflare.com/queues/platform/pricing/), [R2 pricing](https://developers.cloudflare.com/r2/pricing/), [Cron triggers](https://developers.cloudflare.com/workers/configuration/cron-triggers/), [Queues changelog (free plan)](https://developers.cloudflare.com/changelog/post/2026-02-04-queues-free-plan/).
+
+---
+
+## Paid tier (Workers Paid)
+
+Production ingest per [ADR-004](../adr/0004-cloudflare-free-vs-paid.md) requires **Workers Paid** (~$5/mo minimum), not a separate “D1 paid plan.” D1, Queues, and R2 on a Paid Workers account use **monthly included quotas** with per-SKU overage ([D1 pricing](https://developers.cloudflare.com/d1/platform/pricing/), [Queues pricing](https://developers.cloudflare.com/queues/platform/pricing/)).
+
+**Binding constraint at scale:** D1 **rows written** (minute-level `viewer_samples`), not Queue ops — `INGEST_COVERAGE_MODE=full` fan-out (~650k queue ops/mo) fits inside **1M ops/mo** included; `shards_only` at `TWITCH_MAX_TRACKED=3000` does not.
+
+**Operator playbook:** [23-paid-tier-zero-overage-playbook.md](../23-paid-tier-zero-overage-playbook.md) (calculators, knobs, dashboards, phased rollout).
 
 ---
 
@@ -97,6 +109,8 @@ flowchart TB
 
 ## 4. Findings by subsystem
 
+> **Note:** Severity tables below are the **pre-remediation baseline** (initial audit). See [Remediation status (2026-06-03)](#remediation-status-2026-06-03) and [cloudflare-hardening-complete.md](./cloudflare-hardening-complete.md) for current state.
+
 ### 4.1 Wrangler & bindings
 
 | Finding | Severity | Evidence |
@@ -161,7 +175,7 @@ flowchart TB
 | Finding | Severity | Evidence |
 |---------|----------|----------|
 | `/v1/rankings/*`, `/v1/channels/*`, `/v1/search/*`, `/health` — no auth | P0 | [`index.ts:53-412`](../../workers/ingest/src/index.ts) |
-| `Access-Control-Allow-Origin: *` on rankings | P2 | [`index.ts:284-288`](../../workers/ingest/src/index.ts) |
+| `Access-Control-Allow-Origin: *` on rankings | P2 | [`rankings-cache.ts`](../../workers/ingest/src/http/rankings-cache.ts) — **Done:** reflect allowlisted origins only (`cors.ts`) |
 | No Workers Rate Limit binding, no WAF rules in repo | P1 | — |
 | `GET /admin/twitch/rankings` — same as public, no key | P2 | [`index.ts:85-87`](../../workers/ingest/src/index.ts) — only `POST /admin/*` gated [`auth.ts:53-55`](../../workers/ingest/src/admin/auth.ts) |
 | Admin POST: production 503 without `ADMIN_API_KEY`; local bypass | Good / warn | [`auth.ts:19-40`](../../workers/ingest/src/admin/auth.ts) |
@@ -227,7 +241,7 @@ No `packages/` workspace — ingest and web are self-contained. Shared logic liv
 | EventSub | Webhook verification required | Implemented | [`eventsub/handler.ts`](../../workers/ingest/src/twitch/eventsub/handler.ts) |
 | Kick / YouTube crons | No queue messages yet | Empty on `*/2` | [`cron-messages.ts:14-15`](../../workers/ingest/src/cron-messages.ts) |
 
-**Operational risk:** Coverage cycle can exhaust Helix budget before D1/CF limits; `HelixRateBudget` sleeps on 429 but does not reduce sweep pages dynamically.
+**Operational risk:** Coverage cycle stays under 800/min via `helixSafePointsPerMinuteFromEnv`, phase split for parallel fan-out, header sync, dynamic page governors, and 429 retry on `Ratelimit-Reset`.
 
 ---
 
@@ -326,14 +340,14 @@ Expected: &lt;10k queue ops/day, &lt;50k D1 writes/day, &lt;50 subrequests per c
 | P1 | Homepage rankings dedupe | **Done** — `loadOverview` returns shared rankings |
 | P1 | SSR `Cache-Control` on `/`, `/channels`, `/games` | **Done** |
 | P1 | Remove no-op `*/2` cron | **Done** |
+| P1 | Pages direct D1 reads for rollups | **Done** — `platform.env.DB` + `@omnicharts/rollup`; ingest HTTP fallback |
 | P2 | `GET /admin/twitch/rankings*` → `/v1` redirect | **Done** |
 
 **Deferred this pass (unchanged):**
 
-- P1 Pages direct D1 reads (large refactor)
 - Full R2 Parquet pipeline (NDJSON path shipped; Parquet offline only)
 - Workers Paid deployment (ops only — [ADR-004](../adr/0004-cloudflare-free-vs-paid.md))
-- KV rankings cache (P2)
+- KV rankings cache (P2) → **in-worker Map 60s** (Lane 7/10; no KV binding)
 
 **Implemented 2026-06-03 (ingest upgrade pass):**
 
@@ -378,12 +392,54 @@ Expected: &lt;10k queue ops/day, &lt;50k D1 writes/day, &lt;50 subrequests per c
 | Item | Status |
 |------|--------|
 | `env.staging` `*/5` cron + `shards_only` vars | **Done** — `wrangler.jsonc` |
-| `env.production` `limits.cpu_ms=30000`, queue `max_batch_size=10` | **Done** |
+| `env.production` `limits.cpu_ms=30000`, queue `max_batch_size=3` | **Done** |
 | Default consumer `max_batch_size=5`, `max_retries=2` (Free-safe) | **Done** |
 | R2 NDJSON wired from poll + sweep paths | **Done** |
 | Doc 22 daily ops budget + prod wrangler snippet | **Done** |
 | Tests `wrangler-bindings.spec.ts`, `sample-archive.spec.ts` | **Done** |
 
+**Lane 7/10 (ingest HTTP surface) — 2026-06-03:**
+
+| Route | D1 reads (cache miss) | Mitigation |
+|-------|----------------------|------------|
+| `GET /v1/rankings/channels` | 1 rollup aggregate (`LIMIT 2×` for tie-break) | In-worker JSON cache 60s — `http/rankings-cache.ts` |
+| `GET /v1/rankings/games` | 1 rollup + eligible-games JOIN | Same 60s cache |
+| `GET /v1/channels/{slug}` | 2 (channel + rollups) | `Cache-Control: 120s`; no in-worker cache (high cardinality) |
+| `GET /v1/games/{slug}` | 2 | Same as channel detail |
+| `GET /v1/channels/resolve` | 1–2 indexed lookups | `Cache-Control: 300s` |
+| `GET /v1/search/channels` | 1 `LIKE` scan (cap 25) | Queries &lt;2 chars return `[]`; FTS deferred (doc 16) |
+| `GET /health` | 4 stmt `DB.batch()` (public) | Not rate-limited; `?detailed=1` requires admin key |
+
+**Workers KV vs in-worker cache (2026):** On **Paid**, KV reads/writes are unlimited ([KV limits](https://developers.cloudflare.com/kv/platform/limits/)). We still use a **KV-free `Map` cache** in the ingest isolate: low-cardinality keys (~16 combos), 60s TTL matches `Cache-Control`, zero binding ops, warm isolates absorb homepage burst. Add KV later only if cross-isolate coherence is required.
+
+| Item | Status |
+|------|--------|
+| In-worker rankings cache (60s) | **Done** — `http/rankings-cache.ts` |
+| Games rankings `invalid_period` / `invalid_limit` | **Done** — parity with channels |
+| Public rate limit by `ENVIRONMENT` | **Done** — `http/rate-limit.ts` |
+| Tests `public-http-edge`, `rankings-cache` | **Done** |
+
 ---
+
+**Lane 1/5 autoresearch pass (2026-06-03):**
+
+| Area | Finding | Fix |
+|------|---------|-----|
+| `parseQueueBody` | Any object with `type` acked silently (no handler) | Discriminated validation in `messages.ts`; `test/messages.spec.ts` |
+| Unit suite | `messages.spec.ts` not in `vitest.unit.config.mts` | Added to include list |
+| Worker wiring | `scheduled` / `queue` only tested via `cronToMessages` unit | `test/index.spec.ts` — `sendBatch` fan-out + invalid-body ack |
+
+**Lane final pass (2026-06-03):**
+
+| Area | Finding | Fix |
+|------|---------|-----|
+| `scheduled()` | `cronToMessages(event.cron)` omitted `env` → legacy `poll_platform` in prod | Pass `env`; `test/scheduled-cron.spec.ts` |
+| `poll_platform` full | Re-enqueued 3 messages → 4 queue msgs/min | Inline sweep + game_pass + reconcile in `poll-platform.ts` |
+| Production queue | `max_batch_size=10` vs fan-out `F=3` | `max_batch_size=3` in `wrangler.jsonc` + tests |
+| Game rankings | Nested `EXISTS` | `INNER JOIN` eligible games subquery — `rollup-queries.ts` |
+| Session lifecycle | Open sessions never closed on poll/reconcile offline | `db/session-lifecycle.ts` — close on offline batch + stream id rotation |
+| Kick/YouTube queue | Stub handlers invoked on no-op cron paths | `index.ts` no-op `poll_kick_tracked` / `poll_youtube_tracked`; no `*/2` in wrangler |
+
+**Still external / deferred:** Workers Paid deploy (ops), KV rankings cache (P2), R2 Parquet (Phase 4), `*/2` Kick/YouTube cron after 14d green Twitch metrics.
 
 *Initial audit file only; application remediations landed 2026-06-03.*

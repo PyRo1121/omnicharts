@@ -4,7 +4,7 @@ import { runTwitchLiveSweep } from '../src/twitch/sweep';
 import { runTwitchDiscovery } from '../src/twitch/discover';
 
 vi.mock('../src/twitch/ingest-stream', () => ({
-	ingestHelixStream: vi.fn().mockResolvedValue(undefined),
+	ingestHelixStreamsBatch: vi.fn().mockResolvedValue([]),
 	flushSampleArchivePage: vi.fn().mockResolvedValue(undefined)
 }));
 
@@ -65,7 +65,7 @@ describe('runTwitchLiveSweep', () => {
 		expect(stats.stoppedBecause).toBe('end_of_catalog');
 	});
 
-	it('stops on empty first page', async () => {
+	it('stops on empty first page without cursor', async () => {
 		vi.spyOn(TwitchHelixClient.prototype, 'getLiveStreamsPage').mockResolvedValue({
 			data: [],
 			pagination: {}
@@ -73,6 +73,26 @@ describe('runTwitchLiveSweep', () => {
 		const stats = await runTwitchLiveSweep({ TWITCH_MIN_VIEWERS: '2', DB: {} } as Env);
 		expect(stats.stoppedBecause).toBe('end_of_catalog');
 		expect(stats.pagesFetched).toBe(1);
+	});
+
+	it('skips empty pages while cursor remains (up to guard)', async () => {
+		let call = 0;
+		vi.spyOn(TwitchHelixClient.prototype, 'getLiveStreamsPage').mockImplementation(async () => {
+			call++;
+			if (call <= 2) {
+				return { data: [], pagination: { cursor: `empty-${call}` } };
+			}
+			return {
+				data: [helixStream('u1', 100)],
+				pagination: {}
+			};
+		});
+		const stats = await runTwitchLiveSweep(
+			{ TWITCH_MIN_VIEWERS: '2', DB: {} } as Env,
+			{ maxPages: 5 }
+		);
+		expect(stats.pagesFetched).toBe(3);
+		expect(stats.channelsIngested).toBe(1);
 	});
 
 	it('hits max_pages when cursor keeps going', async () => {
@@ -111,6 +131,8 @@ describe('runTwitchDiscovery quick mode', () => {
 	});
 
 	it('logs non-fatal enrichment errors in full mode', async () => {
+		const ingestLog = await import('../src/log');
+		const errorSpy = vi.spyOn(ingestLog, 'ingestNonFatalError').mockImplementation(() => {});
 		const topGamesCache = await import('../src/twitch/top-games-cache');
 		vi.spyOn(topGamesCache, 'writeCachedTopGames').mockResolvedValue(undefined);
 		vi.spyOn(TwitchHelixClient.prototype, 'getTopGames').mockResolvedValue([
@@ -127,5 +149,32 @@ describe('runTwitchDiscovery quick mode', () => {
 			quick: false
 		});
 		expect(stats.gamesScanned).toBeGreaterThan(0);
+		expect(errorSpy).toHaveBeenCalledWith(
+			'discovery profile enrichment failed (non-fatal)',
+			expect.any(Error)
+		);
+	});
+
+	it('skips empty game pages when cursor is present', async () => {
+		vi.spyOn(TwitchHelixClient.prototype, 'getTopGames').mockResolvedValue([
+			{ id: 'g1', name: 'G1', box_art_url: '' }
+		]);
+		let call = 0;
+		vi.spyOn(TwitchHelixClient.prototype, 'getStreamsByGameId').mockImplementation(async () => {
+			call++;
+			if (call === 1) {
+				return { data: [], pagination: { cursor: 'empty-skip' } };
+			}
+			return {
+				data: [helixStream('u1', 50)],
+				pagination: {}
+			};
+		});
+
+		const stats = await runTwitchDiscovery({ TWITCH_MIN_VIEWERS: '2', DB: {} } as Env, {
+			quick: true
+		});
+		expect(stats.pagesFetched).toBe(2);
+		expect(stats.streamsSeen).toBeGreaterThan(0);
 	});
 });

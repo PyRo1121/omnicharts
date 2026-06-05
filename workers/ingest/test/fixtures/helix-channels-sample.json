@@ -1,0 +1,28 @@
+{
+  "data": [
+    {
+      "broadcaster_id": "545050196",
+      "broadcaster_login": "kato_junichi0817",
+      "broadcaster_name": "KatoJunichi",
+      "game_id": "509658",
+      "game_name": "Just Chatting",
+      "title": "Offline channel title",
+      "tags": ["日本語", "English"],
+      "delay": 0,
+      "content_classification_labels": [],
+      "is_branded_content": false
+    },
+    {
+      "broadcaster_id": "141981764",
+      "broadcaster_login": "twitch",
+      "broadcaster_name": "Twitch",
+      "game_id": "26936",
+      "game_name": "World of Warcraft",
+      "title": "Welcome to Twitch",
+      "tags": ["English"],
+      "delay": 0,
+      "content_classification_labels": [],
+      "is_branded_content": true
+    }
+  ]
+}

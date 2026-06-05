@@ -1,0 +1,66 @@
+{
+  "data": [
+    {
+      "id": "316033372147",
+      "user_id": "545050196",
+      "user_login": "[redacted:user_login]",
+      "user_name": "[redacted:user_name]",
+      "game_id": "515025",
+      "game_name": "[redacted:game_name]",
+      "type": "live",
+      "title": "[redacted:title]",
+      "viewer_count": 31680,
+      "started_at": "2026-06-01T08:56:12Z",
+      "language": "ja",
+      "thumbnail_url": "https://static-cdn.jtvnw.net/previews-ttv/live_user_kato_junichi0817-{width}x{height}.jpg",
+      "tag_ids": [],
+      "tags": [
+        "日本語",
+        "Drops有効"
+      ],
+      "is_mature": false
+    },
+    {
+      "id": "317952340567",
+      "user_id": "411377640",
+      "user_login": "[redacted:user_login]",
+      "user_name": "[redacted:user_name]",
+      "game_id": "498592",
+      "game_name": "[redacted:game_name]",
+      "type": "live",
+      "title": "[redacted:title]",
+      "viewer_count": 19641,
+      "started_at": "2026-05-31T16:09:35Z",
+      "language": "en",
+      "thumbnail_url": "https://static-cdn.jtvnw.net/previews-ttv/live_user_jynxzi-{width}x{height}.jpg",
+      "tag_ids": [],
+      "tags": [
+        "English",
+        "ViewerRewards"
+      ],
+      "is_mature": false
+    },
+    {
+      "id": "316033249651",
+      "user_id": "142898099",
+      "user_login": "[redacted:user_login]",
+      "user_name": "[redacted:user_name]",
+      "game_id": "1158884259",
+      "game_name": "[redacted:game_name]",
+      "type": "live",
+      "title": "[redacted:title]",
+      "viewer_count": 13533,
+      "started_at": "2026-06-01T08:17:08Z",
+      "language": "ja",
+      "thumbnail_url": "https://static-cdn.jtvnw.net/previews-ttv/live_user_gon_vl-{width}x{height}.jpg",
+      "tag_ids": [],
+      "tags": [
+        "日本語"
+      ],
+      "is_mature": false
+    }
+  ],
+  "pagination": {
+    "cursor": "eyJiIjp7IkN1cnNvciI6ImV5SnpJam96TVRZNE1DNDNNekU0T1RnME5qY3lNamNzSW1RaU9tWmhiSE5sTENKMElqcDBjblZsZlE9PSJ9LCJhIjp7IkN1cnNvciI6ImV5SnpJam94TlRVekxqUXhNekF5TlRRNE5ETTBOamNzSW1RaU9tWmhiSE5sTENKMElqcDBjblZsZlE9PSJ9fQ"
+  }
+}

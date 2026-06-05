@@ -1,0 +1,31 @@
+# Copy to workers/ingest/.dev.vars (never commit .dev.vars)
+# https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
+# Coverage caps: baked in wrangler.jsonc (staging/production) — docs/21, docs/22, docs/23
+
+# --- Secrets (required for Helix / EventSub) ---
+# Production: wrangler secret put from workers/ingest — docs/15-ingest-runbook.md
+ADMIN_API_KEY=
+TWITCH_CLIENT_ID=
+TWITCH_CLIENT_SECRET=
+
+# EventSub webhook (Phase 1b) — required for POST /admin/twitch/eventsub/sync
+# transport.secret: minimum 10 characters, maximum 100 (ASCII). NOT the Twitch client_secret.
+# If the value contains $, wrap in single quotes in .dev.vars (e.g. TWITCH_EVENTSUB_SECRET='abc$xyz') — unquoted $ is expanded by the shell/dotenv parser.
+TWITCH_EVENTSUB_SECRET=
+# Public HTTPS :443 — e.g. cloudflared tunnel + /webhooks/twitch/eventsub
+TWITCH_EVENTSUB_CALLBACK_URL=
+
+# --- Optional local overrides (omit for wrangler auto-defaults) ---
+# INGEST_COVERAGE_MODE=shards_only
+# LIVE_SWEEP_MAX_PAGES=3
+# GAME_PASS_GAMES_PER_CYCLE=2
+# TWITCH_MAX_TRACKED=200
+# TWITCH_MIN_VIEWERS=20
+# SAMPLE_ARCHIVE_ENABLED=0
+# TWITCH_RANKING_MIN_AIRTIME_MINUTES=1
+# D1_META_LOG=1
+# SAMPLE_ARCHIVE_ENABLED=1
+# SAMPLE_ARCHIVE_MIN_ROWS=10
+# INGEST_RATE_LIMIT_PER_MINUTE=60
+# INGEST_RATE_LIMIT_DISABLED=1
+# ALLOW_DEV_SEED=1

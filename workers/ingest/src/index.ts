@@ -5,13 +5,28 @@
 
 import { parseQueueBody, type IngestQueueMessage } from './messages';
 import { runTwitchDiscovery } from './twitch/discover';
-import { enqueueTwitchPollShards, runTwitchPollBatch } from './twitch/poll';
+import {
+	enqueueTwitchPollShards,
+	runTwitchCatalogPoll,
+	runTwitchPollBatch
+} from './twitch/poll';
 import { runTwitchLiveSweep } from './twitch/sweep';
 import { runTwitchCoverageCycle } from './twitch/coverage';
 import { runTwitchGamePass } from './twitch/game-pass';
+import { runTwitchSweepAndGamePass } from './twitch/sweep-game-pass';
 import { runTwitchReconcileRecent } from './twitch/reconcile';
 import { runTwitchPollPlatform } from './twitch/poll-platform';
 import { checkPublicRateLimit } from './http/rate-limit';
+import { corsAllowOrigin } from './http/cors';
+import {
+	getCachedRankingsChannels,
+	getCachedRankingsGames,
+	rankingsChannelsCacheKey,
+	rankingsGamesCacheKey,
+	rankingsResponseHeaders,
+	setCachedRankingsChannels,
+	setCachedRankingsGames
+} from './http/rankings-cache';
 import { ENRICH_MAX_CHANNELS_PER_RUN } from './twitch/config';
 import { runTwitchProfileEnrichment } from './twitch/enrich-profiles';
 import { handleTwitchEventSubWebhook } from './twitch/eventsub/handler';
@@ -39,8 +54,8 @@ import {
 	buildGameDetailResponse,
 	parseGameDetailQuery
 } from './ranking/game-api';
-import { searchChannels } from './search/channels';
-import { TWITCH_PLATFORM_ID } from './twitch/config';
+import { parseSearchChannelsQuery, searchChannels } from './search/channels';
+import { PLATFORM_TWITCH } from '@omnicharts/domain';
 import { hasTwitchAppCredentials, twitchAppCredentialsErrorResponse } from './twitch/credentials';
 import { isDevAdminRouteAllowed } from './dev/admin-guard';
 import { clearDevSeedChannels } from './dev/clear-seed';
@@ -48,10 +63,11 @@ import { seedDevRankings } from './dev/seed-rankings';
 import { recordDiscoverySeed } from './discovery/seed';
 import { rankingQueryOptionsFromEnv } from './ranking/rollup-queries';
 import { isAdminPostPath, isAdminRankingsGetPath, requireAdminApiKey } from './admin/auth';
+import { ingestNonFatalError, ingestWarn } from './log';
 import { cronToMessages } from './cron-messages';
-
+import { requireDb, requireIngestQueue } from './worker-bindings';
 export default {
-	async fetch(request, env): Promise<Response> {
+	async fetch(request, env, ctx): Promise<Response> {
 		const url = new URL(request.url);
 
 		const rateLimited = checkPublicRateLimit(request, env, url.pathname);
@@ -87,7 +103,7 @@ export default {
 		}
 
 		if (url.pathname === '/webhooks/twitch/eventsub' && request.method === 'POST') {
-			return handleTwitchEventSubWebhook(request, env);
+			return handleTwitchEventSubWebhook(request, env, ctx);
 		}
 
 		if (url.pathname === '/admin/twitch/eventsub/sync' && request.method === 'POST') {
@@ -138,10 +154,12 @@ export default {
 	},
 
 	async scheduled(event, env, ctx): Promise<void> {
-		const messages = cronToMessages(event.cron);
+		const messages = cronToMessages(event.cron, env);
 		if (messages.length === 0) return;
 		ctx.waitUntil(
-			env.INGEST_QUEUE.sendBatch(messages.map((body) => ({ body })))
+			requireIngestQueue(env)
+				.sendBatch(messages.map((body) => ({ body })))
+				.catch((err) => ingestNonFatalError('scheduled sendBatch failed', err))
 		);
 	},
 
@@ -150,6 +168,7 @@ export default {
 			try {
 				const payload = parseQueueBody(message.body);
 				if (!payload) {
+					ingestWarn('queue: ack invalid message body (drop)', message.body);
 					message.ack();
 					continue;
 				}
@@ -169,9 +188,14 @@ async function handleQueueMessage(payload: IngestQueueMessage, env: Env): Promis
 			if (payload.platform === 'twitch') {
 				await runTwitchPollPlatform(env);
 			}
+			// Phase 3: Kick/YouTube poll_platform handlers — no-op until ADR-003 ingest ships.
+			break;
+		case 'poll_kick_tracked':
+		case 'poll_youtube_tracked':
+			// Phase 3: tracked catalog poll — no-op until Kick/YouTube ingest (see kick/poll-platform.ts).
 			break;
 		case 'poll_twitch_sweep':
-			await runTwitchLiveSweep(env);
+			await runTwitchSweepAndGamePass(env);
 			break;
 		case 'poll_twitch_game_pass':
 			await runTwitchGamePass(env);
@@ -180,17 +204,16 @@ async function handleQueueMessage(payload: IngestQueueMessage, env: Env): Promis
 			const reconcile = await runTwitchReconcileRecent(env);
 			const enrichIds = reconcile.platformChannelIds.slice(0, ENRICH_MAX_CHANNELS_PER_RUN);
 			if (enrichIds.length > 0) {
-				await env.INGEST_QUEUE.sendBatch([
-					{
-						body: {
-							type: 'poll_twitch_enrich',
-							platform_channel_ids: enrichIds
-						}
-					}
-				]);
+				await runTwitchProfileEnrichment(env, {
+					platformChannelIds: enrichIds,
+					includeFollowers: false
+				});
 			}
 			break;
 		}
+		case 'poll_twitch_catalog':
+			await runTwitchCatalogPoll(env);
+			break;
 		case 'poll_twitch_enrich':
 			await runTwitchProfileEnrichment(env, {
 				platformChannelIds: payload.platform_channel_ids,
@@ -252,7 +275,7 @@ async function adminTwitchDiscover(request: Request, env: Env): Promise<Response
 		/* empty body */
 	}
 	const stats = await runTwitchDiscovery(env, { quick });
-	await recordDiscoverySeed(env.DB, stats);
+	await recordDiscoverySeed(requireDb(env), stats);
 	return Response.json({ ok: true, stats, quick });
 }
 
@@ -313,49 +336,89 @@ async function adminRollupDaily(request: Request, env: Env): Promise<Response> {
 	return Response.json({ ok: true, stats });
 }
 
+function rankingsQueryErrorResponse(error: 'invalid_period' | 'invalid_limit'): Response {
+	return Response.json(
+		{
+			error: {
+				code: error,
+				message:
+					error === 'invalid_period'
+						? 'period must be one of 24h, 7d, 30d, 90d'
+						: 'limit must be a positive integer'
+			}
+		},
+		{ status: 400 }
+	);
+}
+
+function searchQueryErrorResponse(
+	error: 'invalid_query' | 'invalid_limit' | 'invalid_platform'
+): Response {
+	const messages: Record<typeof error, string> = {
+		invalid_query: 'q must be between 2 and 100 characters',
+		invalid_limit: 'limit must be a positive integer',
+		invalid_platform: 'platform must be twitch, kick, or youtube'
+	};
+	return Response.json(
+		{ error: { code: error, message: messages[error] } },
+		{ status: 400 }
+	);
+}
+
 async function publicRankingsChannels(request: Request, env: Env): Promise<Response> {
 	const url = new URL(request.url);
 	const parsed = parseRankingsChannelsQuery(url);
 	if (!parsed.ok) {
-		return Response.json(
-			{
-				error: {
-					code: parsed.error,
-					message:
-						parsed.error === 'invalid_period'
-							? 'period must be one of 24h, 7d, 30d, 90d'
-							: 'limit must be a positive integer'
-				}
-			},
-			{ status: 400 }
-		);
+		return rankingsQueryErrorResponse(parsed.error);
 	}
 	const eligibility = rankingQueryOptionsFromEnv(env);
-	const body = await buildRankingsChannelsResponse(env.DB, {
+	const cacheKey = rankingsChannelsCacheKey({
 		platform: parsed.platform,
 		period: parsed.period,
 		limit: parsed.limit,
 		minAverageViewers: eligibility.minAverageViewers,
 		minAirtimeMinutes: eligibility.minAirtimeMinutes
 	});
-	return Response.json(body, {
-		headers: {
-			'cache-control': 'public, max-age=60',
-			'access-control-allow-origin': '*'
-		}
+	const cached = getCachedRankingsChannels(cacheKey);
+	if (cached) {
+		return new Response(cached, { headers: rankingsResponseHeaders(request) });
+	}
+	const db = requireDb(env);
+	const body = await buildRankingsChannelsResponse(db, {
+		platform: parsed.platform,
+		period: parsed.period,
+		limit: parsed.limit,
+		minAverageViewers: eligibility.minAverageViewers,
+		minAirtimeMinutes: eligibility.minAirtimeMinutes
 	});
+	const json = JSON.stringify(body);
+	setCachedRankingsChannels(cacheKey, json);
+	return new Response(json, { headers: rankingsResponseHeaders(request) });
 }
 
 async function publicRankingsGames(request: Request, env: Env): Promise<Response> {
 	const url = new URL(request.url);
-	const query = parseRankingsGamesQuery(url);
-	const body = await buildRankingsGamesResponse(env.DB, query, env);
-	return Response.json(body, {
-		headers: {
-			'cache-control': 'public, max-age=60',
-			'access-control-allow-origin': '*'
-		}
+	const parsed = parseRankingsGamesQuery(url);
+	if (!parsed.ok) {
+		return rankingsQueryErrorResponse(parsed.error);
+	}
+	const eligibility = rankingQueryOptionsFromEnv(env);
+	const cacheKey = rankingsGamesCacheKey({
+		platform: parsed.platform,
+		period: parsed.period,
+		limit: parsed.limit,
+		minAverageViewers: eligibility.minAverageViewers,
+		minAirtimeMinutes: eligibility.minAirtimeMinutes
 	});
+	const cached = getCachedRankingsGames(cacheKey);
+	if (cached) {
+		return new Response(cached, { headers: rankingsResponseHeaders(request) });
+	}
+	const db = requireDb(env);
+	const body = await buildRankingsGamesResponse(db, parsed, env);
+	const json = JSON.stringify(body);
+	setCachedRankingsGames(cacheKey, json);
+	return new Response(json, { headers: rankingsResponseHeaders(request) });
 }
 
 async function adminDevRoute(env: Env, handler: () => Promise<Response>): Promise<Response> {
@@ -371,21 +434,21 @@ async function adminDevSeedRankings(env: Env): Promise<Response> {
 }
 
 async function adminDevResetForLiveTest(env: Env): Promise<Response> {
-	const stats = await clearDevSeedChannels(env.DB);
+	const stats = await clearDevSeedChannels(requireDb(env));
 	return Response.json({ ok: true, stats });
 }
 
 async function publicChannelResolve(request: Request, env: Env): Promise<Response> {
 	const url = new URL(request.url);
 	const slug = url.searchParams.get('slug')?.trim() ?? '';
-	const platform = url.searchParams.get('platform') ?? TWITCH_PLATFORM_ID;
+	const platform = url.searchParams.get('platform') ?? PLATFORM_TWITCH;
 	if (!slug) {
 		return Response.json(
 			{ error: { code: 'bad_request', message: 'slug is required' } },
 			{ status: 400 }
 		);
 	}
-	const resolved = await resolveChannelSlug(env.DB, { platform, slug });
+	const resolved = await resolveChannelSlug(requireDb(env), { platform, slug });
 	if (!resolved) {
 		return Response.json(
 			{ error: { code: 'not_found', message: 'Channel not found' } },
@@ -397,7 +460,7 @@ async function publicChannelResolve(request: Request, env: Env): Promise<Respons
 		{
 			headers: {
 				'cache-control': 'public, max-age=300',
-				'access-control-allow-origin': '*'
+				...corsAllowOrigin(request)
 			}
 		}
 	);
@@ -411,7 +474,7 @@ async function publicChannelDetail(
 	const url = new URL(request.url);
 	url.pathname = `/v1/channels/${slug}`;
 	const query = parseChannelDetailQuery(url);
-	const body = await buildChannelDetailResponse(env.DB, {
+	const body = await buildChannelDetailResponse(requireDb(env), {
 		platform: query.platform,
 		slug: query.slug,
 		period: query.period
@@ -425,7 +488,7 @@ async function publicChannelDetail(
 	return Response.json(body, {
 		headers: {
 			'cache-control': 'public, max-age=120',
-			'access-control-allow-origin': '*'
+			...corsAllowOrigin(request)
 		}
 	});
 }
@@ -438,11 +501,16 @@ async function publicGameDetail(
 	const url = new URL(request.url);
 	url.pathname = `/v1/games/${slug}`;
 	const query = parseGameDetailQuery(url);
-	const body = await buildGameDetailResponse(env.DB, {
-		platform: query.platform,
-		slug: query.slug,
-		period: query.period
-	});
+	const rankingOpts = rankingQueryOptionsFromEnv(env);
+	const body = await buildGameDetailResponse(
+		requireDb(env),
+		{
+			platform: query.platform,
+			slug: query.slug,
+			period: query.period
+		},
+		{ minAirtimeMinutes: rankingOpts.minAirtimeMinutes }
+	);
 	if (!body) {
 		return Response.json(
 			{ error: { code: 'not_found', message: 'Game not found' } },
@@ -452,17 +520,22 @@ async function publicGameDetail(
 	return Response.json(body, {
 		headers: {
 			'cache-control': 'public, max-age=120',
-			'access-control-allow-origin': '*'
+			...corsAllowOrigin(request)
 		}
 	});
 }
 
 async function publicSearchChannels(request: Request, env: Env): Promise<Response> {
 	const url = new URL(request.url);
-	const q = url.searchParams.get('q') ?? '';
-	const platform = url.searchParams.get('platform') ?? TWITCH_PLATFORM_ID;
-	const limit = Number(url.searchParams.get('limit') ?? '10');
-	const results = await searchChannels(env.DB, { platformId: platform, query: q, limit });
+	const parsed = parseSearchChannelsQuery(url);
+	if (!parsed.ok) {
+		return searchQueryErrorResponse(parsed.error);
+	}
+	const results = await searchChannels(requireDb(env), {
+		platformId: parsed.platformId,
+		query: parsed.query,
+		limit: parsed.limit
+	});
 	return Response.json(
 		{ results },
 		{ headers: { 'cache-control': 'private, max-age=30' } }

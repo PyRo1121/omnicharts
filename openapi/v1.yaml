@@ -1,0 +1,460 @@
+openapi: 3.1.0
+info:
+  title: OmniCharts API
+  version: 1.0.0
+  description: |
+    Public REST API for OmniCharts streaming analytics (implemented subset).
+
+    **Platform:** Twitch ingest only in Phase 2. `kick` and `youtube` return empty leaderboards (`items: []`) until Phase 3.
+    Search rejects unknown platforms with `400` + `invalid_platform`. Channel/game detail returns `404` until Phase 3.
+
+    **Periods:** `24h`, `7d`, `30d`, `90d` (rankings and channel detail). Web UI hides `90d` until Phase 4 retention.
+
+    Metrics come from OmniCharts rollups, not third-party warehouses.
+
+servers:
+  - url: https://ingest.omnicharts.com/v1
+    description: Ingest Worker (production TBD)
+  - url: http://127.0.0.1:8787/v1
+    description: Local wrangler dev
+
+tags:
+  - name: rankings
+  - name: channels
+  - name: games
+  - name: search
+
+paths:
+  /rankings/channels:
+    get:
+      tags: [rankings]
+      summary: Top channels by hours watched (Twitch)
+      operationId: listChannelRankings
+      parameters:
+        - $ref: '#/components/parameters/platform'
+        - $ref: '#/components/parameters/period'
+        - $ref: '#/components/parameters/limit'
+      responses:
+        '200':
+          description: Ranked channel list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChannelRankingResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /rankings/games:
+    get:
+      tags: [rankings]
+      summary: Top games by average viewers (Twitch)
+      operationId: listGameRankings
+      parameters:
+        - $ref: '#/components/parameters/platform'
+        - $ref: '#/components/parameters/period'
+        - $ref: '#/components/parameters/limit'
+      responses:
+        '200':
+          description: Ranked game list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameRankingResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /channels/{slug}:
+    get:
+      tags: [channels]
+      summary: Channel summary and daily rollup series
+      operationId: getChannel
+      parameters:
+        - $ref: '#/components/parameters/slug'
+        - $ref: '#/components/parameters/platform'
+        - $ref: '#/components/parameters/period'
+      responses:
+        '200':
+          description: Channel detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChannelDetailResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /channels/resolve:
+    get:
+      tags: [channels]
+      summary: Resolve slug or slug_history alias to canonical slug
+      operationId: resolveChannelSlug
+      parameters:
+        - name: slug
+          in: query
+          required: true
+          schema:
+            type: string
+        - $ref: '#/components/parameters/platform'
+      responses:
+        '200':
+          description: Canonical slug
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [platform, slug, from_history]
+                properties:
+                  platform:
+                    $ref: '#/components/schemas/Platform'
+                  slug:
+                    type: string
+                  from_history:
+                    type: boolean
+                    description: true when resolved via slug_history
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /games/{slug}:
+    get:
+      tags: [games]
+      summary: Game/category summary (Twitch)
+      operationId: getGame
+      parameters:
+        - $ref: '#/components/parameters/slug'
+        - $ref: '#/components/parameters/platform'
+        - $ref: '#/components/parameters/period'
+      responses:
+        '200':
+          description: Game detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameDetailResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /search/channels:
+    get:
+      tags: [search]
+      summary: Search channels by slug or display name prefix
+      operationId: searchChannels
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 100
+        - $ref: '#/components/parameters/platform'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 25
+            default: 10
+      responses:
+        '200':
+          description: Search hits
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChannelSearchResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+components:
+  parameters:
+    platform:
+      name: platform
+      in: query
+      schema:
+        $ref: '#/components/schemas/Platform'
+      description: Only `twitch` returns data today.
+    period:
+      name: period
+      in: query
+      schema:
+        $ref: '#/components/schemas/Period'
+    slug:
+      name: slug
+      in: path
+      required: true
+      schema:
+        type: string
+    limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  schemas:
+    Platform:
+      type: string
+      enum: [twitch, kick, youtube]
+
+    Period:
+      type: string
+      enum: [24h, 7d, 30d, 90d]
+      default: 7d
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+
+    ChannelRankingItem:
+      type: object
+      required:
+        - rank
+        - slug
+        - display_name
+        - hours_watched
+        - average_viewers
+      properties:
+        rank:
+          type: integer
+        slug:
+          type: string
+        display_name:
+          type: string
+        avatar_url:
+          type: [string, 'null']
+          format: uri
+        hours_watched:
+          type: number
+        average_viewers:
+          type: number
+        peak_viewers:
+          type: [integer, 'null']
+          description: Max daily peak in period; null if no rollup rows (legacy clients).
+        airtime_hours:
+          type: [number, 'null']
+          description: Sum of airtime in period, hours; null if no rollup rows.
+        stream_count:
+          type: integer
+          description: Sum of daily stream_count rollup rows in period.
+        tracked_since:
+          type: [string, 'null']
+          format: date-time
+
+    ChannelRankingResponse:
+      type: object
+      required: [platform, period, updated_at, items]
+      properties:
+        platform:
+          $ref: '#/components/schemas/Platform'
+        period:
+          $ref: '#/components/schemas/Period'
+        updated_at:
+          type: string
+          format: date-time
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChannelRankingItem'
+
+    GameRankingItem:
+      type: object
+      required: [rank, slug, name, average_viewers]
+      properties:
+        rank:
+          type: integer
+        slug:
+          type: string
+        name:
+          type: string
+        average_viewers:
+          type: number
+        hours_watched:
+          type: number
+
+    GameRankingResponse:
+      type: object
+      required: [platform, period, updated_at, items]
+      properties:
+        platform:
+          $ref: '#/components/schemas/Platform'
+        period:
+          $ref: '#/components/schemas/Period'
+        updated_at:
+          type: string
+          format: date-time
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameRankingItem'
+
+    DailyMetricPoint:
+      type: object
+      required:
+        - date
+        - hours_watched
+        - average_viewers
+        - peak_viewers
+        - airtime_hours
+        - stream_count
+      properties:
+        date:
+          type: string
+          format: date
+        hours_watched:
+          type: number
+        average_viewers:
+          type: number
+        peak_viewers:
+          type: integer
+        airtime_hours:
+          type: number
+          description: airtime_minutes / 60, one decimal
+        stream_count:
+          type: integer
+
+    ChannelDetailResponse:
+      type: object
+      required:
+        - platform
+        - slug
+        - display_name
+        - ingest_state
+        - period
+        - totals
+        - daily
+      properties:
+        platform:
+          $ref: '#/components/schemas/Platform'
+        slug:
+          type: string
+        display_name:
+          type: string
+        avatar_url:
+          type: [string, 'null']
+          format: uri
+        language:
+          type: [string, 'null']
+        tracked_since:
+          type: [string, 'null']
+          format: date-time
+          description: first_observed_at in ingest DB
+        ingest_state:
+          type: string
+          enum: [discovered, tracked, dormant, retired]
+        follower_count:
+          type: [integer, 'null']
+        description:
+          type: [string, 'null']
+        period:
+          $ref: '#/components/schemas/Period'
+        totals:
+          type: object
+          required:
+            - hours_watched
+            - average_viewers
+            - peak_viewers
+            - airtime_hours
+            - stream_count
+            - followers_gain
+          properties:
+            hours_watched:
+              type: number
+            average_viewers:
+              type: number
+            peak_viewers:
+              type: integer
+            airtime_hours:
+              type: number
+            stream_count:
+              type: integer
+            followers_gain:
+              type: [integer, 'null']
+              description: Sum of daily followers_delta when snapshots exist
+        daily:
+          type: array
+          items:
+            $ref: '#/components/schemas/DailyMetricPoint'
+
+    GameDetailResponse:
+      type: object
+      properties:
+        platform:
+          $ref: '#/components/schemas/Platform'
+        slug:
+          type: string
+        name:
+          type: string
+        period:
+          $ref: '#/components/schemas/Period'
+        totals:
+          type: object
+        daily:
+          type: array
+          items:
+            $ref: '#/components/schemas/DailyMetricPoint'
+        top_channels:
+          type: array
+          description: Top tracked channels for this game in the period (hours watched)
+          items:
+            type: object
+            required: [rank, slug, display_name, hours_watched]
+            properties:
+              rank:
+                type: integer
+              slug:
+                type: string
+              display_name:
+                type: string
+              avatar_url:
+                type: [string, 'null']
+                format: uri
+              hours_watched:
+                type: number
+
+    ChannelSearchHit:
+      type: object
+      required: [id, slug, display_name, platform_id]
+      properties:
+        id:
+          type: string
+        slug:
+          type: string
+        display_name:
+          type: string
+        avatar_url:
+          type: [string, 'null']
+          format: uri
+        platform_id:
+          $ref: '#/components/schemas/Platform'
+
+    ChannelSearchResponse:
+      type: object
+      required: [results]
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChannelSearchHit'
+
+  responses:
+    BadRequest:
+      description: Invalid parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

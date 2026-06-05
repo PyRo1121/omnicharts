@@ -1,0 +1,32 @@
+{
+	"name": "ingest",
+	"version": "0.0.0",
+	"private": true,
+	"scripts": {
+		"deploy": "wrangler deploy",
+		"dev": "bun ../../scripts/dev/wrangler-decline-skills.ts && wrangler dev --test-scheduled --show-interactive-dev-session false",
+		"test": "node ../../scripts/dev/strip-test-noise.mjs",
+		"test:watch": "vitest",
+		"test:coverage": "vitest run --project unit --coverage",
+		"check": "tsc -p tsconfig.json",
+		"cf-typegen": "wrangler types"
+	},
+	"exports": {
+		"./health/operational-metrics": {
+			"types": "./src/health/operational-metrics.ts",
+			"default": "./src/health/operational-metrics.ts"
+		}
+	},
+	"dependencies": {
+		"@omnicharts/domain": "workspace:*",
+		"@omnicharts/rollup": "workspace:*"
+	},
+	"devDependencies": {
+		"@cloudflare/vitest-pool-workers": "^0.12.4",
+		"@types/node": "^25.9.1",
+		"@vitest/coverage-v8": "~3.2.0",
+		"typescript": "^5.5.2",
+		"vitest": "~3.2.0",
+		"wrangler": "4.97.0"
+	}
+}

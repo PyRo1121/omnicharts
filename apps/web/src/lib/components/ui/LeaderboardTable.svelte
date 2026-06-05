@@ -1,0 +1,87 @@
+<script lang="ts">
+	import AvatarImage from '$lib/components/ui/AvatarImage.svelte';
+	import { cn } from '$lib/utils/cn';
+	import type { PlatformId } from '$lib/mock/home';
+
+	export type LeaderboardRow = {
+		rank: number;
+		href: string;
+		primary: string;
+		secondary?: string;
+		imageUrl: string;
+		imageAlt: string;
+		metric: string;
+		metricLabel: string;
+		platform?: Exclude<PlatformId, 'all'>;
+	};
+
+	interface Props {
+		rows: LeaderboardRow[];
+		metricHeader: string;
+	}
+
+	let { rows, metricHeader }: Props = $props();
+
+	const platformLabel: Record<Exclude<PlatformId, 'all'>, string> = {
+		twitch: 'Twitch',
+		kick: 'Kick',
+		youtube: 'YouTube'
+	};
+</script>
+
+<div class="overflow-hidden rounded-xl border border-[var(--color-oc-border)] bg-[var(--color-oc-bg-card)]">
+	<table class="w-full text-left text-sm">
+		<thead>
+			<tr class="border-b border-[var(--color-oc-border-subtle)] text-xs uppercase tracking-wider text-[var(--color-oc-text-faint)]">
+				<th scope="col" class="w-12 px-4 py-3 font-medium">#</th>
+				<th scope="col" class="px-4 py-3 font-medium">Name</th>
+				<th scope="col" class="hidden px-4 py-3 font-medium sm:table-cell">Platform</th>
+				<th scope="col" class="px-4 py-3 text-right font-medium">{metricHeader}</th>
+			</tr>
+		</thead>
+		<tbody>
+			{#each rows as row (row.href)}
+				<tr
+					class="group border-b border-[var(--color-oc-border-subtle)] last:border-0 transition-colors hover:bg-[var(--color-oc-bg-hover)]"
+				>
+					<td class="px-4 py-3">
+						<span
+							class={cn(
+								'inline-flex size-7 items-center justify-center rounded-md font-mono text-xs font-semibold',
+								row.rank <= 3
+									? 'bg-[color-mix(in_oklab,var(--color-oc-highlight)_20%,transparent)] text-[var(--color-oc-highlight)]'
+									: 'bg-[var(--color-oc-bg-elevated)] text-[var(--color-oc-text-muted)]'
+							)}
+						>
+							{row.rank}
+						</span>
+					</td>
+					<td class="px-4 py-3">
+						<a href={row.href} class="flex items-center gap-3 min-w-0">
+							<AvatarImage src={row.imageUrl} alt="" size={40} />
+							<span class="min-w-0">
+								<span class="block truncate font-medium text-[var(--color-oc-text)] group-hover:text-[var(--color-oc-accent)]">
+									{row.primary}
+								</span>
+								{#if row.secondary}
+									<span class="block truncate text-xs text-[var(--color-oc-text-faint)]">{row.secondary}</span>
+								{/if}
+							</span>
+						</a>
+					</td>
+					<td class="hidden px-4 py-3 sm:table-cell">
+						{#if row.platform}
+							<span class="text-xs text-[var(--color-oc-text-muted)]">{platformLabel[row.platform]}</span>
+						{/if}
+					</td>
+					<td class="px-4 py-3 text-right">
+						<span class="font-mono text-sm font-medium tabular-nums text-[var(--color-oc-text)]">{row.metric}</span>
+						<span class="mt-0.5 block text-[10px] uppercase tracking-wide text-[var(--color-oc-text-faint)]">
+							{row.metricLabel}
+						</span>
+					</td>
+				</tr>
+			{/each}
+		</tbody>
+	</table>
+</div>

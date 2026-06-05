@@ -20,5 +20,8 @@ describe('parseQueueBody', () => {
 		expect(parseQueueBody(null)).toBeNull();
 		expect(parseQueueBody('not json')).toBeNull();
 		expect(parseQueueBody({})).toBeNull();
+		expect(parseQueueBody({ type: 'unknown_type' })).toBeNull();
+		expect(parseQueueBody({ type: 'poll_platform' })).toBeNull();
+		expect(parseQueueBody({ type: 'poll_channel_batch', platform: 'twitch' })).toBeNull();
 	});
 });

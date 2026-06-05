@@ -11,5 +11,7 @@ describe('wrangler staging free-tier profile', () => {
 		expect(raw).toMatch(/"staging"[\s\S]*?"crons"\s*:\s*\[[\s\S]*?"\*\/5 \* \* \* \*"/);
 		expect(raw).toMatch(/"staging"[\s\S]*?"INGEST_COVERAGE_MODE"\s*:\s*"shards_only"/);
 		expect(raw).toMatch(/"staging"[\s\S]*?"TWITCH_MAX_TRACKED"\s*:\s*"200"/);
+		expect(raw).toMatch(/"staging"[\s\S]*?"LIVE_SWEEP_MAX_PAGES"\s*:\s*"3"/);
+		expect(raw).toMatch(/"staging"[\s\S]*?"GAME_PASS_GAMES_PER_CYCLE"\s*:\s*"2"/);
 	});
 });

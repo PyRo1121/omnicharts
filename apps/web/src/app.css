@@ -1,0 +1,71 @@
+@import 'tailwindcss';
+
+@theme {
+	--font-display: 'Sora', system-ui, sans-serif;
+	--font-sans: 'Source Sans 3', system-ui, sans-serif;
+	--font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+	--color-oc-bg: #0c0e14;
+	--color-oc-bg-elevated: #12151e;
+	--color-oc-bg-card: #161a26;
+	--color-oc-bg-hover: #1c2130;
+	--color-oc-border: #2a3144;
+	--color-oc-border-subtle: #1f2433;
+
+	--color-oc-text: #e8eaf0;
+	--color-oc-text-muted: #8b93a8;
+	--color-oc-text-faint: #7a8499;
+
+	--color-oc-accent: #2dd4bf;
+	--color-oc-accent-dim: #14b8a6;
+	--color-oc-highlight: #f59e0b;
+	--color-oc-danger: #f87171;
+
+	--color-oc-twitch: #9146ff;
+	--color-oc-kick: #53fc18;
+	--color-oc-youtube: #ff0033;
+
+	--radius-oc-sm: 0.375rem;
+	--radius-oc-md: 0.5rem;
+	--radius-oc-lg: 0.75rem;
+	--radius-oc-xl: 1rem;
+}
+
+@layer base {
+	html {
+		@apply antialiased;
+		font-family: var(--font-sans);
+		background-color: var(--color-oc-bg);
+		color: var(--color-oc-text);
+	}
+
+	body {
+		min-height: 100dvh;
+	}
+
+	a {
+		@apply transition-colors duration-150;
+	}
+
+	::selection {
+		background: color-mix(in oklab, var(--color-oc-accent) 35%, transparent);
+	}
+}
+
+@layer utilities {
+	.oc-grid-bg {
+		background-image:
+			linear-gradient(color-mix(in oklab, var(--color-oc-border) 40%, transparent) 1px, transparent 1px),
+			linear-gradient(
+				90deg,
+				color-mix(in oklab, var(--color-oc-border) 40%, transparent) 1px,
+				transparent 1px
+			);
+		background-size: 48px 48px;
+		mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 20%, transparent 70%);
+	}
+
+	.oc-glow-accent {
+		box-shadow: 0 0 40px color-mix(in oklab, var(--color-oc-accent) 18%, transparent);
+	}
+}

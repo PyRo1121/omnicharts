@@ -1,0 +1,57 @@
+# REM-030 — Twitch verification on PR (no Helix secrets; checkpoint skipped by design).
+# Local full gate: bun run dev:ingest && bun run verify:twitch
+# CI checkpoint (Helix + wrangler): set VERIFY_FULL=1, unset VERIFY_SKIP_CHECKPOINT,
+#   add TWITCH_CLIENT_ID, TWITCH_CLIENT_SECRET, ADMIN_API_KEY, start ingest — see docs/13.
+# This workflow keeps VERIFY_SKIP_CHECKPOINT=1 to avoid CI Helix burn; no nightly job.
+name: verify-twitch
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      CI: true
+      VERIFY_SKIP_CHECKPOINT: '1'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Ingest unit tests
+        run: bun run test:ingest
+
+      - name: Ingest coverage (twitch/ + db/)
+        run: bun run test:ingest:coverage
+
+      - name: Web server load tests
+        run: bun run test:web
+
+      - name: Web typecheck
+        run: bun run check:web
+
+      - name: Web build
+        run: bun run build:web
+
+      - name: OpenAPI lint
+        run: npx --yes @redocly/cli lint openapi/v1.yaml --config openapi/redocly.yaml
+
+      # Checkpoint skipped unless VERIFY_FULL=1 (see docs/13); default PR avoids Helix.
+      - name: verify:twitch (checkpoint skipped)
+        run: bun run verify:twitch
+
+      - name: Install Playwright Chromium (REM-035)
+        continue-on-error: true
+        run: cd apps/web && bunx playwright install chromium --with-deps
+
+      - name: Playwright E2E smoke (non-blocking, REM-035)
+        continue-on-error: true
+        run: bun run test:e2e

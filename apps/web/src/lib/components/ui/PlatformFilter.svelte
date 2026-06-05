@@ -1,0 +1,43 @@
+<script lang="ts">
+	import { cn } from '$lib/utils/cn';
+	import type { PlatformId } from '$lib/mock/home';
+
+	interface Props {
+		platforms: { id: PlatformId; label: string }[];
+		value: PlatformId;
+		onchange?: (id: PlatformId) => void;
+	}
+
+	let { platforms, value, onchange }: Props = $props();
+
+	const dotClass: Record<PlatformId, string> = {
+		all: 'bg-[var(--color-oc-accent)]',
+		twitch: 'bg-[var(--color-oc-twitch)]',
+		kick: 'bg-[var(--color-oc-kick)]',
+		youtube: 'bg-[var(--color-oc-youtube)]'
+	};
+</script>
+
+<div
+	class="flex flex-wrap gap-2"
+	role="tablist"
+	aria-label="Platform"
+>
+	{#each platforms as p (p.id)}
+		<button
+			type="button"
+			role="tab"
+			aria-selected={value === p.id}
+			class={cn(
+				'inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors',
+				value === p.id
+					? 'border-[var(--color-oc-accent)] bg-[color-mix(in_oklab,var(--color-oc-accent)_12%,transparent)] text-[var(--color-oc-text)]'
+					: 'border-[var(--color-oc-border)] bg-[var(--color-oc-bg-card)] text-[var(--color-oc-text-muted)] hover:border-[var(--color-oc-border)] hover:bg-[var(--color-oc-bg-hover)] hover:text-[var(--color-oc-text)]'
+			)}
+			onclick={() => onchange?.(p.id)}
+		>
+			<span class={cn('size-2 rounded-full', dotClass[p.id])} aria-hidden="true"></span>
+			{p.label}
+		</button>
+	{/each}
+</div>

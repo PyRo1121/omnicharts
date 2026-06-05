@@ -1,0 +1,32 @@
+/**
+ * OmniCharts Pages — docs/11, docs/23 (ranking vars parity with ingest production)
+ */
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "omnicharts-web",
+	"compatibility_date": "2026-06-01",
+	"compatibility_flags": ["nodejs_als"],
+	"pages_build_output_dir": ".svelte-kit/cloudflare",
+	// Local platformProxy — match ingest root dev-friendly vars (checkpoint uses airtime=1)
+	"vars": {
+		"TWITCH_MIN_VIEWERS": "2",
+		"TWITCH_RANKING_MIN_AIRTIME_MINUTES": "1"
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "omnicharts",
+			"database_id": "81d6616e-8277-4dd6-954c-2f0470004254",
+			"preview_database_id": "DB",
+			"migrations_dir": "../../migrations/d1"
+		}
+	],
+	"env": {
+		"production": {
+			"vars": {
+				"TWITCH_MIN_VIEWERS": "20",
+				"TWITCH_RANKING_MIN_AIRTIME_MINUTES": "60"
+			}
+		}
+	}
+}

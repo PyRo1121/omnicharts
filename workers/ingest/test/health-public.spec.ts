@@ -36,6 +36,7 @@ describe('public health', () => {
 	it('buildPublicHealth omits detailed ingest fields', async () => {
 		const payload = await buildPublicHealth(mockEnv());
 		expect(payload.tracked_channels.twitch).toBe(10);
+		expect(payload.eventsub).toBe('not_configured');
 		expect(payload).not.toHaveProperty('ingest_state_counts');
 		expect(payload).not.toHaveProperty('ingest_lag_seconds');
 	});
@@ -44,6 +45,7 @@ describe('public health', () => {
 		const res = await worker.fetch(new Request('http://ingest/health'), mockEnv());
 		expect(res.status).toBe(200);
 		const body = (await res.json()) as Record<string, unknown>;
+		expect(body).toHaveProperty('eventsub');
 		expect(body).toHaveProperty('tracked_channels');
 		expect(body).not.toHaveProperty('ingest_state_counts');
 	});

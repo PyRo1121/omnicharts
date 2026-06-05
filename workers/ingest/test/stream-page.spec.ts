@@ -16,7 +16,7 @@ const stream = (userId: string, viewers: number): HelixStream => ({
 });
 
 vi.mock('../src/twitch/ingest-stream', () => ({
-	ingestHelixStream: vi.fn().mockResolvedValue(undefined),
+	ingestHelixStreamsBatch: vi.fn().mockResolvedValue([]),
 	flushSampleArchivePage: vi.fn().mockResolvedValue(undefined)
 }));
 

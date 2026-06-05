@@ -1,0 +1,8 @@
+# Draft v1 lint — syntax, refs, path params, OAS 3.1 schema shape.
+# Security and tag descriptions deferred to Phase 6 polish.
+extends:
+  - recommended
+rules:
+  security-defined: off
+  info-license: off
+  tag-description: off

@@ -1,10 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
 import { getTopTwitchGamesByAverageViewers } from '../src/ranking/top-games';
-import * as rollupQueries from '../src/ranking/rollup-queries';
+import * as rankingQueries from '../../../packages/rollup/src/ranking-queries';
 
 describe('getTopTwitchGamesByAverageViewers', () => {
 	it('maps query rows to ranked results', async () => {
-		vi.spyOn(rollupQueries, 'queryTopGamesByAverageViewers').mockResolvedValue([
+		vi.spyOn(rankingQueries, 'queryTopGamesByAverageViewers').mockResolvedValue([
 			{
 				slug: 'valorant',
 				name: 'VALORANT',

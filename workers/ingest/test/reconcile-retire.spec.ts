@@ -4,12 +4,15 @@ import { TwitchHelixClient } from '../src/twitch/helix';
 import { runTwitchReconcileRecent } from '../src/twitch/reconcile';
 
 vi.mock('../src/twitch/ingest-stream', () => ({
-	ingestHelixStream: vi.fn().mockResolvedValue(undefined)
+	ingestHelixStreamsBatch: vi.fn().mockResolvedValue([])
 }));
+
+import { ingestHelixStreamsBatch } from '../src/twitch/ingest-stream';
 
 describe('runTwitchReconcileRecent', () => {
 	beforeEach(() => {
 		vi.restoreAllMocks();
+		vi.mocked(ingestHelixStreamsBatch).mockResolvedValue([]);
 	});
 
 	it('does not call GET /users for offline channels (retire via enrich pass)', async () => {
@@ -34,7 +37,12 @@ describe('runTwitchReconcileRecent', () => {
 		]);
 		const getUsers = vi.spyOn(TwitchHelixClient.prototype, 'getUsersByIds');
 
-		const stats = await runTwitchReconcileRecent({ DB: {} } as Env);
+		const batch = vi.fn().mockResolvedValue([]);
+		const prepare = vi.fn(() => ({
+			bind: vi.fn().mockReturnThis(),
+			run: vi.fn().mockResolvedValue({ success: true })
+		}));
+		const stats = await runTwitchReconcileRecent({ DB: { prepare, batch } } as Env);
 		expect(stats.retired).toBe(0);
 		expect(getUsers).not.toHaveBeenCalled();
 	});

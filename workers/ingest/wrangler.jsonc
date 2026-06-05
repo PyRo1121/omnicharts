@@ -1,5 +1,5 @@
 /**
- * OmniCharts ingest Worker — docs/11-cloudflare-deployment.md, docs/22-ingest-free-tier-tuning.md
+ * OmniCharts ingest Worker — docs/11, docs/22 (Free/staging), docs/23-paid-tier-zero-overage-playbook (Paid budgets)
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
@@ -7,6 +7,10 @@
 	"main": "src/index.ts",
 	"compatibility_date": "2026-06-01",
 	"compatibility_flags": ["nodejs_compat"],
+	"alias": {
+		"@omnicharts/domain": "../../packages/domain/src/index.ts",
+		"@omnicharts/rollup": "../../packages/rollup/src/index.ts"
+	},
 	"observability": { "enabled": true },
 	"dev": {
 		"ip": "127.0.0.1",
@@ -17,6 +21,7 @@
 	"triggers": {
 		"crons": [
 			"*/1 * * * *",
+			// Phase 3: add "*/2 * * * *" for kick+youtube after Twitch-only budget green 14d (docs/23)
 			"15 0 * * *",
 			"0 */6 * * *"
 		]
@@ -24,7 +29,9 @@
 	"vars": {
 		"TWITCH_MIN_VIEWERS": "2",
 		"TWITCH_MAX_TRACKED": "3000",
-		"TWITCH_RANKING_MIN_AIRTIME_MINUTES": "1"
+		"TWITCH_RANKING_MIN_AIRTIME_MINUTES": "1",
+		// Row gate when archive on — src/r2/sample-archive.ts (default 10 if unset)
+		"SAMPLE_ARCHIVE_MIN_ROWS": "10"
 	},
 	"d1_databases": [
 		{
@@ -67,22 +74,33 @@
 				"ENVIRONMENT": "staging",
 				"INGEST_COVERAGE_MODE": "shards_only",
 				"LIVE_SWEEP_MAX_PAGES": "3",
+				"GAME_PASS_GAMES_PER_CYCLE": "2",
 				"TWITCH_MIN_VIEWERS": "20",
 				"TWITCH_MAX_TRACKED": "200",
 				"TWITCH_RANKING_MIN_AIRTIME_MINUTES": "60",
-				"SAMPLE_ARCHIVE_ENABLED": "0"
+				"SAMPLE_ARCHIVE_ENABLED": "0",
+				"SAMPLE_ARCHIVE_MIN_ROWS": "10"
 			}
 		},
 		"production": {
+			"triggers": {
+				"crons": ["*/1 * * * *", "15 0 * * *", "0 */6 * * *"]
+			},
 			"limits": {
+				// Paid: cap runaway CPU-ms billing — docs/23-paid-tier-zero-overage-playbook.md
 				"cpu_ms": 30000
 			},
 			"vars": {
 				"ENVIRONMENT": "production",
 				"INGEST_COVERAGE_MODE": "full",
 				"TWITCH_MIN_VIEWERS": "20",
+				"TWITCH_MAX_TRACKED": "3000",
+				"LIVE_SWEEP_MAX_PAGES": "40",
+				"GAME_PASS_GAMES_PER_CYCLE": "5",
 				"TWITCH_RANKING_MIN_AIRTIME_MINUTES": "60",
-				"SAMPLE_ARCHIVE_ENABLED": "0"
+				"SAMPLE_ARCHIVE_ENABLED": "0",
+				"SAMPLE_ARCHIVE_MIN_ROWS": "10",
+				"EVENTSUB_SYNC_MAX_CHANNELS_PER_RUN": "125"
 			},
 			"queues": {
 				"producers": [
@@ -94,7 +112,7 @@
 				"consumers": [
 					{
 						"queue": "omnicharts-ingest",
-						"max_batch_size": 10,
+						"max_batch_size": 3,
 						"max_batch_timeout": 5,
 						"max_retries": 3,
 						"dead_letter_queue": "omnicharts-ingest-dlq"

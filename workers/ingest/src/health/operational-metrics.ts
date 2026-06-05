@@ -1,4 +1,12 @@
-import { TWITCH_PLATFORM_ID } from '../twitch/config';
+import { PLATFORM_TWITCH } from '@omnicharts/domain';
+import {
+	countFromBatchRow,
+	maxSampleFromBatchRow,
+	TWITCH_DISCOVERY_24H_SQL,
+	TWITCH_LIVE_COUNT_SQL,
+	TWITCH_MAX_SAMPLE_SQL,
+	type D1BatchResult
+} from '@omnicharts/rollup';
 
 export type IngestOperationalMetrics = {
 	channels_live: number;
@@ -6,19 +14,10 @@ export type IngestOperationalMetrics = {
 	ingest_lag_seconds: { twitch: number | null };
 };
 
-const TWITCH_LIVE_COUNT_SQL = `SELECT COUNT(*) AS n FROM stream_sessions ss
-       INNER JOIN channels c ON c.id = ss.channel_id
-       WHERE c.platform_id = ? AND ss.ended_at IS NULL`;
-
-const TWITCH_DISCOVERY_24H_SQL = `SELECT COUNT(*) AS n FROM channels
-       WHERE platform_id = ?
-         AND first_observed_at >= datetime('now', '-1 day')`;
-
-const TWITCH_MAX_SAMPLE_SQL = `SELECT MAX(vs.sampled_at) AS max_sampled_at
-       FROM viewer_samples vs
-       INNER JOIN stream_sessions ss ON ss.id = vs.stream_session_id
-       INNER JOIN channels c ON c.id = ss.channel_id
-       WHERE c.platform_id = ?`;
+export {
+	LIVE_COUNT_RECENT_SAMPLE_MINUTES,
+	TWITCH_LIVE_COUNT_SQL
+} from '@omnicharts/rollup';
 
 export function ingestLagSecondsFromMaxSample(
 	maxSampledAt: string | null | undefined
@@ -29,30 +28,20 @@ export function ingestLagSecondsFromMaxSample(
 	return Math.round(lagMs / 1000);
 }
 
-function countFromBatchRow(batchEntry: D1Result): number {
-	const row = batchEntry.results?.[0] as { n?: number } | undefined;
-	return row?.n ?? 0;
-}
-
-function maxSampleFromBatchRow(batchEntry: D1Result): string | null {
-	const row = batchEntry.results?.[0] as { max_sampled_at?: string | null } | undefined;
-	return row?.max_sampled_at ?? null;
-}
-
 export async function fetchIngestOperationalMetrics(
 	db: D1Database
 ): Promise<IngestOperationalMetrics> {
 	const [liveBatch, discoveryBatch, sampleBatch] = await db.batch([
-		db.prepare(TWITCH_LIVE_COUNT_SQL).bind(TWITCH_PLATFORM_ID),
-		db.prepare(TWITCH_DISCOVERY_24H_SQL).bind(TWITCH_PLATFORM_ID),
-		db.prepare(TWITCH_MAX_SAMPLE_SQL).bind(TWITCH_PLATFORM_ID)
+		db.prepare(TWITCH_LIVE_COUNT_SQL).bind(PLATFORM_TWITCH),
+		db.prepare(TWITCH_DISCOVERY_24H_SQL).bind(PLATFORM_TWITCH),
+		db.prepare(TWITCH_MAX_SAMPLE_SQL).bind(PLATFORM_TWITCH)
 	]);
 
 	return {
-		channels_live: countFromBatchRow(liveBatch),
-		discovery_new_24h: countFromBatchRow(discoveryBatch),
+		channels_live: countFromBatchRow(liveBatch as D1BatchResult),
+		discovery_new_24h: countFromBatchRow(discoveryBatch as D1BatchResult),
 		ingest_lag_seconds: {
-			twitch: ingestLagSecondsFromMaxSample(maxSampleFromBatchRow(sampleBatch))
+			twitch: ingestLagSecondsFromMaxSample(maxSampleFromBatchRow(sampleBatch as D1BatchResult))
 		}
 	};
 }
