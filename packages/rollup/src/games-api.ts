@@ -10,7 +10,7 @@ import {
 import { MIN_RANKING_AIRTIME_MINUTES } from './eligibility';
 import { rankingQueryOptionsForPlatform, type RankingEligibilityEnv } from './ranking-env';
 import { getTopGamesByAverageViewers } from './top-games';
-import type { RankingsQueryError } from './channels-api';
+import type { RankingsBaseQueryError } from './channels-api';
 
 export type RankingsGamesItem = {
 	rank: number;
@@ -30,7 +30,7 @@ export type RankingsGamesResponse = {
 
 export type ParsedRankingsGamesQuery =
 	| { ok: true; platform: string; period: RankingPeriod; limit: number }
-	| { ok: false; error: RankingsQueryError };
+	| { ok: false; error: RankingsBaseQueryError };
 
 export function parseRankingsGamesQuery(url: URL): ParsedRankingsGamesQuery {
 	const platformRaw = url.searchParams.get('platform') ?? PLATFORM_TWITCH;

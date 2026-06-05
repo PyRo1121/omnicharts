@@ -59,7 +59,8 @@ async function loadFromD1(
 	platform: PlatformId,
 	period: Period,
 	limit: number,
-	cfEnv: ServerLoadContext['cfEnv']
+	cfEnv: ServerLoadContext['cfEnv'],
+	language: string | null
 ): Promise<ChannelRankingsLoad> {
 	const apiPeriod = parseRankingPeriod(periodForApi(period));
 	const eligibility = webRankingEligibility(cfEnv, platform);
@@ -67,6 +68,7 @@ async function loadFromD1(
 		platform,
 		period: apiPeriod,
 		limit,
+		language,
 		minAirtimeMinutes: eligibility.minAirtimeMinutes,
 		minAverageViewers: eligibility.minAverageViewers
 	});
@@ -77,10 +79,17 @@ async function loadFromIngest(
 	fetchFn: typeof fetch,
 	platform: PlatformId,
 	period: Period,
-	limit: number
+	limit: number,
+	language: string | null
 ): Promise<ChannelRankingsLoad | null> {
 	const apiPeriod = periodForApi(period);
-	const url = `${getIngestBaseUrl()}/v1/rankings/channels?platform=${encodeURIComponent(platform)}&period=${apiPeriod}&limit=${limit}`;
+	const params = new URLSearchParams({
+		platform,
+		period: apiPeriod,
+		limit: String(limit)
+	});
+	if (language) params.set('language', language);
+	const url = `${getIngestBaseUrl()}/v1/rankings/channels?${params}`;
 	const res = await fetchFn(url, { headers: { accept: 'application/json' } });
 	if (!res.ok) return null;
 	const body = (await res.json()) as RankingsChannelsResponse;
@@ -92,7 +101,8 @@ export async function loadChannelRankings(
 	platform: PlatformId,
 	period: Period,
 	limit = 20,
-	mockEnabled = false
+	mockEnabled = false,
+	language: string | null = null
 ): Promise<ChannelRankingsLoad> {
 	if (!supportsRollupChannelRankings(platform)) {
 		return { source: 'live', period, updatedAt: null, rows: [] };
@@ -100,7 +110,7 @@ export async function loadChannelRankings(
 
 	if (ctx.db) {
 		try {
-			const load = await loadFromD1(ctx.db, platform, period, limit, ctx.cfEnv);
+			const load = await loadFromD1(ctx.db, platform, period, limit, ctx.cfEnv, language);
 			if (mockEnabled && load.rows.length === 0) {
 				return { source: 'mock', period, updatedAt: null, rows: topChannels.slice(0, limit) };
 			}
@@ -114,7 +124,7 @@ export async function loadChannelRankings(
 	}
 
 	try {
-		const live = await loadFromIngest(ctx.fetch, platform, period, limit);
+		const live = await loadFromIngest(ctx.fetch, platform, period, limit, language);
 		if (live) return live;
 		throw new Error('rankings unavailable');
 	} catch {

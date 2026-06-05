@@ -58,4 +58,24 @@ describe('searchChannels (D1 mock)', () => {
 		expect(bound[2]).toBe('100\\%\\_%');
 		expect(bound[3]).toBe('%100\\%\\_%');
 	});
+
+	it('filters by language when provided', async () => {
+		let capturedSql = '';
+		let bound: unknown[] = [];
+		const db = {
+			prepare(sql: string) {
+				capturedSql = sql;
+				return {
+					bind(...args: unknown[]) {
+						bound = args;
+						return { all: async () => ({ results: [] }) };
+					}
+				};
+			}
+		} as unknown as D1Database;
+
+		await searchChannels(db, { platformId: 'kick', query: 'xqc', language: 'en' });
+		expect(capturedSql).toContain('lower(c.language) = ?');
+		expect(bound).toContain('en');
+	});
 });

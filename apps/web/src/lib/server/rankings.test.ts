@@ -142,4 +142,20 @@ describe('loadTwitchChannelRankings', () => {
 		expect(load.rows).toHaveLength(0);
 		expect(String(fetchFn.mock.calls[0]?.[0])).toContain('platform=youtube');
 	});
+
+	it('passes language filter to ingest rankings URL', async () => {
+		const fetchFn = vi.fn().mockResolvedValue({
+			ok: true,
+			json: async () => ({
+				platform: 'twitch',
+				period: '7d',
+				language: 'en',
+				updated_at: '2026-06-01T00:00:00Z',
+				items: []
+			})
+		});
+
+		await loadChannelRankings(testLoadContext(fetchFn as typeof fetch), 'twitch', '7d', 20, false, 'en');
+		expect(String(fetchFn.mock.calls[0]?.[0])).toContain('language=en');
+	});
 });

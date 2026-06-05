@@ -3,6 +3,7 @@ import {
 	PLATFORM_TWITCH,
 	isPlatformId,
 	isRankingPeriod,
+	parseOptionalLanguageParam,
 	parseRankingPeriod,
 	periodToDays,
 	type RankingPeriod
@@ -27,14 +28,16 @@ export type RankingsChannelsItem = {
 export type RankingsChannelsResponse = {
 	platform: string;
 	period: RankingPeriod;
+	language?: string;
 	updated_at: string;
 	items: RankingsChannelsItem[];
 };
 
-export type RankingsQueryError = 'invalid_period' | 'invalid_limit' | 'invalid_platform';
+export type RankingsBaseQueryError = 'invalid_period' | 'invalid_limit' | 'invalid_platform';
+export type RankingsQueryError = RankingsBaseQueryError | 'invalid_language';
 
 export type ParsedRankingsChannelsQuery =
-	| { ok: true; platform: string; period: RankingPeriod; limit: number }
+	| { ok: true; platform: string; period: RankingPeriod; limit: number; language: string | null }
 	| { ok: false; error: RankingsQueryError };
 
 export function parseRankingsChannelsQuery(url: URL): ParsedRankingsChannelsQuery {
@@ -48,13 +51,17 @@ export function parseRankingsChannelsQuery(url: URL): ParsedRankingsChannelsQuer
 		return { ok: false, error: 'invalid_period' };
 	}
 	const period = parseRankingPeriod(periodRaw);
+	const languageParsed = parseOptionalLanguageParam(url.searchParams.get('language'));
+	if (!languageParsed.ok) {
+		return { ok: false, error: languageParsed.error };
+	}
 	const limitRaw = url.searchParams.get('limit') ?? '20';
 	const limitNum = Number(limitRaw);
 	if (Number.isNaN(limitNum) || limitNum < 1) {
 		return { ok: false, error: 'invalid_limit' };
 	}
 	const limit = Math.min(100, Math.max(1, Math.floor(limitNum)));
-	return { ok: true, platform, period, limit };
+	return { ok: true, platform, period, limit, language: languageParsed.language };
 }
 
 export async function buildRankingsChannelsResponse(
@@ -63,12 +70,14 @@ export async function buildRankingsChannelsResponse(
 		platform: string;
 		period: RankingPeriod;
 		limit: number;
+		language?: string | null;
 		minAverageViewers?: number;
 		minAirtimeMinutes?: number;
 	},
 	env?: RankingEligibilityEnv
 ): Promise<RankingsChannelsResponse> {
 	const days = periodToDays(opts.period);
+	const language = opts.language ?? null;
 	const eligibility = env
 		? rankingQueryOptionsForPlatform(env, opts.platform)
 		: {
@@ -80,12 +89,14 @@ export async function buildRankingsChannelsResponse(
 		days,
 		limit: opts.limit,
 		minAverageViewers: eligibility.minAverageViewers,
-		minAirtimeMinutes: eligibility.minAirtimeMinutes
+		minAirtimeMinutes: eligibility.minAirtimeMinutes,
+		language
 	});
 
 	return {
 		platform: opts.platform,
 		period: opts.period,
+		...(language ? { language } : {}),
 		updated_at: new Date().toISOString(),
 		items: rankings.map((r) => ({
 			rank: r.rank,

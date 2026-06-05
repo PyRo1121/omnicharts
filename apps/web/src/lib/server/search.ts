@@ -27,7 +27,7 @@ type IngestSearchResponse = {
 
 export async function searchChannels(
 	fetchFn: typeof fetch,
-	opts: { q: string; platform?: string; limit?: number }
+	opts: { q: string; platform?: string; limit?: number; language?: string | null }
 ): Promise<{ results: SearchResultRow[]; error: boolean }> {
 	const q = opts.q.trim();
 	if (q.length < 2) return { results: [], error: false };
@@ -37,6 +37,7 @@ export async function searchChannels(
 		platform: opts.platform ?? 'twitch',
 		limit: String(opts.limit ?? 25)
 	});
+	if (opts.language) params.set('language', opts.language);
 
 	try {
 		const res = await fetchFn(`${getIngestBaseUrl()}/v1/search/channels?${params}`, {

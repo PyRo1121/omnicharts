@@ -44,7 +44,24 @@ describe('searchChannels validation', () => {
 			ok: true,
 			platformId: 'twitch',
 			query: 'shroud',
-			limit: 5
+			limit: 5,
+			language: null
 		});
+	});
+
+	it('parseSearchChannelsQuery accepts language filter', () => {
+		const url = new URL('http://x/v1/search/channels?q=sh&platform=kick&language=fr');
+		expect(parseSearchChannelsQuery(url)).toEqual({
+			ok: true,
+			platformId: 'kick',
+			query: 'sh',
+			limit: 10,
+			language: 'fr'
+		});
+	});
+
+	it('parseSearchChannelsQuery rejects invalid language', () => {
+		const url = new URL('http://x/v1/search/channels?q=sh&platform=twitch&language=FRANCE');
+		expect(parseSearchChannelsQuery(url)).toEqual({ ok: false, error: 'invalid_language' });
 	});
 });

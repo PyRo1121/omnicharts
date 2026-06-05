@@ -33,6 +33,19 @@ describe('parseRankingsChannelsQuery', () => {
 		const url = new URL('http://x/v1/rankings/channels?period=365d');
 		expect(parseRankingsChannelsQuery(url)).toEqual({ ok: false, error: 'invalid_period' });
 	});
+
+	it('accepts language=en filter', () => {
+		const url = new URL('http://x/v1/rankings/channels?language=en');
+		const q = parseRankingsChannelsQuery(url);
+		expect(q.ok).toBe(true);
+		if (!q.ok) return;
+		expect(q.language).toBe('en');
+	});
+
+	it('rejects invalid language code', () => {
+		const url = new URL('http://x/v1/rankings/channels?language=english');
+		expect(parseRankingsChannelsQuery(url)).toEqual({ ok: false, error: 'invalid_language' });
+	});
 });
 
 describe('buildRankingsChannelsResponse', () => {
@@ -137,5 +150,34 @@ describe('buildRankingsChannelsResponse', () => {
 			{},
 			expect.objectContaining({ platformId: 'kick', minAverageViewers: 50 })
 		);
+	});
+
+	it('passes language filter to top channels query', async () => {
+		const spy = vi.spyOn(topChannels, 'getTopChannelsByHoursWatched').mockResolvedValue([]);
+
+		const res = await buildRankingsChannelsResponse({} as D1Database, {
+			platform: 'twitch',
+			period: '7d',
+			limit: 20,
+			language: 'es'
+		});
+
+		expect(spy).toHaveBeenCalledWith(
+			{},
+			expect.objectContaining({ platformId: 'twitch', language: 'es' })
+		);
+		expect(res.language).toBe('es');
+	});
+
+	it('omits language field when unfiltered', async () => {
+		vi.spyOn(topChannels, 'getTopChannelsByHoursWatched').mockResolvedValue([]);
+
+		const res = await buildRankingsChannelsResponse({} as D1Database, {
+			platform: 'twitch',
+			period: '7d',
+			limit: 20
+		});
+
+		expect(res.language).toBeUndefined();
 	});
 });

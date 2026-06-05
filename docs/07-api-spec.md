@@ -23,6 +23,7 @@
 | `not_found` | 404 | Channel/game resolve or detail missing |
 | `bad_request` | 400 | Missing required query param |
 | `invalid_format` | 400 | `format` not `json` or `csv` |
+| `invalid_language` | 400 | Rankings/search: malformed `language` tag |
 | `missing_slugs` | 400 | Compare: `a` and/or `b` slug query params missing |
 
 ### Platform behavior (Phase 3)
@@ -126,6 +127,7 @@ Top channels by Hours Watched.
 |-------|----------|-------------|
 | `platform` | yes | `twitch`, `kick`, `youtube` |
 | `period` | no | `7d` (default), `30d`, `90d` |
+| `language` | no | Filter by stream language tag (`channels.language` from Helix/Kick ingest). YouTube often empty. Invalid → `invalid_language`. |
 | `game` | no | Filter by game slug — **Phase 6 deferred** (not in browse MVP or current `/v1`) |
 | `limit` | no | max 100, default 20 |
 | `offset` | no | Pagination — **Phase 6 deferred** (browse MVP returns first page only) |
@@ -136,6 +138,7 @@ Top channels by Hours Watched.
 {
   "platform": "twitch",
   "period": "7d",
+  "language": "en",
   "updated_at": "2026-06-01T12:00:00Z",
   "items": [
     {
@@ -211,6 +214,7 @@ Channel lookup for integrations. Same resolution rules as the website ([16-searc
 |-------|----------|-------------|
 | `q` | yes | Query string (slug or display name) |
 | `platform` | yes | `twitch`, `kick`, `youtube` |
+| `language` | no | Same filter as rankings — matches `channels.language` when ingest has tags |
 | `limit` | no | max 25, default 10 |
 
 ---

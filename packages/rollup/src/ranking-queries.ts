@@ -13,7 +13,7 @@ export type ChannelRollupQueryRow = {
 	stream_count: number;
 };
 
-const TOP_CHANNELS_BY_HW_SQL = `SELECT c.slug, c.display_name, c.avatar_url, c.first_observed_at,
+const TOP_CHANNELS_BY_HW_SQL_BASE = `SELECT c.slug, c.display_name, c.avatar_url, c.first_observed_at,
               SUM(r.hours_watched) AS hours_watched,
               SUM(r.airtime_minutes) AS airtime_minutes,
               SUM(r.stream_count) AS stream_count,
@@ -23,12 +23,23 @@ const TOP_CHANNELS_BY_HW_SQL = `SELECT c.slug, c.display_name, c.avatar_url, c.f
        INNER JOIN channels c ON c.id = r.channel_id
        WHERE c.platform_id = ?
          AND c.ingest_state = 'tracked'
-         AND r.date >= date('now', '-' || ? || ' days')
-       GROUP BY c.id
+         AND r.date >= date('now', '-' || ? || ' days')`;
+
+const TOP_CHANNELS_LANGUAGE_FILTER = ` AND lower(c.language) = ?`;
+
+const TOP_CHANNELS_BY_HW_SQL_SUFFIX = ` GROUP BY c.id
        HAVING SUM(r.airtime_minutes) >= ?
          AND (SUM(r.hours_watched) * 60.0 / NULLIF(SUM(r.airtime_minutes), 0)) >= ?
        ORDER BY hours_watched DESC, average_viewers DESC, slug ASC
        LIMIT ?`;
+
+function topChannelsByHoursWatchedSql(language: string | null): string {
+	return (
+		TOP_CHANNELS_BY_HW_SQL_BASE +
+		(language ? TOP_CHANNELS_LANGUAGE_FILTER : '') +
+		TOP_CHANNELS_BY_HW_SQL_SUFFIX
+	);
+}
 
 export function prepareTopChannelsByHoursWatched(
 	db: D1Database,
@@ -38,13 +49,16 @@ export function prepareTopChannelsByHoursWatched(
 		limit: number;
 		minAirtimeMinutes?: number;
 		minAverageViewers?: number;
+		language?: string | null;
 	}
 ): D1PreparedStatement {
 	const minAirtime = opts.minAirtimeMinutes ?? MIN_RANKING_AIRTIME_MINUTES;
 	const minAv = opts.minAverageViewers ?? 0;
-	return db
-		.prepare(TOP_CHANNELS_BY_HW_SQL)
-		.bind(opts.platformId, String(opts.days), minAirtime, minAv, opts.limit);
+	const language = opts.language ?? null;
+	const binds: unknown[] = [opts.platformId, String(opts.days)];
+	if (language) binds.push(language);
+	binds.push(minAirtime, minAv, opts.limit);
+	return db.prepare(topChannelsByHoursWatchedSql(language)).bind(...binds);
 }
 
 export async function queryTopChannelsByHoursWatched(
@@ -55,6 +69,7 @@ export async function queryTopChannelsByHoursWatched(
 		limit: number;
 		minAirtimeMinutes?: number;
 		minAverageViewers?: number;
+		language?: string | null;
 	}
 ): Promise<ChannelRollupQueryRow[]> {
 	const { results } = await prepareTopChannelsByHoursWatched(db, opts).all<ChannelRollupQueryRow>();

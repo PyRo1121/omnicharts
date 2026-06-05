@@ -30,6 +30,7 @@
 Query params:
 
 - `?platform=twitch|kick|youtube` on channel, game, overview, homepage tables.
+- `?language=en|es|…` on `/channels` rankings (Phase 4.7) — filters by `channels.language` when ingest has Helix/Kick tags.
 - `/compare?a={slug}&b={slug}&platform=twitch|kick|youtube&period=7d|30d|90d` — two-channel rollup compare (Phase 4).
 
 ---

@@ -44,6 +44,18 @@ describe('public HTTP edge cases (worker.fetch)', () => {
 		expect(body.error.code).toBe('invalid_period');
 	});
 
+	it('GET /v1/rankings/channels?language=english returns 400 invalid_language', async () => {
+		const buildSpy = vi.spyOn(channelsApi, 'buildRankingsChannelsResponse');
+		const res = await worker.fetch(
+			new Request('http://ingest/v1/rankings/channels?language=english'),
+			{ DB: {} as D1Database } as Env
+		);
+		expect(res.status).toBe(400);
+		const body = (await res.json()) as { error: { code: string } };
+		expect(body.error.code).toBe('invalid_language');
+		expect(buildSpy).not.toHaveBeenCalled();
+	});
+
 	it('POST /admin/twitch/discover returns 401 when ADMIN_API_KEY set and header missing', async () => {
 		const res = await worker.fetch(
 			new Request('http://ingest/admin/twitch/discover', { method: 'POST' }),
@@ -151,6 +163,18 @@ describe('public HTTP edge cases (worker.fetch)', () => {
 		expect(res.status).toBe(400);
 		const body = (await res.json()) as { error: { code: string } };
 		expect(body.error.code).toBe('invalid_query');
+		expect(searchSpy).not.toHaveBeenCalled();
+	});
+
+	it('GET /v1/search/channels returns 400 invalid_language', async () => {
+		const searchSpy = vi.spyOn(search, 'searchChannelsWithYoutubeSeed').mockResolvedValue([]);
+		const res = await worker.fetch(
+			new Request('http://ingest/v1/search/channels?q=sh&platform=twitch&language=english'),
+			{ DB: {} as D1Database } as Env
+		);
+		expect(res.status).toBe(400);
+		const body = (await res.json()) as { error: { code: string } };
+		expect(body.error.code).toBe('invalid_language');
 		expect(searchSpy).not.toHaveBeenCalled();
 	});
 });

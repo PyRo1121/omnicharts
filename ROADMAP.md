@@ -2,7 +2,7 @@
 
 Living plan aligned with [docs/00-vision-and-principles.md](./docs/00-vision-and-principles.md). Update checkboxes as phases ship.
 
-**Phase 0–3 (MVP):** Shipped (2026-06-05) — three-platform discovery loop. **Phase 4** in progress — [28-phase4-plan](./docs/28-phase4-plan.md).
+**Phase 0–3 (MVP):** Shipped (2026-06-05) — three-platform discovery loop. **Phase 4** shipped (2026-06-05) — [28-phase4-plan](./docs/28-phase4-plan.md).
 
 ## MVP definition (canonical)
 
@@ -98,7 +98,9 @@ Plan: [28-phase4-plan](./docs/28-phase4-plan.md)
 - [x] Twitch VOD metadata backfill (Phase 4 slice 4.6)
 - [x] **2-channel compare** (7d/30d/90d) — `/compare` + API (slice 4.4 shipped 2026-06-05)
 - [x] **Agency CSV watchlist import** — `POST /admin/watchlist/import` (slice 4.5 shipped 2026-06-05)
-- [ ] Language filter on rankings when API provides tags
+- [x] **Language filter on rankings** — `?language=` on rankings + search; UI on `/channels` (slice 4.7 shipped 2026-06-05)
+
+**Exit criteria:** 90d retention, CSV export, compare, agency import, VOD backfill, language filter. **Met.**
 
 ---
 

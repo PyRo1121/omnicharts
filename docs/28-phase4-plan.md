@@ -23,7 +23,7 @@
 | 4.4 | 2-channel compare (7d/30d/90d) | Compare Streamers | Browse MVP |
 | 4.5 | Agency CSV watchlist import | Agency CSV import | Admin auth |
 | 4.6 | Twitch VOD metadata backfill | VOD backfill | Helix tier limits |
-| 4.7 | Language filter on rankings | Language filter | Platform API tags |
+| **4.7** | **Language filter on rankings** | Language filter | Platform API tags |
 
 ---
 
@@ -99,6 +99,15 @@ Same query params as JSON. Error `invalid_format` when not `json` or `csv`. See 
 - Helix `GET /videos?user_id=&type=archive` with existing 429 retry budget; cap `VOD_BACKFILL_MAX_CHANNELS_PER_RUN` (default 25)
 - Tests: `vod-retention`, `vod-backfill`, `helix-videos`, `vod-admin-routes`, `db-vod-sessions`, `cron-messages`
 
-## Next after 4.6
+## Slice 4.7 — Language filter on rankings (shipped 2026-06-05)
 
-**4.7 — Language filter on rankings:** when platform API tags provide language.
+- `GET /v1/rankings/channels?language=` — optional filter on `channels.language` (Helix/Kick ingest tags)
+- `GET /v1/search/channels?language=` — same filter on catalog search
+- Response includes `language` field when filter active; `400 invalid_language` for malformed codes
+- Kick/YouTube: filter applies when D1 has language; YouTube often returns empty (honest)
+- Web `/channels` language `<select>` + CSV export preserves filter
+- Tests: `@omnicharts/domain` language parse, `@omnicharts/rollup` SQL + API, ingest search/rankings edge, web rankings URL
+
+## Phase 4 complete
+
+All slices 4.1–4.7 shipped 2026-06-05.

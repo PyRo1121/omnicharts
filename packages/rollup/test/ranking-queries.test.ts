@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { D1Database } from '../src/d1';
-import { queryTopGamesByAverageViewers } from '../src/ranking-queries';
+import { queryTopGamesByAverageViewers, queryTopChannelsByHoursWatched } from '../src/ranking-queries';
 
 describe('queryTopGamesByAverageViewers SQL eligibility', () => {
 	test('requires contributing tracked channels meet minAverageViewers in EXISTS', async () => {
@@ -46,8 +46,8 @@ describe('queryTopGamesByAverageViewers SQL eligibility', () => {
 			}
 		} as unknown as D1Database;
 
-		const { queryTopChannelsByHoursWatched } = await import('../src/ranking-queries');
-		await queryTopChannelsByHoursWatched(db, {
+		const { queryTopChannelsByHoursWatched: queryTop } = await import('../src/ranking-queries');
+		await queryTop(db, {
 			platformId: 'kick',
 			days: 90,
 			limit: 20
@@ -55,5 +55,31 @@ describe('queryTopGamesByAverageViewers SQL eligibility', () => {
 
 		expect(binds[0]).toBe('kick');
 		expect(binds[1]).toBe('90');
+	});
+
+	test('adds language filter to channel rankings SQL when set', async () => {
+		let capturedSql = '';
+		let binds: unknown[] = [];
+		const db = {
+			prepare(sql: string) {
+				capturedSql = sql;
+				return {
+					bind(...args: unknown[]) {
+						binds = args;
+						return { all: async () => ({ results: [] }) };
+					}
+				};
+			}
+		} as unknown as D1Database;
+
+		await queryTopChannelsByHoursWatched(db, {
+			platformId: 'twitch',
+			days: 7,
+			limit: 10,
+			language: 'en'
+		});
+
+		expect(capturedSql).toContain('lower(c.language) = ?');
+		expect(binds).toEqual(['twitch', '7', 'en', 60, 0, 10]);
 	});
 });

@@ -2,7 +2,7 @@
  * Channel search — docs/16-search-and-resolution.md (FTS deferred; prefix LIKE fallback)
  */
 
-import { isPlatformId, PLATFORM_TWITCH, PLATFORM_YOUTUBE } from '@omnicharts/domain';
+import { isPlatformId, parseOptionalLanguageParam, PLATFORM_TWITCH, PLATFORM_YOUTUBE } from '@omnicharts/domain';
 import { shouldTryYoutubeApiSeed } from '../youtube/channel-id';
 import { seedYoutubeChannelByQuery } from '../youtube/seed';
 
@@ -28,10 +28,10 @@ export function escapeLikePattern(raw: string): string {
 	return raw.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
 }
 
-export type SearchQueryError = 'invalid_query' | 'invalid_limit' | 'invalid_platform';
+export type SearchQueryError = 'invalid_query' | 'invalid_limit' | 'invalid_platform' | 'invalid_language';
 
 export type ParsedSearchChannelsQuery =
-	| { ok: true; platformId: string; query: string; limit: number }
+	| { ok: true; platformId: string; query: string; limit: number; language: string | null }
 	| { ok: false; error: SearchQueryError };
 
 const SEARCH_QUERY_MAX_LENGTH = 100;
@@ -54,12 +54,22 @@ export function parseSearchChannelsQuery(url: URL): ParsedSearchChannelsQuery {
 	}
 
 	const limit = Math.min(25, Math.max(1, Math.floor(limitNum)));
-	return { ok: true, platformId: platformRaw, query: q, limit };
+	const languageParsed = parseOptionalLanguageParam(url.searchParams.get('language'));
+	if (!languageParsed.ok) {
+		return { ok: false, error: languageParsed.error };
+	}
+	return {
+		ok: true,
+		platformId: platformRaw,
+		query: q,
+		limit,
+		language: languageParsed.language
+	};
 }
 
 export async function searchChannels(
 	db: D1Database,
-	opts: { platformId: string; query: string; limit?: number }
+	opts: { platformId: string; query: string; limit?: number; language?: string | null }
 ): Promise<ChannelSearchRow[]> {
 	const q = normalizeSearchQuery(opts.query);
 	if (q.length < 2) return [];
@@ -68,24 +78,27 @@ export async function searchChannels(
 	const likeQ = escapeLikePattern(q);
 	const slugPrefix = `${likeQ}%`;
 	const nameContains = `%${likeQ}%`;
+	const language = opts.language ?? null;
 
-	const { results } = await db
-		.prepare(
-			`SELECT c.id, c.slug, c.display_name, c.avatar_url, c.platform_id
+	const languageFilter = language ? ' AND lower(c.language) = ?' : '';
+	const sql = `SELECT c.id, c.slug, c.display_name, c.avatar_url, c.platform_id
        FROM channels c
        WHERE c.platform_id = ?
          AND (
            lower(c.slug) = ?
            OR lower(c.slug) LIKE ? ESCAPE '\\'
            OR lower(c.display_name) LIKE ? ESCAPE '\\'
-         )
+         )${languageFilter}
        ORDER BY
          CASE WHEN lower(c.slug) = ? THEN 0 ELSE 1 END,
          c.last_seen_at DESC
-       LIMIT ?`
-		)
-		.bind(opts.platformId, q, slugPrefix, nameContains, q, limit)
-		.all<ChannelSearchRow>();
+       LIMIT ?`;
+
+	const binds: unknown[] = [opts.platformId, q, slugPrefix, nameContains];
+	if (language) binds.push(language);
+	binds.push(q, limit);
+
+	const { results } = await db.prepare(sql).bind(...binds).all<ChannelSearchRow>();
 
 	return results ?? [];
 }
@@ -94,7 +107,7 @@ export async function searchChannels(
 export async function searchChannelsWithYoutubeSeed(
 	db: D1Database,
 	env: Env,
-	opts: { platformId: string; query: string; limit?: number }
+	opts: { platformId: string; query: string; limit?: number; language?: string | null }
 ): Promise<ChannelSearchRow[]> {
 	const results = await searchChannels(db, opts);
 	if (results.length > 0 || opts.platformId !== PLATFORM_YOUTUBE) return results;

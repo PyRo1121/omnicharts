@@ -56,6 +56,8 @@ export async function getTopChannelsByHoursWatched(
 		limit?: number;
 		minAverageViewers?: number;
 		minAirtimeMinutes?: number;
+		minAverageViewers?: number;
+		language?: string | null;
 	}
 ): Promise<TopChannelRanking[]> {
 	const days = opts.days ?? 7;
@@ -66,7 +68,8 @@ export async function getTopChannelsByHoursWatched(
 		days,
 		limit,
 		minAirtimeMinutes: opts.minAirtimeMinutes,
-		minAverageViewers: opts.minAverageViewers ?? 0
+		minAverageViewers: opts.minAverageViewers ?? 0,
+		language: opts.language ?? null
 	});
 
 	return rankTopChannelsFromRollupRows(rows, limit);

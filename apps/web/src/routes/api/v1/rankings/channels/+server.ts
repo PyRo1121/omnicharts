@@ -16,14 +16,16 @@ type RankingsQueryError =
 	| 'invalid_period'
 	| 'invalid_limit'
 	| 'invalid_platform'
-	| 'invalid_format';
+	| 'invalid_format'
+	| 'invalid_language';
 
 function rankingsQueryErrorResponse(error: RankingsQueryError): Response {
 	const messages = {
 		invalid_period: 'period must be one of 24h, 7d, 30d, 90d',
 		invalid_limit: 'limit must be a positive integer',
 		invalid_platform: 'platform must be twitch, kick, or youtube',
-		invalid_format: 'format must be json or csv'
+		invalid_format: 'format must be json or csv',
+		invalid_language: 'language must be a valid BCP 47 stream tag (e.g. en, es, zh-tw)'
 	} as const;
 	return Response.json(
 		{ error: { code: error, message: messages[error] } },
@@ -50,6 +52,7 @@ export const GET: RequestHandler = async ({ url, fetch, platform }) => {
 			platform: parsed.platform,
 			period: parsed.period,
 			limit: parsed.limit,
+			language: parsed.language,
 			minAirtimeMinutes: eligibility.minAirtimeMinutes,
 			minAverageViewers: eligibility.minAverageViewers
 		});

@@ -31,8 +31,10 @@ export function rankingsChannelsCacheKey(opts: {
 	limit: number;
 	minAverageViewers: number;
 	minAirtimeMinutes: number;
+	language?: string | null;
 }): string {
-	return `ch:${opts.platform}:${opts.period}:${opts.limit}:${opts.minAverageViewers}:${opts.minAirtimeMinutes}`;
+	const lang = opts.language ?? '';
+	return `ch:${opts.platform}:${opts.period}:${opts.limit}:${opts.minAverageViewers}:${opts.minAirtimeMinutes}:${lang}`;
 }
 
 export function rankingsGamesCacheKey(opts: {

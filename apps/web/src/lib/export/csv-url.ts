@@ -2,7 +2,8 @@
 export function rankingsChannelsCsvUrl(
 	platform: string,
 	period: string,
-	limit = 100
+	limit = 100,
+	language?: string | null
 ): string {
 	const q = new URLSearchParams({
 		platform,
@@ -10,6 +11,7 @@ export function rankingsChannelsCsvUrl(
 		limit: String(limit),
 		format: 'csv'
 	});
+	if (language) q.set('language', language);
 	return `/api/v1/rankings/channels?${q}`;
 }
 

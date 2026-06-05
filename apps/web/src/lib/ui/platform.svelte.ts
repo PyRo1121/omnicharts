@@ -59,6 +59,34 @@ export function parseUiPeriod(raw: string | null): { period: Period; periodNote:
 	return { period: '7d', periodNote: null };
 }
 
+/** Common Helix/Kick stream language tags for rankings filter (Phase 4.7). */
+export const rankingLanguages = [
+	{ code: 'en', label: 'English' },
+	{ code: 'es', label: 'Spanish' },
+	{ code: 'fr', label: 'French' },
+	{ code: 'de', label: 'German' },
+	{ code: 'pt', label: 'Portuguese' },
+	{ code: 'ru', label: 'Russian' },
+	{ code: 'ja', label: 'Japanese' },
+	{ code: 'ko', label: 'Korean' },
+	{ code: 'zh', label: 'Chinese' }
+] as const;
+
+export function parseUiLanguage(raw: string | null): string | null {
+	const normalized = raw?.trim().toLowerCase() ?? '';
+	if (!normalized) return null;
+	return rankingLanguages.some((l) => l.code === normalized) ? normalized : null;
+}
+
+export function languageFilterNote(platform: PlatformId, language: string | null): string | null {
+	if (!language) return null;
+	const label = rankingLanguages.find((l) => l.code === language)?.label ?? language;
+	if (platform === 'youtube') {
+		return `${label} filter — YouTube channels rarely have language tags in our DB; results may be empty.`;
+	}
+	return `Showing ${label} streamers only (from platform language tags).`;
+}
+
 export function overviewPageSubtitle(platform: PlatformId, source: DataSource): string {
 	const rollupPlatformName = platform === 'kick' ? 'Kick' : 'YouTube';
 	if (platform === 'kick' || platform === 'youtube') {

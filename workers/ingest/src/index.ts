@@ -494,13 +494,14 @@ async function adminTwitchVodBackfill(request: Request, env: Env): Promise<Respo
 }
 
 function rankingsQueryErrorResponse(
-	error: 'invalid_period' | 'invalid_limit' | 'invalid_platform' | 'invalid_format'
+	error: 'invalid_period' | 'invalid_limit' | 'invalid_platform' | 'invalid_format' | 'invalid_language'
 ): Response {
 	const messages: Record<typeof error, string> = {
 		invalid_period: 'period must be one of 24h, 7d, 30d, 90d',
 		invalid_limit: 'limit must be a positive integer',
 		invalid_platform: 'platform must be twitch, kick, or youtube',
-		invalid_format: 'format must be json or csv'
+		invalid_format: 'format must be json or csv',
+		invalid_language: 'language must be a valid BCP 47 stream tag (e.g. en, es, zh-tw)'
 	};
 	return Response.json(
 		{
@@ -514,12 +515,13 @@ function rankingsQueryErrorResponse(
 }
 
 function searchQueryErrorResponse(
-	error: 'invalid_query' | 'invalid_limit' | 'invalid_platform'
+	error: 'invalid_query' | 'invalid_limit' | 'invalid_platform' | 'invalid_language'
 ): Response {
 	const messages: Record<typeof error, string> = {
 		invalid_query: 'q must be between 2 and 100 characters',
 		invalid_limit: 'limit must be a positive integer',
-		invalid_platform: 'platform must be twitch, kick, or youtube'
+		invalid_platform: 'platform must be twitch, kick, or youtube',
+		invalid_language: 'language must be a valid BCP 47 stream tag (e.g. en, es, zh-tw)'
 	};
 	return Response.json(
 		{ error: { code: error, message: messages[error] } },
@@ -543,7 +545,8 @@ async function publicRankingsChannels(request: Request, env: Env): Promise<Respo
 		period: parsed.period,
 		limit: parsed.limit,
 		minAverageViewers: eligibility.minAverageViewers,
-		minAirtimeMinutes: eligibility.minAirtimeMinutes
+		minAirtimeMinutes: eligibility.minAirtimeMinutes,
+		language: parsed.language
 	});
 	if (formatParsed.format === 'json') {
 		const cached = getCachedRankingsChannels(cacheKey);
@@ -556,6 +559,7 @@ async function publicRankingsChannels(request: Request, env: Env): Promise<Respo
 		platform: parsed.platform,
 		period: parsed.period,
 		limit: parsed.limit,
+		language: parsed.language,
 		minAverageViewers: eligibility.minAverageViewers,
 		minAirtimeMinutes: eligibility.minAirtimeMinutes
 	});
@@ -763,7 +767,8 @@ async function publicSearchChannels(request: Request, env: Env): Promise<Respons
 	const results = await searchChannelsWithYoutubeSeed(requireDb(env), env, {
 		platformId: parsed.platformId,
 		query: parsed.query,
-		limit: parsed.limit
+		limit: parsed.limit,
+		language: parsed.language
 	});
 	return Response.json(
 		{ results },
