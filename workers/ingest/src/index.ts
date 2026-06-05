@@ -115,7 +115,7 @@ export default {
 		}
 
 		if (url.pathname === '/webhooks/kick/events' && request.method === 'POST') {
-			return handleKickWebhook(request, env, ctx);
+			return handleKickWebhook(request, env);
 		}
 
 		if (url.pathname === '/admin/twitch/eventsub/sync' && request.method === 'POST') {
@@ -242,9 +242,13 @@ async function handleQueueMessage(payload: IngestQueueMessage, env: Env): Promis
 		case 'discover_twitch':
 			await runTwitchDiscovery(env);
 			break;
-		case 'discover_kick':
-			await runKickDiscovery(env);
+		case 'discover_kick': {
+			const stats = await runKickDiscovery(env);
+			if (stats.categoriesScanned > 0 || stats.streamsSeen > 0) {
+				await recordKickDiscoverySeed(requireDb(env), stats);
+			}
 			break;
+		}
 		case 'sync_eventsub_twitch':
 			await syncTwitchEventSubSubscriptions(env);
 			break;
@@ -540,6 +544,9 @@ async function publicGameDetail(
 	const url = new URL(request.url);
 	url.pathname = `/v1/games/${slug}`;
 	const query = parseGameDetailQuery(url);
+	if (!query.ok) {
+		return rankingsQueryErrorResponse(query.error);
+	}
 	const rankingOpts = rankingQueryOptionsFromEnv(env);
 	const body = await buildGameDetailResponse(
 		requireDb(env),

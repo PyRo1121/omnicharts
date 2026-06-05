@@ -1,9 +1,7 @@
 import { applyRollupPageCache } from '$lib/server/cache';
 import { isDevMockEnabled } from '$lib/server/dev-mock';
 import { serverLoadContext } from '$lib/server/load-context';
-import { loadOverview } from '$lib/server/overview';
-import { loadGameRankings } from '$lib/server/game-rankings';
-import { loadChannelRankings } from '$lib/server/rankings';
+import { loadKickOverview, loadOverview } from '$lib/server/overview';
 import { trendingFromRankings } from '$lib/server/trending';
 import { parseUiPeriod, parseUiPlatform, type PlatformId } from '$lib/mock/home';
 import type { PageServerLoad } from './$types';
@@ -17,11 +15,11 @@ export const load: PageServerLoad = async ({ fetch, url, setHeaders, platform: c
 	const platform = parseUiPlatform(url.searchParams.get('platform'));
 	const mockEnabled = isDevMockEnabled(url.searchParams.get('demo'));
 
-	const overview = await loadOverview(ctx, mockEnabled, {
-		period,
-		channelLimit: 5,
-		gameLimit: 5
-	});
+	const overviewOpts = { period, channelLimit: 5, gameLimit: 5 };
+	const overview =
+		platform === 'kick'
+			? await loadKickOverview(ctx, mockEnabled, overviewOpts)
+			: await loadOverview(ctx, mockEnabled, overviewOpts);
 
 	const emptyChannelRankings = {
 		source: 'live' as const,
@@ -50,10 +48,8 @@ export const load: PageServerLoad = async ({ fetch, url, setHeaders, platform: c
 	}
 
 	if (platform === 'kick') {
-		const [channelRankings, gameRankings] = await Promise.all([
-			loadChannelRankings(ctx, 'kick', period, 5, mockEnabled),
-			loadGameRankings(ctx, 'kick', period, 5, mockEnabled)
-		]);
+		const channelRankings = overview.channelRankings ?? emptyChannelRankings;
+		const gameRankings = overview.gameRankings ?? emptyGameRankings;
 		return {
 			period,
 			periodNote,

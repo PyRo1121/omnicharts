@@ -9,6 +9,8 @@ describe('parseGameDetailQuery', () => {
 	it('parses slug from path and defaults', () => {
 		const url = new URL('http://x/v1/games/valorant?platform=twitch&period=30d');
 		const q = parseGameDetailQuery(url);
+		expect(q.ok).toBe(true);
+		if (!q.ok) return;
 		expect(q.slug).toBe('valorant');
 		expect(q.platform).toBe('twitch');
 		expect(q.period).toBe('30d');
@@ -17,12 +19,19 @@ describe('parseGameDetailQuery', () => {
 	it('accepts platform=kick', () => {
 		const url = new URL('http://x/v1/games/just-chatting?platform=kick');
 		const q = parseGameDetailQuery(url);
+		expect(q.ok).toBe(true);
+		if (!q.ok) return;
 		expect(q.platform).toBe('kick');
 		expect(q.slug).toBe('just-chatting');
 	});
 });
 
 describe('buildGameDetailResponse', () => {
+	it('rejects invalid platform', () => {
+		const url = new URL('http://x/v1/games/foo?platform=invalid');
+		expect(parseGameDetailQuery(url)).toEqual({ ok: false, error: 'invalid_platform' });
+	});
+
 	it('returns null for empty slug', async () => {
 		const db = {} as D1Database;
 		const res = await buildGameDetailResponse(db, {

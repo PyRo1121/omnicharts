@@ -96,6 +96,7 @@ export default defineConfig({
 			'test/db-youtube-lists.spec.ts',
 			'test/youtube-api.spec.ts',
 			'test/youtube-poll.spec.ts',
+			'test/youtube-live-video-id.spec.ts',
 			'test/eventsub-subscriptions.spec.ts',
 			'test/eventsub-sync-cursor.spec.ts',
 			'test/eventsub-message-dedup.spec.ts',

@@ -9,9 +9,9 @@ Operations guide for `workers/ingest`. Read with [11-cloudflare-deployment.md](.
 | Cron | UTC | Action |
 |------|-----|--------|
 | `*/1 * * * *` | every minute | Enqueue `poll_platform: twitch` |
-| `*/2 * * * *` | every 2 min | Enqueue `kick`, `youtube` |
+| `*/2 * * * *` | every 2 min | Enqueue `poll_kick_tracked`, `poll_youtube_tracked` (when `MULTI_PLATFORM_CRON` enabled) |
+| `0 */6 * * *` | every 6h | Enqueue `discover_twitch`, `discover_kick`, `sync_eventsub_twitch` |
 | `15 0 * * *` | 00:15 | Enqueue `rollup_daily` |
-| `0 */6 * * *` | every 6h | Enqueue `discover_twitch` (optional separate worker) |
 
 **Cron handlers must only enqueue** — see [11](./11-cloudflare-deployment.md).
 
@@ -22,9 +22,10 @@ Operations guide for `workers/ingest`. Read with [11-cloudflare-deployment.md](.
 | `type` | Payload | Consumer action |
 |--------|---------|-----------------|
 | `poll_platform` | `{ platform: 'twitch' }` | **Coverage cycle** — global sweep + rotating game pass + reconcile ([ADR-0006](./adr/0006-twitch-pagination-coverage.md)) |
-| `poll_platform` | `{ platform: 'kick' \| 'youtube' }` | Phase 3 stubs — single tracked batch via [`platform-coverage.ts`](../workers/ingest/src/platform-coverage.ts) |
-| `poll_kick_tracked` | — | Kick catalog batch (no global sweep) |
-| `poll_youtube_tracked` | — | YouTube `videos.list` batch |
+| `poll_platform` | `{ platform: 'kick' \| 'youtube' }` | Enqueues tracked poll message via [`platform-coverage.ts`](../workers/ingest/src/platform-coverage.ts) |
+| `poll_kick_tracked` | — | Kick `GET /public/v1/livestreams` catalog batch |
+| `poll_youtube_tracked` | — | YouTube `videos.list` on `channels.youtube_live_video_id` |
+| `discover_kick` | — | Kick category discovery; writes `kick_discovery_seed_at` metadata |
 | `poll_channel_batch` | `{ platform, channel_ids[] }` | Optional catalog re-poll by `user_id` (admin backfill only) |
 | `rollup_daily` | `{ date? }` | Close sessions; upsert daily rollups |
 | `discover_twitch` | — | Supplemental top-games scan + `game_categories` |
@@ -35,6 +36,16 @@ Idempotency: `UNIQUE(stream_session_id, sampled_at)` on samples.
 ---
 
 ## Secret rotation
+
+### Phase 3 platform secrets (Kick, YouTube)
+
+| Variable | Required for |
+|----------|----------------|
+| `KICK_CLIENT_ID`, `KICK_CLIENT_SECRET` | Kick discover + poll (`NEEDS_API` when absent) |
+| `KICK_WEBHOOK_PUBLIC_KEY` | Optional `POST /webhooks/kick/events` lifecycle |
+| `YOUTUBE_API_KEY` | YouTube tracked poll + live video id refresh (`NEEDS_API` when absent) |
+
+Sync with `wrangler secret put` from `workers/ingest` (same flow as Twitch above). See [05-ingestion-per-platform](./05-ingestion-per-platform.md).
 
 ### Platform API secrets (Twitch, YouTube, Kick)
 
@@ -173,7 +184,7 @@ bun run twitch:rankings
 | `30d` | 30 days |
 | `90d` | 90 days |
 
-Kick/YouTube return empty `items[]` until Phase 2+.
+Kick returns rollup-backed `items[]` when discover + poll + `rollup_daily` have run. YouTube rankings stay empty until channel rollups exist; poll + `youtube_live_video_id` writer are live when `YOUTUBE_API_KEY` is set.
 
 Rankings apply [eligibility rules](./12-channel-discovery-and-tracking.md#ranking-eligibility): `ingest_state = tracked`, ≥60 min airtime in period, period average viewers ≥ `TWITCH_MIN_VIEWERS`.
 
@@ -233,9 +244,11 @@ bun run twitch:discover   # POST /admin/twitch/discover — top games scan + dis
 
 ### Kick / YouTube cron
 
-`MULTI_PLATFORM_CRON` (`*/2 * * * *`) enqueues **`poll_kick_tracked`** and **`poll_youtube_tracked`** via `multiPlatformCronMessages()` (`workers/ingest/src/cron-messages.ts`, `workers/ingest/src/ingest-budget.ts`). Kick poll/discover handlers are live; YouTube poll is still a stub.
+`MULTI_PLATFORM_CRON` (`*/2 * * * *`) enqueues **`poll_kick_tracked`** and **`poll_youtube_tracked`** via `multiPlatformCronMessages()` (`workers/ingest/src/cron-messages.ts`, `workers/ingest/src/ingest-budget.ts`). Kick poll/discover and YouTube tracked poll are implemented.
 
 **Deferred (budget gate):** production `wrangler.jsonc` may keep the `*/2` trigger commented until the 14-day ingest budget review passes — staging/local dev can run the cron. Re-enable production schedule only after `ingest-budget` sign-off ([23-paid-tier-zero-overage-playbook](./23-paid-tier-zero-overage-playbook.md)).
+
+**Ops note:** staging and production must not share the same D1 database id — use separate `database_id` per environment in `wrangler.jsonc` / Pages bindings ([11-cloudflare-deployment](./11-cloudflare-deployment.md)).
 
 ---
 

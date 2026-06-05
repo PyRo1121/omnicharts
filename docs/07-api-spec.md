@@ -27,13 +27,13 @@
 
 | Endpoint | `platform=twitch` | `platform=kick` | `platform=youtube` |
 |----------|-------------------|-----------------|---------------------|
-| `GET /v1/rankings/channels` | Rollup-backed items | Rollup-backed when Kick discover + poll + `rollup_daily` have run | `{ items: [] }` — valid empty until YouTube ingest ships |
-| `GET /v1/rankings/games` | Rollup-backed items | Same as channels | `{ items: [] }` |
+| `GET /v1/rankings/channels` | Rollup-backed items | Rollup-backed when Kick discover + poll + `rollup_daily` have run | `{ items: [] }` until YouTube rollups exist |
+| `GET /v1/rankings/games` | Rollup-backed items | Same as channels | `{ items: [] }` until YouTube game rollups exist |
 | `GET /v1/search/channels` | Prefix / LIKE on tracked catalog | Same when Kick channels exist in D1 | Same when YouTube channels exist; often empty today |
 | `GET /v1/channels/{slug}` | 200 or 404 | 200 when channel row + rollups exist | 404 until tracked poll + rollups exist |
 | `GET /v1/games/{slug}` | 200 or 404 | 200 when game rollups exist | 404 or empty series until ingest |
 
-Kick needs `KICK_CLIENT_ID` / `KICK_CLIENT_SECRET` in the ingest Worker; without credentials discover/poll no-op (`NEEDS_API`) and rankings stay empty. YouTube `poll_youtube_tracked` is queued on `*/2` cron but not yet implemented — API shape is stable, data is not.
+Kick needs `KICK_CLIENT_ID` / `KICK_CLIENT_SECRET` in the ingest Worker; without credentials discover/poll no-op (`NEEDS_API`) and rankings stay empty. YouTube `poll_youtube_tracked` runs on `*/2` cron when enabled; requires `YOUTUBE_API_KEY` and tracked `UC…` channels with `youtube_live_video_id` (set on poll bootstrap / playlist refresh per [05-ingestion](./05-ingestion-per-platform.md)).
 
 No breaking change for Twitch clients. Same error codes for all platforms (`invalid_platform`, `not_found`, etc.).
 

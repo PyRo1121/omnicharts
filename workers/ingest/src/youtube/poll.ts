@@ -4,7 +4,13 @@ import {
 	clearYoutubeLiveVideoIds,
 	type YoutubeLiveSampleInput
 } from '../db/youtube-live-batch';
-import { listYoutubePollTargets, type YoutubePollTarget } from '../db/youtube';
+import {
+	listYoutubePollTargets,
+	listYoutubeTrackedMissingLiveVideoId,
+	setYoutubeLiveVideoId,
+	type YoutubePollTarget
+} from '../db/youtube';
+import { resolveYoutubeLiveVideoId } from './live-video-id';
 import { runD1Batches } from '../db/d1-batch';
 import { closeOpenSessionsForPlatformChannelIds } from '../db/session-lifecycle';
 import { archiveSampleBatch } from '../r2/sample-archive';
@@ -48,6 +54,8 @@ export async function runYoutubeCatalogPoll(env: Env): Promise<YoutubePollResult
 
 	const db = requireDb(env);
 	const limit = youtubeMaxTrackedFromEnv(env);
+	const client = new YoutubeDataApiClient(env);
+	await bootstrapYoutubeLiveVideoIds(env, db, client, limit);
 	const targets = await listYoutubePollTargets(db, limit);
 	const totals: YoutubePollResult = { batches: 0, liveVideos: 0, samplesWritten: 0 };
 
@@ -60,6 +68,43 @@ export async function runYoutubeCatalogPoll(env: Env): Promise<YoutubePollResult
 	}
 
 	return totals;
+}
+
+async function bootstrapYoutubeLiveVideoIds(
+	env: Env,
+	db: D1Database,
+	client: YoutubeDataApiClient,
+	limit: number
+): Promise<void> {
+	const missing = await listYoutubeTrackedMissingLiveVideoId(db, limit);
+	for (const row of missing) {
+		try {
+			const videoId = await resolveYoutubeLiveVideoId(client, row.platformChannelId);
+			if (videoId) {
+				await setYoutubeLiveVideoId(db, row.channelRowId, videoId);
+			}
+		} catch (err) {
+			ingestWarn('[youtube] live video id resolve failed', row.platformChannelId, err);
+		}
+	}
+}
+
+async function refreshYoutubeLiveVideoIdOnPollMiss(
+	env: Env,
+	db: D1Database,
+	client: YoutubeDataApiClient,
+	target: YoutubePollTarget
+): Promise<string | null> {
+	try {
+		const videoId = await resolveYoutubeLiveVideoId(client, target.platformChannelId);
+		if (videoId) {
+			await setYoutubeLiveVideoId(db, target.channelRowId, videoId);
+			return videoId;
+		}
+	} catch (err) {
+		ingestWarn('[youtube] poll-miss refresh failed', target.platformChannelId, err);
+	}
+	return null;
 }
 
 export async function runYoutubePollBatch(
@@ -90,6 +135,11 @@ export async function runYoutubePollBatch(
 		if (!target) continue;
 
 		if (youtubeStreamEnded(video) || !isYoutubeLive(video)) {
+			const refreshed = await refreshYoutubeLiveVideoIdOnPollMiss(env, db, client, target);
+			if (refreshed) {
+				liveVideoIds.add(refreshed);
+				continue;
+			}
 			endedChannelIds.push(target.channelRowId);
 			continue;
 		}
@@ -110,9 +160,15 @@ export async function runYoutubePollBatch(
 	}
 
 	for (const target of targets) {
-		if (!liveVideoIds.has(target.liveVideoId) && !endedChannelIds.includes(target.channelRowId)) {
-			endedChannelIds.push(target.channelRowId);
+		if (liveVideoIds.has(target.liveVideoId)) continue;
+		if (endedChannelIds.includes(target.channelRowId)) continue;
+
+		const refreshed = await refreshYoutubeLiveVideoIdOnPollMiss(env, db, client, target);
+		if (refreshed) {
+			liveVideoIds.add(refreshed);
+			continue;
 		}
+		endedChannelIds.push(target.channelRowId);
 	}
 
 	const archiveRows = await batchRecordYoutubeLiveSamples(db, sampleInputs, {

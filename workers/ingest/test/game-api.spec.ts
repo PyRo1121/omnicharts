@@ -9,6 +9,8 @@ describe('parseGameDetailQuery', () => {
 	it('parses slug from path and defaults', () => {
 		const url = new URL('http://x/v1/games/valorant?platform=twitch&period=30d');
 		const q = parseGameDetailQuery(url);
+		expect(q.ok).toBe(true);
+		if (!q.ok) return;
 		expect(q.slug).toBe('valorant');
 		expect(q.platform).toBe('twitch');
 		expect(q.period).toBe('30d');

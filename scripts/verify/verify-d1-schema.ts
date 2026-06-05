@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * D1 schema parity through migration 0008 (local or remote).
+ * D1 schema parity through migration 0009 (local or remote).
  * @see docs/13-testing-and-verification.md · migrations/d1/
  */
 import { spawnSync } from 'node:child_process';
@@ -17,10 +17,11 @@ const MIGRATION_FILES = [
 	'0005_channel_profile_helix.sql',
 	'0006_channel_sightings_followers.sql',
 	'0007_viewer_samples_sampled_at_index.sql',
-	'0008_ingest_hot_path_indexes.sql'
+	'0008_ingest_hot_path_indexes.sql',
+	'0009_youtube_live_video_id.sql'
 ] as const;
 
-/** Tables that must exist after migrations 0001–0008 (0001–0006 create/alter; 0007–0008 indexes only). */
+/** Tables that must exist after migrations 0001–0009 (0001–0006 create/alter; 0007–0008 indexes; 0009 column). */
 const EXPECTED_TABLES = [
 	'platforms',
 	'channels',
@@ -45,7 +46,8 @@ const EXPECTED_COLUMNS: Record<string, string[]> = {
 		'channel_profile_json',
 		'profile_enriched_at',
 		'follower_count',
-		'followers_enriched_at'
+		'followers_enriched_at',
+		'youtube_live_video_id'
 	],
 	stream_sessions: ['language', 'tags_json', 'thumbnail_url', 'stream_type'],
 	channel_daily_rollups: ['followers_delta']
@@ -141,7 +143,7 @@ function main() {
 	const remote = process.argv.includes('--remote');
 	const target = remote ? 'remote' : 'local';
 
-	console.log(`D1 schema verify (${target}) — migrations 0001–0008\n`);
+	console.log(`D1 schema verify (${target}) — migrations 0001–0009\n`);
 	console.log(`Migration files (SSOT): ${MIGRATION_FILES.join(', ')}\n`);
 
 	const errors: string[] = [];
@@ -177,7 +179,7 @@ function main() {
 	}
 
 	console.log(
-		`PASS — ${EXPECTED_TABLES.length} tables, key columns through 0006, ${EXPECTED_INDEXES.length} indexes through 0008 (${target})`
+		`PASS — ${EXPECTED_TABLES.length} tables, key columns through 0009, ${EXPECTED_INDEXES.length} indexes through 0008 (${target})`
 	);
 }
 

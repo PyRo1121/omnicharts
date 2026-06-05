@@ -1,6 +1,7 @@
 import { PLATFORM_TWITCH } from '@omnicharts/domain';
 import type { D1Database } from './d1';
 import { queryTopGamesByAverageViewers, type GameRollupQueryRow } from './ranking-queries';
+import { sortGamesByAverageViewers } from './sort';
 
 export type TopGameRanking = {
 	rank: number;
@@ -14,13 +15,24 @@ export function rankTopGamesFromRollupRows(
 	rows: GameRollupQueryRow[],
 	limit: number
 ): TopGameRanking[] {
-	return rows.slice(0, limit).map((r, i) => ({
-		rank: i + 1,
-		slug: r.slug,
-		name: r.name,
-		averageViewers: r.average_viewers,
-		hoursWatched: r.hours_watched
-	}));
+	const bySlug = new Map(rows.map((r) => [r.slug, r]));
+	const sorted = sortGamesByAverageViewers(
+		rows.map((r) => ({
+			slug: r.slug,
+			averageViewers: r.average_viewers,
+			hoursWatched: r.hours_watched
+		}))
+	);
+	return sorted.slice(0, limit).map((r, i) => {
+		const row = bySlug.get(r.slug);
+		return {
+			rank: i + 1,
+			slug: r.slug,
+			name: row?.name ?? r.slug,
+			averageViewers: r.averageViewers,
+			hoursWatched: r.hoursWatched
+		};
+	});
 }
 
 export async function getTopGamesByAverageViewers(

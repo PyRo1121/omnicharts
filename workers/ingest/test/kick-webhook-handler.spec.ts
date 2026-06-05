@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 import { handleKickWebhook } from '../src/kick/webhook/handler';
+import * as lifecycle from '../src/kick/webhook/lifecycle';
 import { buildKickWebhookSignedPayload } from '../src/kick/webhook/verify';
 import * as ingestLog from '../src/log';
 
@@ -67,6 +68,10 @@ describe('handleKickWebhook', () => {
 				return {
 					bind: (...args: unknown[]) => ({
 						run: async () => {
+							if (q.includes('DELETE FROM ingest_metadata')) {
+								metadata.delete(String(args[0]));
+								return { meta: { changes: 1 } };
+							}
 							if (q.includes('INSERT INTO ingest_metadata')) {
 								const key = String(args[0]);
 								if (q.includes('ON CONFLICT(key) DO NOTHING')) {
@@ -173,6 +178,39 @@ describe('handleKickWebhook', () => {
 		const res = await handleKickWebhook(req, env);
 		expect(res.status).toBe(204);
 		expect(warn).toHaveBeenCalled();
+	});
+
+	it('500 and releases claim when lifecycle handler throws', async () => {
+		vi.spyOn(lifecycle, 'applyKickLivestreamStatusUpdated')
+			.mockRejectedValueOnce(new Error('d1 down'))
+			.mockResolvedValueOnce(undefined);
+		const body = JSON.stringify({
+			broadcaster: {
+				user_id: 123,
+				username: 'caster',
+				channel_slug: 'caster'
+			},
+			is_live: true,
+			title: 'Live now',
+			started_at: '2026-06-01T12:00:00Z',
+			ended_at: null
+		});
+		const req = await signedKickRequest({ body, messageId: '01JFAIL001' }, keys);
+		const res = await handleKickWebhook(req, env);
+		expect(res.status).toBe(500);
+
+		const retryReq = await signedKickRequest({ body, messageId: '01JFAIL001' }, keys);
+		const retry = await handleKickWebhook(retryReq, env);
+		expect(retry.status).toBe(204);
+	});
+
+	it('400 invalid JSON releases claim for retry', async () => {
+		const firstReq = await signedKickRequest({ body: 'not-json', messageId: '01JJSON001' }, keys);
+		const first = await handleKickWebhook(firstReq, env);
+		expect(first.status).toBe(400);
+		const secondReq = await signedKickRequest({ body: 'not-json', messageId: '01JJSON002' }, keys);
+		const second = await handleKickWebhook(secondReq, env);
+		expect(second.status).toBe(400);
 	});
 
 	it('204 duplicate message_id without re-processing', async () => {

@@ -20,3 +20,14 @@
 | [13-testing-and-verification](../13-testing-and-verification.md) | **Verify command SSOT** — no duplicate bash blocks elsewhere |
 
 **Quick gate:** `bun run dev:ingest` → `bun run verify:twitch` (local) · `bun run twitch:freeze-proof` (M1 matrix).
+
+## Phase 3 audit wave 2 deferred
+
+Document only — not blockers for wave 3 re-audit when code gates pass:
+
+| Item | Notes |
+|------|--------|
+| Prod `*/2` multi-platform cron | Enable after 14-day ingest budget gate ([15-ingest-runbook](../15-ingest-runbook.md#kick--youtube-cron)) |
+| Staging/prod shared D1 id | Ops: separate `database_id` per env in wrangler/Pages bindings |
+| Full YouTube discover cron | Tracked UC catalog + admin bootstrap only; no `search.list` cron |
+| Full health multi-platform | `/health?detailed=1` Twitch-heavy until stretch |

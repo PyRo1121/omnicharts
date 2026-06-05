@@ -66,6 +66,8 @@ describe('homepage load — non-Twitch platforms (docs/09 Phase 3)', () => {
 
 		expect(result.platform).toBe('kick');
 		expect(result.platformUnsupported).toBe(false);
+		expect(result.overview.topChannelName).toBe('xQc');
+		expect(result.overview.stats.some((s) => s.label.includes('Top 20 ranked'))).toBe(true);
 		expect(result.channelRankings.rows[0]?.slug).toBe('xqc');
 		expect(result.gameRankings).toMatchObject({ source: 'live', rows: [] });
 		expect(

@@ -19,3 +19,21 @@ export type YoutubeVideoItem = {
 export type YoutubeVideoListResponse = {
 	items?: YoutubeVideoItem[];
 };
+
+export type YoutubeChannelListResponse = {
+	items?: {
+		id: string;
+		contentDetails?: { relatedPlaylists?: { uploads?: string } };
+	}[];
+};
+
+export type YoutubePlaylistItem = {
+	snippet?: {
+		resourceId?: { videoId?: string };
+		liveBroadcastContent?: string;
+	};
+};
+
+export type YoutubePlaylistItemsResponse = {
+	items?: YoutubePlaylistItem[];
+};

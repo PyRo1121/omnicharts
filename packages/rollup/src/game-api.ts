@@ -1,4 +1,10 @@
-import { PLATFORM_TWITCH, parseRankingPeriod, periodToDays, type RankingPeriod } from '@omnicharts/domain';
+import {
+	isPlatformId,
+	PLATFORM_TWITCH,
+	parseRankingPeriod,
+	periodToDays,
+	type RankingPeriod
+} from '@omnicharts/domain';
 import { MIN_RANKING_AIRTIME_MINUTES } from './eligibility';
 import type { D1Database } from './d1';
 
@@ -55,16 +61,21 @@ type RollupRow = {
 	live_channels: number;
 };
 
-export function parseGameDetailQuery(url: URL): {
-	platform: string;
-	period: RankingPeriod;
-	slug: string;
-} {
-	const platform = url.searchParams.get('platform') ?? PLATFORM_TWITCH;
+export type GameDetailQueryError = 'invalid_platform';
+
+export type ParsedGameDetailQuery =
+	| { ok: true; platform: string; period: RankingPeriod; slug: string }
+	| { ok: false; error: GameDetailQueryError };
+
+export function parseGameDetailQuery(url: URL): ParsedGameDetailQuery {
+	const platformRaw = url.searchParams.get('platform') ?? PLATFORM_TWITCH;
+	if (!isPlatformId(platformRaw)) {
+		return { ok: false, error: 'invalid_platform' };
+	}
 	const period = parseRankingPeriod(url.searchParams.get('period'));
 	const parts = url.pathname.split('/').filter(Boolean);
 	const slug = decodeURIComponent(parts[parts.length - 1] ?? '');
-	return { platform, period, slug };
+	return { ok: true, platform: platformRaw, period, slug };
 }
 
 type TopChannelQueryRow = {

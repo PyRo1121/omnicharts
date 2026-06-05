@@ -90,7 +90,7 @@ const TOP_GAMES_BY_AV_SQL = `SELECT gc.slug, gc.name,
          AND r.date >= date('now', '-' || ? || ' days')
        GROUP BY gc.id
        HAVING SUM(r.airtime_minutes) >= ?
-       ORDER BY average_viewers DESC
+       ORDER BY average_viewers DESC, hours_watched DESC, gc.slug ASC
        LIMIT ?`;
 
 export function prepareTopGamesByAverageViewers(

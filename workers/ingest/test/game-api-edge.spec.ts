@@ -2,9 +2,16 @@ import { describe, it, expect } from 'vitest';
 import { buildGameDetailResponse, parseGameDetailQuery } from '../src/ranking/game-api';
 
 describe('game-api edge cases', () => {
+	it('parseGameDetailQuery rejects invalid platform', () => {
+		const url = new URL('http://x/v1/games/foo?platform=not-a-platform');
+		expect(parseGameDetailQuery(url)).toEqual({ ok: false, error: 'invalid_platform' });
+	});
+
 	it('parseGameDetailQuery defaults platform and period', () => {
 		const url = new URL('http://x/v1/games/valorant');
 		const q = parseGameDetailQuery(url);
+		expect(q.ok).toBe(true);
+		if (!q.ok) return;
 		expect(q.platform).toBe('twitch');
 		expect(q.period).toBe('7d');
 	});

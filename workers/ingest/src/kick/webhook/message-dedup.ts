@@ -37,6 +37,14 @@ export async function isDuplicateKickWebhookMessage(
 	return false;
 }
 
+/** Drop claim so Kick can retry after handler failure (before TTL expires). */
+export async function releaseKickWebhookMessageId(
+	db: D1Database,
+	messageId: string
+): Promise<void> {
+	await db.prepare(`DELETE FROM ingest_metadata WHERE key = ?`).bind(keyFor(messageId)).run();
+}
+
 export async function recordKickWebhookMessageId(db: D1Database, messageId: string): Promise<void> {
 	const payload: DedupEntry = { seenAt: new Date().toISOString() };
 	await db

@@ -6,7 +6,8 @@ import { ingestWarn } from '../../log';
 import { requireDb } from '../../worker-bindings';
 import {
 	claimKickWebhookMessageId,
-	recordKickWebhookMessageId
+	recordKickWebhookMessageId,
+	releaseKickWebhookMessageId
 } from './message-dedup';
 import { applyKickLivestreamStatusUpdated, parseLivestreamStatusUpdated } from './lifecycle';
 import type { KickWebhookHeaders } from './types';
@@ -45,11 +46,7 @@ function kickWebhookPublicKey(env: Env): string | undefined {
 	return env.KICK_WEBHOOK_PUBLIC_KEY?.trim();
 }
 
-export async function handleKickWebhook(
-	request: Request,
-	env: Env,
-	ctx?: ExecutionContext
-): Promise<Response> {
+export async function handleKickWebhook(request: Request, env: Env): Promise<Response> {
 	const publicKeyPem = kickWebhookPublicKey(env);
 	if (!publicKeyPem) {
 		return new Response('Kick webhook public key not configured', { status: 503 });
@@ -81,35 +78,33 @@ export async function handleKickWebhook(
 		return new Response(null, { status: 204 });
 	}
 
-	const work = (async () => {
+	try {
 		let parsedBody: unknown;
 		try {
 			parsedBody = JSON.parse(rawBody) as unknown;
 		} catch {
 			ingestWarn('[kick] webhook dropped: invalid JSON body');
-			await recordKickWebhookMessageId(db, headers.messageId);
-			return;
+			await releaseKickWebhookMessageId(db, headers.messageId);
+			return new Response('Invalid JSON body', { status: 400 });
 		}
 
 		if (headers.eventType === 'livestream.status.updated' && headers.eventVersion === '1') {
 			const event = parseLivestreamStatusUpdated(parsedBody);
-			if (event) {
-				await applyKickLivestreamStatusUpdated(env, event);
-			} else {
+			if (!event) {
 				ingestWarn('[kick] webhook dropped: malformed livestream.status.updated', parsedBody);
+				await releaseKickWebhookMessageId(db, headers.messageId);
+				return new Response('Malformed event payload', { status: 400 });
 			}
+			await applyKickLivestreamStatusUpdated(env, event);
 		} else {
 			ingestWarn('[kick] webhook ignored: unsupported event', headers.eventType);
 		}
 
 		await recordKickWebhookMessageId(db, headers.messageId);
-	})();
-
-	if (ctx) {
-		ctx.waitUntil(work);
-	} else {
-		await work;
+		return new Response(null, { status: 204 });
+	} catch (err) {
+		ingestWarn('[kick] webhook handler failed', err);
+		await releaseKickWebhookMessageId(db, headers.messageId);
+		return new Response('Webhook processing failed', { status: 500 });
 	}
-
-	return new Response(null, { status: 204 });
 }

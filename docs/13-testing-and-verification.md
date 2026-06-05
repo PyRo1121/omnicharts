@@ -71,12 +71,12 @@ Root `package.json` scripts — **do not duplicate bash blocks** in docs 23/24/2
 | `bun run test` | Fast unit gate (ingest + web) | — |
 | `bun run verify:twitch` | Full Twitch gate before claiming ingest/web work done; freeze **G1** | Local: `dev:ingest` for checkpoint; CI: `VERIFY_SKIP_CHECKPOINT=1` unless `VERIFY_FULL=1` |
 | `bun run verify:kick` | Kick Phase 3 gate (ingest unit tests + optional live discover + rankings shape) | Local: `dev:ingest` + `KICK_*` in `.dev.vars`; CI: `VERIFY_SKIP_KICK_LIVE=1` unless `VERIFY_KICK_FULL=1` |
-| `bun run verify:youtube` | YouTube stub (ingest unit tests + optional empty rankings shape check) | Full gate deferred until `poll_youtube_tracked` ships; CI skips live unless `VERIFY_YOUTUBE_FULL=1` |
+| `bun run verify:youtube` | YouTube Phase 3 gate (ingest unit tests + optional rankings shape) | CI skips live unless `VERIFY_YOUTUBE_FULL=1` |
 | `bun run twitch:freeze-proof` | M1 operational proof matrix (health → schema → cron → checkpoint → optional EventSub) | `dev:ingest` with `--test-scheduled` |
 | `bun run twitch:checkpoint --no-start-ingest` | Deep ingest pipeline smoke (subset of verify) | `dev:ingest` + `ADMIN_API_KEY` in `.dev.vars` |
 | `bun run twitch:checkpoint:full` | Slow coverage poll path | Same as checkpoint |
-| `bun run d1:verify-schema` | After `d1:migrate:local` — tables/columns/indexes through migration **0008** | Local D1 |
-| `bun run d1:verify-schema:remote` | Pre-deploy / freeze **G2** — parity through **0008** | Wrangler login |
+| `bun run d1:verify-schema` | After `d1:migrate:local` — tables/columns/indexes through migration **0009** (`channels.youtube_live_video_id`) | Local D1 |
+| `bun run d1:verify-schema:remote` | Pre-deploy / freeze **G2** — parity through **0009** | Wrangler login |
 | `bun run verify:wrangler-production` | Pre-deploy guard: prod vars 60m airtime / 20 min viewers | — |
 | `bun run check:web` | Wrangler types + svelte-check | — |
 | `bun run build:web` | Production Pages build | — |
@@ -100,12 +100,12 @@ From repo root:
 
 **Known gap (defer):** non-empty Kick rankings after discover + `rollup_daily` (Twitch checkpoint parity); web BFF not in this script.
 
-### `verify:youtube` (stub)
+### `verify:youtube`
 
 From repo root:
 
-1. `bun run test:ingest` — includes YouTube API empty-ranking tests
-2. Optional live: when ingest is up, `GET /v1/rankings/channels?platform=youtube` must return `{ items: [] }` with valid shape until tracked poll ships
+1. `bun run test:ingest` — includes YouTube poll + `youtube_live_video_id` writer tests
+2. Optional live: when ingest is up, `GET /v1/rankings/channels?platform=youtube` must return valid JSON (`items` may be empty before rollups)
 
 | Env | Effect |
 |-----|--------|
@@ -113,7 +113,7 @@ From repo root:
 | `CI=true` without `VERIFY_YOUTUBE_FULL=1` | Skip live shape check |
 | `VERIFY_YOUTUBE_FULL=1` | Run rankings shape check when ingest is reachable |
 
-**Deferred:** discover, poll, rollup, and non-empty YouTube leaderboards — replace stub when `poll_youtube_tracked` is implemented per [05-ingestion](./05-ingestion-per-platform.md).
+**Deferred:** full YouTube discover cron, non-empty YouTube leaderboards after rollup backfill — see [audits/README](./audits/README.md#phase-3-audit-wave-2-deferred).
 
 ### `verify:twitch` (agents)
 
@@ -160,10 +160,10 @@ Pre–Kick freeze: [23 §2](./23-audit-remediation-plan.md#2-freeze-gate-twitch-
 |------|---------|
 | Full Twitch smoke | `bun run verify:twitch` |
 | Kick Phase 3 gate | `bun run verify:kick` |
-| YouTube stub (pre-ingest) | `bun run verify:youtube` |
+| YouTube Phase 3 gate | `bun run verify:youtube` |
 | M1 proof matrix | `bun run twitch:freeze-proof` |
-| D1 schema (local) | `bun run d1:verify-schema` (after `d1:migrate:local`) — migrations **0001–0008** |
-| D1 schema (pre-deploy) | `bun run d1:verify-schema:remote` — freeze G2; indexes **0007–0008** |
+| D1 schema (local) | `bun run d1:verify-schema` (after `d1:migrate:local`) — migrations **0001–0009** |
+| D1 schema (pre-deploy) | `bun run d1:verify-schema:remote` — freeze G2; through **0009** |
 | Production wrangler vars | `bun run verify:wrangler-production` — freeze G3 guard |
 | Types | `bun run check:web` |
 | Build | `bun run build:web` |

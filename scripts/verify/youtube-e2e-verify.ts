@@ -2,7 +2,7 @@
 /**
  * YouTube Phase 3 stub — ingest unit tests + optional API shape check when ingest is up.
  *
- * Full gate (discover, poll, rollup, non-empty rankings) ships when `poll_youtube_tracked` is implemented.
+ * Full gate (discover cron, non-empty rankings) deferred — poll + live video id writer ship in ingest.
  *
  * Local: `bun run dev:ingest` then `bun run verify:youtube`
  * CI: always runs `test:ingest`; live check skipped when ingest unreachable or `VERIFY_SKIP_YOUTUBE_LIVE=1`.
@@ -107,7 +107,7 @@ async function youtubeRankingsShapeCheckpoint(): Promise<Step> {
 }
 
 async function main() {
-	console.log('YouTube verify (verify:youtube) — stub until tracked poll ships\n');
+	console.log('YouTube verify (verify:youtube)\n');
 
 	const ingestTests = await run(['bun', 'run', 'test:ingest']);
 	log({

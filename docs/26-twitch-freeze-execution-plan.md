@@ -37,7 +37,7 @@ Re-run evidence after each wave. Full local gate: `bun run dev:ingest` then `bun
 | # | Criterion | Status | Evidence |
 |---|-----------|--------|----------|
 | G1 | `bun run verify:twitch` passes locally (ingest up + checkpoint) | [x] | `bun run dev:ingest` → `bun run verify:twitch` — **PASS 2026-06:** 6/6 steps (checkpoint incl.; prior rollup fix: `follower-snapshots.ts` batched IN, size 50) |
-| G2 | Remote D1 at migration **0008**; schema matches `migrations/d1/` | [x] | **2026-06-03:** `d1:migrate:remote` → `No migrations to apply!`; `d1:verify-schema:remote` → `PASS — 11 tables, indexes through 0008 (remote)` |
+| G2 | Remote D1 at migration **0009**; schema matches `migrations/d1/` (`channels.youtube_live_video_id`) | [ ] | Re-run after Phase 3 wave 2: `d1:migrate:remote` + `d1:verify-schema:remote` |
 | G3 | Production ingest vars: `TWITCH_RANKING_MIN_AIRTIME_MINUTES=60`, `TWITCH_MIN_VIEWERS=20` | [ ] | `workers/ingest/wrangler.jsonc` `[env.production].vars` + deploy screenshot |
 | G4 | `/admin/*` mutating routes require secret; dev routes disabled in prod; no silent mock fallback | [x] | `admin-auth.spec.ts`, `public-http-edge.spec.ts`, REM-036 |
 | G5 | `followers_delta` populated on rollup days with follower snapshots | [x] | `rollup-daily-job.spec.ts`, `helix-to-rollup.integration.spec.ts` |

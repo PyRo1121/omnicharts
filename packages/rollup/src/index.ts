@@ -27,7 +27,12 @@ export {
 	minViewersFromRankingEnv,
 	type RankingEligibilityEnv
 } from './ranking-env';
-export { sortChannelsByHoursWatched, type RankedChannelRow } from './sort';
+export {
+	sortChannelsByHoursWatched,
+	sortGamesByAverageViewers,
+	type RankedChannelRow,
+	type RankedGameRow
+} from './sort';
 export {
 	getTopChannelsByHoursWatched,
 	getTopTwitchChannelsByHoursWatched,
@@ -70,6 +75,8 @@ export {
 	parseGameDetailQuery,
 	type GameDetailBuildOpts,
 	type GameDetailDaily,
+	type GameDetailQueryError,
 	type GameDetailResponse,
-	type GameTopChannelItem
+	type GameTopChannelItem,
+	type ParsedGameDetailQuery
 } from './game-api';

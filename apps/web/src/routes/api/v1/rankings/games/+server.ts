@@ -27,7 +27,7 @@ export const GET: RequestHandler = async ({ url, fetch, platform }) => {
 	const db = getD1(platform);
 	const parsed = parseRankingsGamesQuery(url);
 
-	if (parsed.ok && db && parsed.platform === 'twitch') {
+	if (parsed.ok && db && (parsed.platform === 'twitch' || parsed.platform === 'kick')) {
 		const body = await buildRankingsGamesResponse(
 			db,
 			{

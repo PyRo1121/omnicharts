@@ -26,6 +26,11 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: D1 migrate local + schema verify
+        run: |
+          bun run d1:migrate:local
+          bun run d1:verify-schema
+
       - name: Ingest unit tests
         run: bun run test:ingest
 
@@ -50,6 +55,9 @@ jobs:
 
       - name: verify:kick (live discover skipped)
         run: VERIFY_SKIP_KICK_LIVE=1 bun run verify:kick
+
+      - name: verify:youtube (live shape skipped)
+        run: VERIFY_SKIP_YOUTUBE_LIVE=1 bun run verify:youtube
 
       - name: Install Playwright Chromium (REM-035)
         continue-on-error: true
