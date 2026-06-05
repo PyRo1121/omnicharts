@@ -1,8 +1,8 @@
 import { getIngestBaseUrl } from '$lib/server/ingest';
 import type { ServerLoadContext } from '$lib/server/load-context';
 import { loadHomepageFromD1 } from '$lib/server/homepage-d1';
-import { loadTwitchChannelRankings, type ChannelRankingsLoad } from '$lib/server/rankings';
-import { loadTwitchGameRankings, type GameRankingsLoad } from '$lib/server/game-rankings';
+import { loadChannelRankings, loadTwitchChannelRankings, type ChannelRankingsLoad } from '$lib/server/rankings';
+import { loadGameRankings, loadTwitchGameRankings, type GameRankingsLoad } from '$lib/server/game-rankings';
 import { heroStats, type Period } from '$lib/mock/home';
 
 export type OverviewSource = 'live' | 'mock' | 'unavailable';
@@ -68,6 +68,23 @@ function unavailableOverviewStats(): OverviewStat[] {
 	];
 }
 
+function kickHealthUnavailableStats(): OverviewStat[] {
+	return [
+		{
+			label: 'Channels tracked',
+			value: '—',
+			hint: 'Kick directory metrics ship with ingest health',
+			source: 'unavailable'
+		},
+		{
+			label: 'Live now',
+			value: '—',
+			hint: 'Requires Kick ingest health',
+			source: 'unavailable'
+		}
+	];
+}
+
 function overviewFromD1Snapshot(
 	snapshot: Awaited<ReturnType<typeof loadHomepageFromD1>>
 ): OverviewLoad {
@@ -102,6 +119,52 @@ function overviewFromD1Snapshot(
 		topGameName: gameRankings.rows[0]?.name ?? null,
 		channelRankings,
 		gameRankings
+	};
+}
+
+export async function loadKickOverview(
+	ctx: ServerLoadContext,
+	mockEnabled = false,
+	opts: OverviewLoadOptions = {}
+): Promise<OverviewLoad> {
+	const period = opts.period ?? '7d';
+	const channelLimit = opts.channelLimit ?? 20;
+	const gameLimit = opts.gameLimit ?? 1;
+
+	const [channels, games] = await Promise.all([
+		loadChannelRankings(ctx, 'kick', period, channelLimit, mockEnabled),
+		loadGameRankings(ctx, 'kick', period, gameLimit, mockEnabled)
+	]);
+
+	const rankingsLive = channels.source === 'live' || games.source === 'live';
+	const rankingsMock = channels.source === 'mock' || games.source === 'mock';
+	const rankingsUnavailable = channels.source === 'unavailable' && games.source === 'unavailable';
+
+	const rankedStat: OverviewStat = rankingsUnavailable
+		? {
+				label: 'Top 20 ranked (7d)',
+				value: '—',
+				hint: 'Requires rollup-backed rankings',
+				source: 'unavailable'
+			}
+		: {
+				label: 'Top 20 ranked (7d)',
+				value: String(channels.rows.length),
+				hint: 'Channels with rollup HW in period',
+				source: channels.source
+			};
+
+	const stats: OverviewStat[] = [...kickHealthUnavailableStats(), rankedStat];
+
+	return {
+		source: rankingsMock ? 'mock' : rankingsLive ? 'live' : 'unavailable',
+		ingestStatus: null,
+		stats,
+		channelsLive: null,
+		topChannelName: channels.rows[0]?.displayName ?? null,
+		topGameName: games.rows[0]?.name ?? null,
+		channelRankings: channels,
+		gameRankings: games
 	};
 }
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { loadOverview } from './overview';
+import { loadKickOverview, loadOverview } from './overview';
 import { mockD1Batch, testLoadContext, testLoadContextWithDb } from './test-helpers';
 
 vi.mock('$env/dynamic/private', () => ({
@@ -119,5 +119,60 @@ describe('loadOverview', () => {
 		const load = await loadOverview(testLoadContext(fetchFn as typeof fetch), true);
 		expect(load.source).toBe('mock');
 		expect(load.stats.every((s) => s.source === 'mock')).toBe(true);
+	});
+});
+
+describe('loadKickOverview', () => {
+	it('builds stats from kick rankings without ingest health', async () => {
+		const fetchFn = vi.fn().mockImplementation((url: string | URL) => {
+			const u = String(url);
+			if (u.includes('/v1/rankings/channels')) {
+				return Promise.resolve({
+					ok: true,
+					json: async () => ({
+						updated_at: '2026-06-01T00:00:00Z',
+						items: [
+							{
+								rank: 1,
+								slug: 'xqc',
+								display_name: 'xQc',
+								avatar_url: null,
+								hours_watched: 100,
+								average_viewers: 10
+							}
+						]
+					})
+				});
+			}
+			if (u.includes('/v1/rankings/games')) {
+				return Promise.resolve({
+					ok: true,
+					json: async () => ({
+						updated_at: '2026-06-01T00:00:00Z',
+						items: [
+							{
+								rank: 1,
+								slug: 'just-chatting',
+								name: 'Just Chatting',
+								average_viewers: 50,
+								hours_watched: 200,
+								box_art_url: null
+							}
+						]
+					})
+				});
+			}
+			return Promise.resolve({ ok: false, status: 404 });
+		});
+
+		const load = await loadKickOverview(testLoadContext(fetchFn as typeof fetch));
+		expect(load.source).toBe('live');
+		expect(load.ingestStatus).toBeNull();
+		expect(load.topChannelName).toBe('xQc');
+		expect(load.topGameName).toBe('Just Chatting');
+		expect(load.stats[0]?.source).toBe('unavailable');
+		expect(load.stats[2]?.value).toBe('1');
+		expect(fetchFn.mock.calls.some((c) => String(c[0]).includes('platform=kick'))).toBe(true);
+		expect(fetchFn.mock.calls.some((c) => String(c[0]).includes('/health'))).toBe(false);
 	});
 });
