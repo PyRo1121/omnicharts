@@ -124,7 +124,7 @@
 </section>
 
 {#if data.overview.channelsLive != null && (data.platform === 'twitch' || data.platform === 'all')}
-	<LiveNowStrip count={data.overview.channelsLive} />
+	<LiveNowStrip count={data.overview.channelsLive} platform={data.platform} />
 {/if}
 
 <div class="mt-4 flex flex-wrap items-center justify-between gap-3">

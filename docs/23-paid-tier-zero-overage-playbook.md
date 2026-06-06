@@ -270,6 +270,7 @@ Parquet encode remains **deferred** (no DuckDB in Workers). Do not lower `SAMPLE
 | **Sample retention** | 14d hot + prune ([06-storage](./06-storage-and-rollup-design.md)) | Storage + rollup read cost |
 | **`SAMPLE_ARCHIVE_ENABLED`** | **0** in prod ([`wrangler.jsonc`](../workers/ingest/wrangler.jsonc)) | Avoids R2 Class A + storage growth |
 | **`SAMPLE_ARCHIVE_MIN_ROWS`** | **10** (default) | When archive on: skip Class A put for sparse batches |
+| **`COLD_ARCHIVE_ENABLED`** | **0** in prod ([`wrangler.jsonc`](../workers/ingest/wrangler.jsonc)) | Parquet cold path off until hot prune stable; cap batches per rollup run when enabled |
 | **`limits.cpu_ms`** | **30000** prod | Prevents runaway CPU-ms billing |
 | **Queue `max_retries`** | staging **2**, prod **3** | Retries multiply queue ops |
 | **Queue `max_batch_size`** | staging **5**, prod **3** | Prod matches twitch `F=3` fan-out per tick ([`wrangler.jsonc`](../workers/ingest/wrangler.jsonc)) |
@@ -289,6 +290,7 @@ Parquet encode remains **deferred** (no DuckDB in Workers). Do not lower `SAMPLE
 | **`TWITCH_MIN_VIEWERS`** | `20` | `20` | Primary **D1 write** lever (`L` live streams) |
 | **`TWITCH_RANKING_MIN_AIRTIME_MINUTES`** | `60` | `60` | Rankings gate (ingest + Pages) |
 | **`SAMPLE_ARCHIVE_ENABLED`** | `0` | `0` | R2 Class A off until prune proven |
+| **`COLD_ARCHIVE_ENABLED`** | `0` | `0` | Parquet archive off; enable only after 14d hot prune + Class A model |
 | **Queue consumer** | root: `max_batch_size=5`, `max_retries=2` | `max_batch_size=3`, `max_retries=3` | Prod matches twitch `F=3` fan-out per tick |
 
 **Modeled prod month (Twitch-only, table above):** queue ops **~390k**, D1 writes **~35M** at moderate `L` — inside Paid **1M** / **50M** bundles ([§8](#8-example-monthly-bill-twitch-only-beta-target)). Tune `TWITCH_MIN_VIEWERS` or `LIVE_SWEEP_MAX_PAGES` only after dashboard evidence — not via manual `.dev.vars` on deploy.

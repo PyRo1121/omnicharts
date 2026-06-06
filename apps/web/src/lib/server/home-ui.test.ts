@@ -28,6 +28,11 @@ describe('searchPageSubtitle', () => {
 		expect(searchPageSubtitle('kick')).toMatch(/Kick/i);
 		expect(searchPageSubtitle('youtube')).toMatch(/YouTube/i);
 	});
+
+	it('documents Twitch-only search on All tab', () => {
+		expect(searchPageSubtitle('all')).toMatch(/Twitch/i);
+		expect(searchPageSubtitle('all')).not.toMatch(/Kick.*YouTube/i);
+	});
 });
 
 describe('searchPlatformId', () => {

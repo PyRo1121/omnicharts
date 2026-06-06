@@ -2,6 +2,14 @@
 	import SectionHeader from '$lib/components/ui/SectionHeader.svelte';
 </script>
 
+<svelte:head>
+	<title>How we measure stats · OmniCharts</title>
+	<meta
+		name="description"
+		content="How OmniCharts calculates Hours Watched, Average Viewers, and rankings for Twitch, Kick, and YouTube using official APIs."
+	/>
+</svelte:head>
+
 <SectionHeader
 	title="How we measure streaming statistics"
 	subtitle="Official platform APIs only — no third-party tracker scraping. Technical definitions: docs/04-metrics-glossary."
@@ -103,7 +111,7 @@
 					<tr>
 						<td class="py-2 pr-3">YouTube</td>
 						<td class="py-2 pr-3">~120 seconds (target)</td>
-						<td class="py-2">Tracked poll not shipped — leaderboards empty until <code class="text-xs">videos.list</code> ingest lands</td>
+						<td class="py-2">Tracked <code class="text-xs">videos.list</code> poll for channels we follow — quota-limited; hidden viewer counts omitted</td>
 					</tr>
 				</tbody>
 			</table>

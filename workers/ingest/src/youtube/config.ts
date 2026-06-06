@@ -9,6 +9,9 @@ export const DEFAULT_YOUTUBE_MAX_TRACKED = PLATFORM_LIVE_STREAM_CAP.youtube;
 
 export const DEFAULT_YOUTUBE_MIN_VIEWERS = 2;
 
+/** Max channels to bootstrap live video ids per poll cron (2 units/channel). @see docs/05 quota math */
+export const YOUTUBE_BOOTSTRAP_MAX_PER_POLL = 10;
+
 export const YOUTUBE_API_BASE = 'https://www.googleapis.com/youtube/v3';
 
 export function youtubeMinViewersFromEnv(env: Env): number {

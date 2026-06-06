@@ -4,8 +4,11 @@
 	import LeaderboardTable, { gameLeaderboardRows } from '$lib/components/ui/LeaderboardTable.svelte';
 	import PeriodSelector from '$lib/components/ui/PeriodSelector.svelte';
 	import PlatformFilter from '$lib/components/ui/PlatformFilter.svelte';
+	import ExportCsvLink from '$lib/components/ui/ExportCsvLink.svelte';
+	import { rankingsGamesCsvUrl } from '$lib/export/csv-url';
 	import {
 		gamesPageSubtitle,
+		searchPlatformId,
 		uiPeriods,
 		platforms,
 		routeWithPlatform,
@@ -17,6 +20,11 @@
 
 	const rows = $derived(gameLeaderboardRows(data.rows));
 	const subtitle = $derived(gamesPageSubtitle(data.platform, data.source));
+	const csvHref = $derived(
+		data.platform !== 'all' && data.rows.length > 0
+			? rankingsGamesCsvUrl(searchPlatformId(data.platform), data.period, 20)
+			: null
+	);
 
 	function platformHref(id: UiPlatformFilter): string {
 		return routeWithPlatform('/games', id, { period: data.period });
@@ -58,6 +66,9 @@
 
 <div class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
 	<PeriodSelector periods={uiPeriods} value={data.period} onPeriodChange={onPeriodChange} />
+	{#if csvHref}
+		<ExportCsvLink href={csvHref} />
+	{/if}
 	{#if data.periodNote}
 		<p class="text-xs text-[var(--color-oc-text-faint)]">{data.periodNote}</p>
 	{/if}

@@ -1,6 +1,7 @@
 import { chunkArray } from '../db/d1-batch';
 import { parseYoutubeChannelListResponse, parseYoutubePlaylistItemsResponse, parseYoutubeVideoListResponse } from '../json-guards';
 import { YOUTUBE_API_BASE, YOUTUBE_VIDEOS_BATCH_SIZE, youtubeApiKeyConfigured } from './config';
+import { youtubeApiHttpError } from './api-errors';
 import type { YoutubeChannelItem, YoutubeVideoItem } from './types';
 
 export class YoutubeDataApiClient {
@@ -39,7 +40,7 @@ export class YoutubeDataApiClient {
 		const res = await fetch(url);
 		if (!res.ok) {
 			const body = await res.text();
-			throw new Error(`YouTube videos.list ${res.status}: ${body.slice(0, 200)}`);
+			throw youtubeApiHttpError('videos.list', res.status, body);
 		}
 
 		const json = parseYoutubeVideoListResponse(await res.json());
@@ -63,7 +64,7 @@ export class YoutubeDataApiClient {
 		const res = await fetch(url);
 		if (!res.ok) {
 			const body = await res.text();
-			throw new Error(`YouTube channels.list ${res.status}: ${body.slice(0, 200)}`);
+			throw youtubeApiHttpError('channels.list', res.status, body);
 		}
 
 		const json = parseYoutubeChannelListResponse(await res.json());
@@ -88,7 +89,7 @@ export class YoutubeDataApiClient {
 		const res = await fetch(url);
 		if (!res.ok) {
 			const body = await res.text();
-			throw new Error(`YouTube channels.list ${res.status}: ${body.slice(0, 200)}`);
+			throw youtubeApiHttpError('channels.list', res.status, body);
 		}
 
 		const json = parseYoutubeChannelListResponse(await res.json());
@@ -109,7 +110,7 @@ export class YoutubeDataApiClient {
 		const res = await fetch(url);
 		if (!res.ok) {
 			const body = await res.text();
-			throw new Error(`YouTube channels.list ${res.status}: ${body.slice(0, 200)}`);
+			throw youtubeApiHttpError('channels.list', res.status, body);
 		}
 
 		const json = parseYoutubeChannelListResponse(await res.json());
@@ -132,7 +133,7 @@ export class YoutubeDataApiClient {
 		const res = await fetch(url);
 		if (!res.ok) {
 			const body = await res.text();
-			throw new Error(`YouTube playlistItems.list ${res.status}: ${body.slice(0, 200)}`);
+			throw youtubeApiHttpError('playlistItems.list', res.status, body);
 		}
 
 		const json = parseYoutubePlaylistItemsResponse(await res.json());

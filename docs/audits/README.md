@@ -39,6 +39,20 @@
 |-----|------|
 | [phase5-execution-plan](./phase5-execution-plan.md) | Cloudflare prod deploy — ordered slices 5.0–5.6, agent vs operator split, P1–P7 pre-deploy gates (2026-06-05) |
 
+## Phase 3–4 code review (2026-06)
+
+MCP-grounded audits — findings only; remediation tracked separately.
+
+| Doc | Role |
+|-----|------|
+| [phase3-4-review-executive-summary](./phase3-4-review-executive-summary.md) | Rollup + remediation status (Agents 1–5) |
+| [phase3-4-remediation](./phase3-4-remediation.md) | Finding → fix mapping with citations |
+| [phase3-4-review-agent1-kick-youtube](./phase3-4-review-agent1-kick-youtube.md) | Kick + YouTube ingest — 1 P0 session-key split |
+| [phase3-4-review-agent2-web-phase3](./phase3-4-review-agent2-web-phase3.md) | Phase 3 browse UI — Svelte MCP + parity H1–H8 |
+| [phase3-4-review-agent3-ingest-phase4](./phase3-4-review-agent3-ingest-phase4.md) | R2, 90d, VOD, watchlist |
+| [phase3-4-review-agent4-web-packages-phase4](./phase3-4-review-agent4-web-packages-phase4.md) | Compare, CSV, language filter |
+| [phase3-4-review-agent5-cross-cutting](./phase3-4-review-agent5-cross-cutting.md) | json-guards, verify, oxlint |
+
 ## Phase 4
 
 | Doc | Role |

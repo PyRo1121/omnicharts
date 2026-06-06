@@ -641,6 +641,9 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ChannelSearchHit'
+        language:
+          type: string
+          description: Present when `language=` query filter is active.
 
     CompareChannelSide:
       type: object

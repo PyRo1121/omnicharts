@@ -89,6 +89,55 @@ describe('kick webhook lifecycle vs poll session keys', () => {
 		closeStale.mockRestore();
 	});
 
+	it('official webhook payload without channel_id uses ingest_metadata API channel id', async () => {
+		const sessionInserts: { sessionId: string; platformStreamId: string }[] = [];
+		const pollChannelId = 420;
+		const closeStale = vi.spyOn(sessionLifecycle, 'closeStaleOpenSessionsForChannel').mockResolvedValue(undefined);
+		const db = {
+			prepare(sql: string) {
+				if (sql.includes('INSERT INTO channels')) {
+					return { bind: () => ({ run: async () => ({}) }) };
+				}
+				if (sql.includes('SELECT id FROM channels')) {
+					return {
+						bind: () => ({ first: async () => ({ id: 'kick-ch-42' }) }),
+					};
+				}
+				if (sql.includes('SELECT value FROM ingest_metadata')) {
+					return {
+						bind: () => ({ first: async () => ({ value: String(pollChannelId) }) }),
+					};
+				}
+				if (sql.includes('INSERT INTO ingest_metadata')) {
+					return { bind: () => ({ run: async () => ({ meta: { changes: 1 } }) }) };
+				}
+				if (sql.includes('INSERT INTO stream_sessions')) {
+					return {
+						bind: (sessionId: string, _channelId: string, platformStreamId: string) => ({
+							run: async () => {
+								sessionInserts.push({ sessionId, platformStreamId });
+							},
+						}),
+					};
+				}
+				return { bind: () => ({ run: async () => ({}) }) };
+			},
+		};
+
+		const pollAlignedStream = { ...sampleStream, channel_id: pollChannelId, broadcaster_user_id: 42 };
+
+		await applyKickLivestreamStatusUpdated(testEnv({ DB: db }), {
+			broadcaster: { user_id: 42, channel_slug: 'caster' },
+			is_live: true,
+			started_at: '2026-06-01T12:00:00Z',
+			title: 'Live',
+		});
+
+		expect(sessionInserts[0]?.sessionId).toBe(kickSessionRowId(pollAlignedStream));
+		expect(sessionInserts[0]?.platformStreamId).toBe(kickPlatformStreamId(pollAlignedStream));
+		closeStale.mockRestore();
+	});
+
 	it('applyKickLivestreamStatusUpdated closes sessions when stream goes offline', async () => {
 		const updates: string[] = [];
 		const db = {

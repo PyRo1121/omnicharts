@@ -68,7 +68,7 @@ When the platform API provides follower totals, we store snapshots and show the 
 |----------|--------------------------------------|----------------|
 | Twitch | About every 60 seconds | Shipped — Helix poll + EventSub lifecycle |
 | Kick | About every 60–120 seconds | Shipped when API credentials configured — livestreams poll + optional webhooks |
-| YouTube | About every 120 seconds (design) | **Not shipped yet** — public pages and API return empty leaderboards until `videos.list` tracked poll lands |
+| YouTube | About every 120 seconds (design) | **Shipped** — tracked `videos.list` poll for followed channels; subject to API quota; hidden concurrent viewers omitted from HW |
 
 Rankings and charts use **daily rollups** built from these samples. The site may cache public pages for up to **60 seconds**.
 

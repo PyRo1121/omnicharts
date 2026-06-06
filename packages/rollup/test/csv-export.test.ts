@@ -33,6 +33,13 @@ describe('escapeCsvCell', () => {
 	test('escapes embedded quotes', () => {
 		expect(escapeCsvCell('say "hi"')).toBe('"say ""hi"""');
 	});
+
+	test('mitigates formula injection per OWASP CSV injection guidance', () => {
+		expect(escapeCsvCell('=1+1')).toBe("'=1+1");
+		expect(escapeCsvCell('+cmd')).toBe("'+cmd");
+		expect(escapeCsvCell('@SUM(1,1)')).toBe("'@SUM(1,1)");
+		expect(escapeCsvCell(' hello')).toBe(' hello');
+	});
 });
 
 describe('channelRankingsToCsv', () => {

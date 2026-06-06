@@ -13,6 +13,9 @@ import {
 import { DAILY_ROLLUP_DELETE_BATCH_SIZE, dailyRollupRetentionCutoffDate, pruneDailyRollupsOlderThanRetention } from './prune-rollups';
 import { VIEWER_SAMPLE_DELETE_BATCH_SIZE, viewerSampleRetentionCutoffIso, pruneViewerSamplesOlderThanRetention } from './prune-samples';
 
+/** Max archive/prune batch iterations per rollup_daily run when cold archive enabled. */
+export const COLD_ARCHIVE_MAX_BATCHES_PER_RUN = 50;
+
 export type RetentionWithColdArchiveStats = {
 	viewerSamplesPruned: number;
 	channelRollupsPruned: number;
@@ -51,8 +54,10 @@ async function deleteViewerSamplesById(db: D1Database, ids: number[]): Promise<n
 async function archiveAndPruneViewerSamples(db: D1Database, env: Env, now: Date): Promise<number> {
 	const cutoff = viewerSampleRetentionCutoffIso(now);
 	let totalDeleted = 0;
+	let batches = 0;
 
 	for (;;) {
+		if (batches >= COLD_ARCHIVE_MAX_BATCHES_PER_RUN) break;
 		const rows = await fetchPrunableViewerSamples(db, cutoff, VIEWER_SAMPLE_DELETE_BATCH_SIZE);
 		if (rows.length === 0) break;
 
@@ -63,6 +68,7 @@ async function archiveAndPruneViewerSamples(db: D1Database, env: Env, now: Date)
 			rows.map((r) => r.id),
 		);
 		totalDeleted += deleted;
+		batches += 1;
 		if (rows.length < VIEWER_SAMPLE_DELETE_BATCH_SIZE) break;
 	}
 
@@ -103,8 +109,10 @@ async function deleteRollupsByRowid(
 async function archiveAndPruneChannelRollups(db: D1Database, env: Env, now: Date): Promise<number> {
 	const cutoff = dailyRollupRetentionCutoffDate(now);
 	let totalDeleted = 0;
+	let batches = 0;
 
 	for (;;) {
+		if (batches >= COLD_ARCHIVE_MAX_BATCHES_PER_RUN) break;
 		const rows = await fetchPrunableChannelRollups(db, cutoff, DAILY_ROLLUP_DELETE_BATCH_SIZE);
 		if (rows.length === 0) break;
 
@@ -119,6 +127,7 @@ async function archiveAndPruneChannelRollups(db: D1Database, env: Env, now: Date
 			'channel_daily_rollups',
 			rows.map((r) => r.rowid),
 		);
+		batches += 1;
 		if (rows.length < DAILY_ROLLUP_DELETE_BATCH_SIZE) break;
 	}
 
@@ -146,8 +155,10 @@ type GameRollupRowWithId = GameRollupArchiveRow & { rowid: number };
 async function archiveAndPruneGameRollups(db: D1Database, env: Env, now: Date): Promise<number> {
 	const cutoff = dailyRollupRetentionCutoffDate(now);
 	let totalDeleted = 0;
+	let batches = 0;
 
 	for (;;) {
+		if (batches >= COLD_ARCHIVE_MAX_BATCHES_PER_RUN) break;
 		const rows = await fetchPrunableGameRollups(db, cutoff, DAILY_ROLLUP_DELETE_BATCH_SIZE);
 		if (rows.length === 0) break;
 
@@ -162,6 +173,7 @@ async function archiveAndPruneGameRollups(db: D1Database, env: Env, now: Date): 
 			'game_daily_rollups',
 			rows.map((r) => r.rowid),
 		);
+		batches += 1;
 		if (rows.length < DAILY_ROLLUP_DELETE_BATCH_SIZE) break;
 	}
 

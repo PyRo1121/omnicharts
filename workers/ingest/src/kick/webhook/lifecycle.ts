@@ -1,10 +1,13 @@
 import { PLATFORM_KICK } from '@omnicharts/domain';
 import { isRecord, readBoolean, readNumber, readString } from '../../json-guards';
 import { closeStaleOpenSessionsForChannel } from '../../db/session-lifecycle';
+import { ingestWarn } from '../../log';
+import { requireDb } from '../../worker-bindings';
+import { KickPublicApiClient } from '../api';
 import { recordKickApiChannelId, resolveKickApiChannelId } from '../api-channel-id';
+import { kickCredentialsConfigured } from '../config';
 import { kickPlatformStreamIdFromChannelId, kickSessionRowIdFromChannelId } from '../stream-fields';
 import type { KickLivestreamStatusUpdatedEvent } from './types';
-import { requireDb } from '../../worker-bindings';
 
 const nowIso = () => new Date().toISOString();
 
@@ -41,7 +44,16 @@ function parseLivestreamStatusUpdated(body: unknown): KickLivestreamStatusUpdate
 	};
 }
 
-async function resolveKickChannelIdForSession(db: D1Database, event: KickLivestreamStatusUpdatedEvent): Promise<number> {
+/**
+ * Resolve Kick Public API `channel_id` for session keys — never use `broadcaster_user_id`.
+ * @see https://docs.kick.com/apis/livestreams — poll uses `channel_id` from livestreams response
+ * @see https://docs.kick.com/events/event-types — webhook payload omits `channel_id`
+ */
+async function resolveKickChannelIdForSession(
+	env: Env,
+	db: D1Database,
+	event: KickLivestreamStatusUpdatedEvent,
+): Promise<number | null> {
 	const broadcasterId = String(event.broadcaster.user_id);
 	if (event.channel_id != null) return event.channel_id;
 	if (event.broadcaster.channel_id != null) return event.broadcaster.channel_id;
@@ -49,7 +61,25 @@ async function resolveKickChannelIdForSession(db: D1Database, event: KickLivestr
 	const fromMeta = await resolveKickApiChannelId(db, broadcasterId);
 	if (fromMeta != null) return fromMeta;
 
-	return event.broadcaster.user_id;
+	if (!kickCredentialsConfigured(env)) {
+		ingestWarn('[kick] webhook: cannot resolve channel_id without API creds', broadcasterId);
+		return null;
+	}
+
+	try {
+		const client = new KickPublicApiClient(env);
+		const bySlug = await client.getChannelsBySlug(event.broadcaster.channel_slug);
+		const slugMatch = bySlug.find((c) => String(c.broadcaster_user_id) === broadcasterId);
+		if (slugMatch?.channel_id != null) return slugMatch.channel_id;
+
+		const byId = await client.getChannelsByBroadcasterId(broadcasterId);
+		const idMatch = byId.find((c) => String(c.broadcaster_user_id) === broadcasterId);
+		if (idMatch?.channel_id != null) return idMatch.channel_id;
+	} catch (err) {
+		ingestWarn('[kick] webhook: channel_id API lookup failed', broadcasterId, err);
+	}
+
+	return null;
 }
 
 /** Session boundary only — polling remains HW/AV source of truth (ADR-003). */
@@ -86,7 +116,11 @@ export async function applyKickLivestreamStatusUpdated(env: Env, event: KickLive
 		.first<{ id: string }>();
 
 	const resolvedChannelId = row?.id ?? channelId;
-	const kickApiChannelId = await resolveKickChannelIdForSession(db, event);
+	const kickApiChannelId = await resolveKickChannelIdForSession(env, db, event);
+	if (kickApiChannelId == null) {
+		ingestWarn('[kick] webhook: skipping session update — unresolved API channel_id', broadcasterId);
+		return;
+	}
 	await recordKickApiChannelId(db, broadcasterId, kickApiChannelId);
 
 	if (event.is_live) {

@@ -13,6 +13,7 @@ import { ingestWarn } from '../log';
 import { requireDb } from '../worker-bindings';
 import { KickPublicApiClient } from './api';
 import { kickCredentialsConfigured, kickMaxTrackedFromEnv, kickMinViewersFromEnv, KICK_LIVESTREAMS_BATCH_SIZE } from './config';
+import { kickBroadcasterIdsReadyToClose } from './poll-offline-grace';
 import { isKickViewerCountKnown, kickBroadcasterId } from './stream-fields';
 
 export type KickPollResult = {
@@ -66,7 +67,7 @@ export async function runKickPollBatch(env: Env, broadcasterIds: string[]): Prom
 	const liveStreams = await client.getLivestreamsByBroadcasterIds(broadcasterIds);
 	result.liveStreams = liveStreams.length;
 
-	const liveSet = new Set(liveStreams.map(kickBroadcasterId));
+	const liveBroadcasterSet = new Set(liveStreams.map(kickBroadcasterId));
 	const games = liveStreams
 		.map((s) => s.category)
 		.filter((c): c is NonNullable<typeof c> => c != null && Number.isFinite(c.id))
@@ -107,8 +108,9 @@ export async function runKickPollBatch(env: Env, broadcasterIds: string[]): Prom
 	await archiveSampleBatch(env, archiveRows);
 
 	const now = new Date().toISOString();
-	const offlineIds = broadcasterIds.filter((id) => !liveSet.has(id));
-	const offlineStatements = offlineIds.map((id) =>
+	const offlineCandidates = broadcasterIds.filter((id) => !liveBroadcasterSet.has(id));
+	const offlineIds = await kickBroadcasterIdsReadyToClose(db, broadcasterIds, liveBroadcasterSet);
+	const offlineStatements = offlineCandidates.map((id) =>
 		db.prepare(`UPDATE channels SET last_seen_at = ? WHERE platform_id = ? AND platform_channel_id = ?`).bind(now, PLATFORM_KICK, id),
 	);
 	await runD1Batches(db, offlineStatements, {

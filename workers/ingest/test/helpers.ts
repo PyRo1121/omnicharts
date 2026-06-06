@@ -52,12 +52,26 @@ export function testEnv(overrides?: Partial<Env>): Env {
 
 /** D1 mock for poll batch tests that track SQL via run(). */
 export function pollBatchD1(onRun: (sql: string) => void): D1Database {
+	const meta = new Map<string, string>();
 	return mockIngestD1(
 		(sql) => ({
-			bind: () => ({
+			bind: (...args: unknown[]) => ({
 				run: async () => {
 					onRun(sql);
+					if (sql.includes('INSERT INTO ingest_metadata')) {
+						meta.set(String(args[0]), String(args[1]));
+					}
+					if (sql.includes('DELETE FROM ingest_metadata')) {
+						meta.delete(String(args[0]));
+					}
 					return {};
+				},
+				first: async () => {
+					if (sql.includes('SELECT value FROM ingest_metadata')) {
+						const value = meta.get(String(args[0]));
+						return value != null ? { value } : null;
+					}
+					return null;
 				},
 			}),
 		}),

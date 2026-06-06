@@ -107,7 +107,7 @@ export function overviewPageSubtitle(platform: UiPlatformFilter, source: DataSou
 
 export function searchPageSubtitle(platform: UiPlatformFilter): string {
 	if (platform === 'all') {
-		return 'Find streamers by name or slug across Twitch, Kick, and YouTube.';
+		return 'Find Twitch streamers by name or slug while the All tab is selected (multi-platform search is planned).';
 	}
 	return `Find streamers by name or slug on ${platformLabel(platform)}.`;
 }

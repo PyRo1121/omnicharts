@@ -1,11 +1,16 @@
 <script lang="ts">
+	import type { UiPlatformFilter } from '$lib/ui/platform.svelte';
+	import { routeWithPlatform } from '$lib/ui/platform.svelte';
+
 	interface Props {
 		count: number;
+		platform?: UiPlatformFilter;
 	}
 
-	const { count }: Props = $props();
+	const { count, platform = 'twitch' }: Props = $props();
 
 	const isEmpty = $derived(count === 0);
+	const channelsHref = $derived(routeWithPlatform('/channels', platform));
 </script>
 
 <div
@@ -30,7 +35,7 @@
 			<span class="text-[var(--color-oc-text-muted)]"> channels live now</span>
 		{/if}
 	</p>
-	<a href="/channels" class="text-xs font-medium text-[var(--color-oc-accent)] hover:underline">
+	<a href={channelsHref} class="text-xs font-medium text-[var(--color-oc-accent)] hover:underline">
 		Browse channels →
 	</a>
 </div>

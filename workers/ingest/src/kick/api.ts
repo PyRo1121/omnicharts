@@ -67,6 +67,18 @@ export class KickPublicApiClient {
 		return json.data;
 	}
 
+	/** GET /public/v1/channels?broadcaster_user_id= — distinct API `channel_id` for session parity with poll. */
+	async getChannelsByBroadcasterId(broadcasterUserId: string): Promise<KickChannel[]> {
+		const trimmed = broadcasterUserId.trim();
+		if (!trimmed) return [];
+
+		const params = new URLSearchParams();
+		params.set('broadcaster_user_id', trimmed);
+
+		const json = await this.getList('/public/v1/channels', params, parseKickChannel);
+		return json.data;
+	}
+
 	async getLivestreamsByBroadcasterIds(broadcasterIds: string[]): Promise<KickLivestream[]> {
 		if (broadcasterIds.length === 0) return [];
 		const chunks = chunkArray(broadcasterIds, KICK_LIVESTREAMS_BATCH_SIZE);

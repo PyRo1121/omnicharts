@@ -6,7 +6,11 @@ export const CSV_CONTENT_TYPE = 'text/csv; charset=utf-8';
 
 export function escapeCsvCell(value: string | number | null | undefined): string {
 	if (value == null) return '';
-	const s = String(value);
+	let s = String(value);
+	// OWASP CSV injection — https://owasp.org/www-community/attacks/CSV_Injection
+	if (/^\s*[=+\-@]/.test(s)) {
+		s = `'${s}`;
+	}
 	if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
 	return s;
 }

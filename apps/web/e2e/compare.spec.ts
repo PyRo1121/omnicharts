@@ -58,4 +58,22 @@ test.describe('Compare page (Phase 4 slice 4.4)', () => {
 		await page.getByRole('group', { name: 'Time period' }).getByRole('link', { name: '30 days' }).click();
 		await expect(page).toHaveURL(/period=30d/);
 	});
+
+	test('compare period toggle updates URL to 90d', async ({ page }) => {
+		if (!(await ingestRankingsReady())) {
+			test.skip(true, `ingest not reachable at ${INGEST_URL}`);
+		}
+
+		const slug = await firstRankedSlug('twitch', 'channels');
+		if (!slug) test.skip(true, 'no twitch rankings');
+
+		await page.goto(`/compare?a=${encodeURIComponent(slug)}&b=${encodeURIComponent(slug)}&platform=twitch&period=7d`);
+		await page.getByRole('group', { name: 'Time period' }).getByRole('link', { name: '90 days' }).click();
+		await expect(page).toHaveURL(/period=90d/);
+	});
+
+	test('compare rejects invalid period with 400', async ({ page }) => {
+		const res = await page.goto('/compare?a=a&b=b&period=24h');
+		expect(res?.status()).toBe(400);
+	});
 });

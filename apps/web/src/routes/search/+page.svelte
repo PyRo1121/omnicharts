@@ -1,10 +1,13 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import AvatarImage from '$lib/components/ui/AvatarImage.svelte';
 	import SectionHeader from '$lib/components/ui/SectionHeader.svelte';
 	import SearchChannels from '$lib/components/ui/SearchChannels.svelte';
 	import PlatformFilter from '$lib/components/ui/PlatformFilter.svelte';
+	import LanguageFilter from '$lib/components/ui/LanguageFilter.svelte';
 	import {
 		platforms,
+		rankingLanguages,
 		routeWithPlatform,
 		searchPageSubtitle,
 		searchPlatformId,
@@ -19,10 +22,22 @@
 		youtube: 'YouTube'
 	};
 
+	function routeQuery(): Record<string, string> {
+		const q: Record<string, string> = {};
+		if (data.q.trim()) q.q = data.q.trim();
+		if (data.language) q.language = data.language;
+		return q;
+	}
+
 	function platformHref(id: UiPlatformFilter): string {
-		const extra: Record<string, string> = {};
-		if (data.q.trim()) extra.q = data.q.trim();
-		return routeWithPlatform('/search', id, extra);
+		return routeWithPlatform('/search', id, routeQuery());
+	}
+
+	function onLanguageChange(code: string | null) {
+		const q = routeQuery();
+		if (code) q.language = code;
+		else delete q.language;
+		goto(routeWithPlatform('/search', data.platform, q), { keepFocus: true, noScroll: true });
 	}
 </script>
 
@@ -34,6 +49,13 @@
 
 <div class="mt-4">
 	<PlatformFilter {platforms} value={data.platform} hrefFor={platformHref} />
+</div>
+
+<div class="mt-4 flex flex-wrap items-center gap-3">
+	<LanguageFilter languages={rankingLanguages} value={data.language} onLanguageChange={onLanguageChange} />
+	{#if data.languageNote}
+		<p class="text-xs text-[var(--color-oc-text-faint)]">{data.languageNote}</p>
+	{/if}
 </div>
 
 <div class="mt-6 max-w-xl">

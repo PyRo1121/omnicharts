@@ -1,3 +1,10 @@
+<script lang="ts">
+	import { page } from '$app/stores';
+	import { parseUiPlatform, routeWithPlatform } from '$lib/ui/platform.svelte';
+
+	const activePlatform = $derived(parseUiPlatform($page.url.searchParams.get('platform')));
+</script>
+
 <footer class="border-t border-[var(--color-oc-border-subtle)] bg-[var(--color-oc-bg-elevated)] px-4 py-8 sm:px-6 lg:px-8">
 	<div class="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
 		<div>
@@ -15,8 +22,14 @@
 			<li><a href="/privacy" class="hover:text-[var(--color-oc-accent)]">Privacy</a></li>
 			<li><a href="/terms" class="hover:text-[var(--color-oc-accent)]">Terms</a></li>
 			<li><a href="/support" class="hover:text-[var(--color-oc-accent)]">Support</a></li>
-			<li><a href="/channels" class="hover:text-[var(--color-oc-accent)]">Channels</a></li>
-			<li><a href="/games" class="hover:text-[var(--color-oc-accent)]">Games</a></li>
+			<li>
+				<a href={routeWithPlatform('/channels', activePlatform)} class="hover:text-[var(--color-oc-accent)]"
+					>Channels</a
+				>
+			</li>
+			<li>
+				<a href={routeWithPlatform('/games', activePlatform)} class="hover:text-[var(--color-oc-accent)]">Games</a>
+			</li>
 		</ul>
 	</div>
 </footer>

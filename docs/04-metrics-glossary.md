@@ -87,7 +87,7 @@ Equivalently: time-weighted mean of `viewer_count` while live.
 |-----|-------|-----|
 | `7d` | Last 7 days | Yes (homepage default) |
 | `30d` | Last 30 days | Yes (homepage + channel pages, Phase 2) |
-| `90d` | Last 90 days | Phase 4 |
+| `90d` | Last 90 days | Yes (Phase 4 — compare API, channel/game directories, homepage toggle) |
 | `365d` | Last 365 days | Phase 7 |
 
 **Window definition:** Rolling **7×24 hours UTC** ending at the latest completed daily rollup (not calendar week Mon–Sun unless labeled).

@@ -183,7 +183,7 @@ async function runProofMatrix(): Promise<void> {
 	log({
 		name: 'd1:verify-schema (local)',
 		pass: schema.ok,
-		detail: schema.ok ? 'migrations 0001–0009 tables/columns/indexes ok' : schema.output.slice(-500),
+		detail: schema.ok ? 'migrations 0001–0010 tables/columns/indexes ok' : schema.output.slice(-500),
 	});
 	if (!schema.ok) {
 		printSummary();
@@ -288,6 +288,17 @@ async function main() {
 		detail: lint.ok ? 'no issues' : lint.output.slice(-400),
 	});
 	if (!lint.ok) {
+		printSummary();
+		process.exit(1);
+	}
+
+	const wranglerProd = await run(['bun', 'run', 'verify:wrangler-production']);
+	log({
+		name: 'verify:wrangler-production',
+		pass: wranglerProd.ok,
+		detail: wranglerProd.ok ? 'wrangler vars match production playbook' : wranglerProd.output.slice(-400),
+	});
+	if (!wranglerProd.ok) {
 		printSummary();
 		process.exit(1);
 	}

@@ -5,9 +5,10 @@
 	import PeriodSelector from '$lib/components/ui/PeriodSelector.svelte';
 	import ExportCsvLink from '$lib/components/ui/ExportCsvLink.svelte';
 	import { channelDetailCsvUrl } from '$lib/export/csv-url';
+	import { comparePageUrl } from '$lib/compare/url';
 	import { ingestStateLabel } from '$lib/ingest-state-label';
 	import { uiPeriods } from '$lib/ui/platform.svelte';
-	import type { RankingPeriod } from '@omnicharts/domain';
+	import { parseComparePeriod, parsePlatformId, type RankingPeriod } from '@omnicharts/domain';
 
 	const { data } = $props();
 	const ch = $derived(data.channel);
@@ -50,6 +51,14 @@
 			? channelDetailCsvUrl(ch.slug, ch.platform, ch.period)
 			: null
 	);
+	const compareHref = $derived(
+		comparePageUrl({
+			a: ch.slug,
+			b: null,
+			platform: parsePlatformId(ch.platform),
+			period: parseComparePeriod(ch.period),
+		})
+	);
 </script>
 
 <svelte:head>
@@ -57,7 +66,7 @@
 </svelte:head>
 
 <nav class="text-xs text-[var(--color-oc-text-faint)]">
-	<a href="/channels" class="hover:text-[var(--color-oc-accent)]">Channels</a>
+	<a href="/channels?platform={ch.platform}" class="hover:text-[var(--color-oc-accent)]">Channels</a>
 	<span class="mx-1">/</span>
 	<span class="text-[var(--color-oc-text-muted)]">{ch.displayName}</span>
 </nav>
@@ -151,6 +160,9 @@
 		{#if csvHref}
 			<ExportCsvLink href={csvHref} />
 		{/if}
+		<a href={compareHref} class="text-sm font-medium text-[var(--color-oc-accent)] hover:underline">
+			Compare with another channel
+		</a>
 		{#if data.periodNote}
 			<p class="text-xs text-[var(--color-oc-text-faint)]">{data.periodNote}</p>
 		{/if}

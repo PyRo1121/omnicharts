@@ -674,5 +674,6 @@ async function publicSearchChannels(request: Request, env: Env): Promise<Respons
 		limit: parsed.limit,
 		language: parsed.language,
 	});
-	return Response.json({ results }, { headers: { 'cache-control': 'private, max-age=30' } });
+	const body = parsed.language ? { results, language: parsed.language } : { results };
+	return Response.json(body, { headers: { 'cache-control': 'private, max-age=30' } });
 }

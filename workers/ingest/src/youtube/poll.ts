@@ -8,8 +8,16 @@ import { archiveSampleBatch } from '../r2/sample-archive';
 import { ingestWarn } from '../log';
 import { requireDb } from '../worker-bindings';
 import { YoutubeDataApiClient } from './api';
-import { youtubeApiKeyConfigured, youtubeMaxTrackedFromEnv, youtubeMinViewersFromEnv, YOUTUBE_VIDEOS_BATCH_SIZE } from './config';
+import { YoutubeQuotaExceededError } from './api-errors';
+import {
+	youtubeApiKeyConfigured,
+	youtubeMaxTrackedFromEnv,
+	youtubeMinViewersFromEnv,
+	YOUTUBE_BOOTSTRAP_MAX_PER_POLL,
+	YOUTUBE_VIDEOS_BATCH_SIZE,
+} from './config';
 import { isYoutubeConcurrentViewersKnown, isYoutubeLive, parseYoutubeConcurrentViewers, youtubeStreamEnded } from './stream-fields';
+import type { YoutubeVideoItem } from './types';
 
 export type YoutubePollResult = {
 	batches: number;
@@ -36,23 +44,32 @@ export async function runYoutubeCatalogPoll(env: Env): Promise<YoutubePollResult
 	const db = requireDb(env);
 	const limit = youtubeMaxTrackedFromEnv(env);
 	const client = new YoutubeDataApiClient(env);
-	await bootstrapYoutubeLiveVideoIds(env, db, client, limit);
-	const targets = await listYoutubePollTargets(db, limit);
 	const totals: YoutubePollResult = { batches: 0, liveVideos: 0, samplesWritten: 0 };
 
-	for (let i = 0; i < targets.length; i += YOUTUBE_VIDEOS_BATCH_SIZE) {
-		const chunk = targets.slice(i, i + YOUTUBE_VIDEOS_BATCH_SIZE);
-		const batch = await runYoutubePollBatch(env, chunk);
-		totals.batches += batch.batches;
-		totals.liveVideos += batch.liveVideos;
-		totals.samplesWritten += batch.samplesWritten;
+	try {
+		await bootstrapYoutubeLiveVideoIds(env, db, client, limit);
+		const targets = await listYoutubePollTargets(db, limit);
+
+		for (let i = 0; i < targets.length; i += YOUTUBE_VIDEOS_BATCH_SIZE) {
+			const chunk = targets.slice(i, i + YOUTUBE_VIDEOS_BATCH_SIZE);
+			const batch = await runYoutubePollBatch(env, chunk);
+			totals.batches += batch.batches;
+			totals.liveVideos += batch.liveVideos;
+			totals.samplesWritten += batch.samplesWritten;
+		}
+	} catch (err) {
+		if (err instanceof YoutubeQuotaExceededError) {
+			ingestWarn('[youtube] poll aborted — quotaExceeded');
+			return totals;
+		}
+		throw err;
 	}
 
 	return totals;
 }
 
 async function bootstrapYoutubeLiveVideoIds(env: Env, db: D1Database, client: YoutubeDataApiClient, limit: number): Promise<void> {
-	const missing = await listYoutubeTrackedMissingLiveVideoId(db, limit);
+	const missing = (await listYoutubeTrackedMissingLiveVideoId(db, limit)).slice(0, YOUTUBE_BOOTSTRAP_MAX_PER_POLL);
 	for (const row of missing) {
 		try {
 			const videoId = await resolveYoutubeLiveVideoId(client, row.platformChannelId);
@@ -60,9 +77,38 @@ async function bootstrapYoutubeLiveVideoIds(env: Env, db: D1Database, client: Yo
 				await setYoutubeLiveVideoId(db, row.channelRowId, videoId);
 			}
 		} catch (err) {
+			if (err instanceof YoutubeQuotaExceededError) throw err;
 			ingestWarn('[youtube] live video id resolve failed', row.platformChannelId, err);
 		}
 	}
+}
+
+function tryQueueYoutubeLiveSample(
+	target: YoutubePollTarget,
+	video: YoutubeVideoItem,
+	minViewers: number,
+	sampleInputs: YoutubeLiveSampleInput[],
+): boolean {
+	if (!isYoutubeLive(video)) return false;
+	const viewers = parseYoutubeConcurrentViewers(video.liveStreamingDetails?.concurrentViewers);
+	if (!isYoutubeConcurrentViewersKnown(video.liveStreamingDetails?.concurrentViewers) || viewers == null || viewers < minViewers) {
+		return false;
+	}
+	sampleInputs.push({ channelId: target.channelRowId, video });
+	return true;
+}
+
+async function sampleRefreshedYoutubeVideo(
+	client: YoutubeDataApiClient,
+	target: YoutubePollTarget,
+	videoId: string,
+	minViewers: number,
+	sampleInputs: YoutubeLiveSampleInput[],
+): Promise<boolean> {
+	const videos = await client.getVideosByIds([videoId]);
+	const video = videos[0];
+	if (!video) return false;
+	return tryQueueYoutubeLiveSample(target, video, minViewers, sampleInputs);
 }
 
 async function refreshYoutubeLiveVideoIdOnPollMiss(
@@ -111,6 +157,9 @@ export async function runYoutubePollBatch(env: Env, targets: YoutubePollTarget[]
 			const refreshed = await refreshYoutubeLiveVideoIdOnPollMiss(env, db, client, target);
 			if (refreshed) {
 				liveVideoIds.add(refreshed);
+				if (await sampleRefreshedYoutubeVideo(client, target, refreshed, minViewers, sampleInputs)) {
+					result.liveVideos += 1;
+				}
 				continue;
 			}
 			endedChannelIds.push(target.channelRowId);
@@ -120,12 +169,9 @@ export async function runYoutubePollBatch(env: Env, targets: YoutubePollTarget[]
 		result.liveVideos += 1;
 		liveVideoIds.add(video.id);
 
-		const viewers = parseYoutubeConcurrentViewers(video.liveStreamingDetails?.concurrentViewers);
-		if (!isYoutubeConcurrentViewersKnown(video.liveStreamingDetails?.concurrentViewers) || viewers == null || viewers < minViewers) {
+		if (tryQueueYoutubeLiveSample(target, video, minViewers, sampleInputs)) {
 			continue;
 		}
-
-		sampleInputs.push({ channelId: target.channelRowId, video });
 	}
 
 	for (const target of targets) {
@@ -135,6 +181,9 @@ export async function runYoutubePollBatch(env: Env, targets: YoutubePollTarget[]
 		const refreshed = await refreshYoutubeLiveVideoIdOnPollMiss(env, db, client, target);
 		if (refreshed) {
 			liveVideoIds.add(refreshed);
+			if (await sampleRefreshedYoutubeVideo(client, target, refreshed, minViewers, sampleInputs)) {
+				result.liveVideos += 1;
+			}
 			continue;
 		}
 		endedChannelIds.push(target.channelRowId);
