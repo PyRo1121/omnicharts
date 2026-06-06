@@ -113,3 +113,47 @@ This project is indexed by GitNexus as **Stream Charts** (5169 symbols, 9895 rel
 | Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
 
 <!-- gitnexus:end -->
+
+## Cursor Cloud specific instructions
+
+### Toolchain
+
+- **Bun** is pinned in root `package.json` (`packageManager: bun@1.3.14`). If `bun` is missing, install from [bun.sh](https://bun.sh/docs/installation) and ensure `~/.bun/bin` is on `PATH`.
+- **Node.js** 20+ is used by Wrangler/Vitest; Node 22 works in practice.
+- Run `bun run scripts/dev/wrangler-decline-skills.ts` once per VM if Wrangler prints the agent-skills prompt (breaks JSON parsers in `d1:verify-schema`).
+
+### Services (local dev)
+
+| Service | Command | URL |
+|---------|---------|-----|
+| Web (SvelteKit/Vite) | `bun run dev:web` | http://localhost:5173 |
+| Ingest Worker | `bun run dev:ingest` | http://127.0.0.1:8787 (`/health`) |
+
+Use **tmux** for long-running dev servers. Ingest `dev` already runs `wrangler-decline-skills` before `wrangler dev --test-scheduled`.
+
+### D1 local database (critical)
+
+Ingest and web each maintain a **separate** local D1 SQLite under their own `.wrangler/state`. After schema changes, apply migrations to **both**:
+
+```bash
+bun run d1:migrate:local                              # workers/ingest D1
+bun run --cwd apps/web wrangler d1 migrations apply omnicharts --local   # web platformProxy D1
+```
+
+Without the web migration, `bun run dev:web` returns 500 (`no such table: channel_daily_rollups`).
+
+### Demo without API secrets
+
+- UI design preview: `http://localhost:5173/?demo=1` (or `DEV_MOCK=1`).
+- Ingest `/health` returns **503** with `missing_credentials` when `workers/ingest/.dev.vars` is absent — expected; DB and routes still work.
+- Live Twitch/Kick/YouTube polling requires secrets per `workers/ingest/.dev.vars.example` and [15-ingest-runbook.md](./docs/15-ingest-runbook.md).
+
+### Verify / lint (see [13-testing-and-verification.md](./docs/13-testing-and-verification.md))
+
+| Gate | Command | Notes |
+|------|---------|-------|
+| Lint | `bun run lint` | oxlint |
+| Format | `bun run format:check` | oxfmt |
+| Unit tests | `bun run test` | Full unit gate (domain, rollup, ingest, web) |
+| Full verify | `bun run verify:twitch` | Requires `dev:ingest` running; CI sets `VERIFY_SKIP_CHECKPOINT=1` without Helix secrets |
+| Web build | `bun run check:web && bun run build:web` | SvelteKit + Cloudflare adapter |

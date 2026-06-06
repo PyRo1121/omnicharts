@@ -37,7 +37,8 @@ describe('escapeCsvCell', () => {
 	test('mitigates formula injection per OWASP CSV injection guidance', () => {
 		expect(escapeCsvCell('=1+1')).toBe("'=1+1");
 		expect(escapeCsvCell('+cmd')).toBe("'+cmd");
-		expect(escapeCsvCell('@SUM(1,1)')).toBe("'@SUM(1,1)");
+		// Comma in cell still requires RFC 4180 quoting after formula prefix
+		expect(escapeCsvCell('@SUM(1,1)')).toBe('"\'@SUM(1,1)"');
 		expect(escapeCsvCell(' hello')).toBe(' hello');
 	});
 });
