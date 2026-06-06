@@ -1,30 +1,25 @@
 import { describe, it, expect, vi } from 'vitest';
 import { load } from '../../routes/search/+page.server';
-import type { PageData } from '../../routes/search/$types';
+import { expectPageData, fetchInputUrl, testSearchLoadEvent } from './test-helpers';
 
 vi.mock('$env/dynamic/private', () => ({
 	env: { INGEST_URL: 'http://ingest.test' },
 }));
 
-type SearchLoad = (event: Parameters<typeof load>[0]) => Promise<PageData>;
-const searchLoad = load as SearchLoad;
-
 function searchLoadArgs(q: string, platform: string) {
 	const url = new URL(`http://localhost/search?q=${encodeURIComponent(q)}&platform=${platform}`);
-	const setHeaders = vi.fn();
 
-	return {
+	return testSearchLoadEvent({
 		fetch: vi.fn(),
 		url,
-		setHeaders,
-		platform: undefined,
-	} as unknown as Parameters<typeof load>[0];
+		setHeaders: vi.fn(),
+	});
 }
 
 describe('search page load — platform=kick', () => {
 	it('forwards platform=kick to ingest and enriches results with rollup HW', async () => {
-		const fetchFn = vi.fn().mockImplementation((input: string | URL) => {
-			const url = String(input);
+		const fetchFn = vi.fn().mockImplementation((input: RequestInfo | URL) => {
+			const url = fetchInputUrl(input);
 			if (url.includes('/v1/search/channels')) {
 				expect(url).toContain('platform=kick');
 				return Promise.resolve({
@@ -70,7 +65,12 @@ describe('search page load — platform=kick', () => {
 			if (url.includes('/v1/rankings/channels')) {
 				return Promise.resolve({
 					ok: true,
-					json: async () => ({ items: [] }),
+					json: async () => ({
+						platform: 'kick',
+						period: '7d',
+						updated_at: '2026-06-01T00:00:00Z',
+						items: [],
+					}),
 				});
 			}
 			return Promise.resolve({ ok: false, status: 503 });
@@ -79,7 +79,7 @@ describe('search page load — platform=kick', () => {
 		const args = searchLoadArgs('xqc', 'kick');
 		args.fetch = fetchFn;
 
-		const result = await searchLoad(args);
+		const result = expectPageData(await load(args));
 
 		expect(result.platform).toBe('kick');
 		expect(result.q).toBe('xqc');
@@ -93,8 +93,8 @@ describe('search page load — platform=kick', () => {
 	});
 
 	it('rejects invalid platform query and defaults to twitch', async () => {
-		const fetchFn = vi.fn().mockImplementation((input: string | URL) => {
-			const url = String(input);
+		const fetchFn = vi.fn().mockImplementation((input: RequestInfo | URL) => {
+			const url = fetchInputUrl(input);
 			if (url.includes('/v1/search/channels')) {
 				expect(url).toContain('platform=twitch');
 				return Promise.resolve({ ok: true, json: async () => ({ results: [] }) });
@@ -108,13 +108,13 @@ describe('search page load — platform=kick', () => {
 		const args = searchLoadArgs('ab', 'not-a-platform');
 		args.fetch = fetchFn;
 
-		const result = await searchLoad(args);
+		const result = expectPageData(await load(args));
 		expect(result.platform).toBe('twitch');
 	});
 
 	it('loads kick trending chips from kick rankings', async () => {
-		const fetchFn = vi.fn().mockImplementation((input: string | URL) => {
-			const url = String(input);
+		const fetchFn = vi.fn().mockImplementation((input: RequestInfo | URL) => {
+			const url = fetchInputUrl(input);
 			if (url.includes('/v1/search/channels')) {
 				return Promise.resolve({ ok: true, json: async () => ({ results: [] }) });
 			}
@@ -122,6 +122,8 @@ describe('search page load — platform=kick', () => {
 				return Promise.resolve({
 					ok: true,
 					json: async () => ({
+						platform: 'kick',
+						period: '7d',
 						updated_at: '2026-06-01T00:00:00Z',
 						items: [
 							{
@@ -131,6 +133,7 @@ describe('search page load — platform=kick', () => {
 								avatar_url: null,
 								hours_watched: 1,
 								average_viewers: 1,
+								stream_count: 1,
 							},
 						],
 					}),
@@ -142,7 +145,7 @@ describe('search page load — platform=kick', () => {
 		const args = searchLoadArgs('', 'kick');
 		args.fetch = fetchFn;
 
-		const result = await searchLoad(args);
+		const result = expectPageData(await load(args));
 		expect(result.trending[0]).toMatchObject({ slug: 'xqc', platform: 'kick' });
 	});
 });

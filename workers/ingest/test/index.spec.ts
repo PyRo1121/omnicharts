@@ -38,10 +38,7 @@ describe('ingest worker', () => {
 		await worker.scheduled(ctrl, scheduledEnv, ctx);
 		await waitOnExecutionContext(ctx);
 		expect(sendBatch).toHaveBeenCalledOnce();
-		expect(sendBatch.mock.calls[0]?.[0]).toEqual([
-			{ body: { type: 'poll_twitch_sweep' } },
-			{ body: { type: 'poll_twitch_reconcile' } },
-		]);
+		expect(sendBatch.mock.calls[0]?.[0]).toEqual([{ body: { type: 'poll_twitch_sweep' } }, { body: { type: 'poll_twitch_reconcile' } }]);
 		sendBatch.mockRestore();
 	});
 
@@ -55,10 +52,7 @@ describe('ingest worker', () => {
 		await worker.scheduled(ctrl, env, ctx);
 		await waitOnExecutionContext(ctx);
 		expect(sendBatch).toHaveBeenCalledOnce();
-		expect(sendBatch.mock.calls[0]?.[0]).toEqual([
-			{ body: { type: 'poll_kick_tracked' } },
-			{ body: { type: 'poll_youtube_tracked' } },
-		]);
+		expect(sendBatch.mock.calls[0]?.[0]).toEqual([{ body: { type: 'poll_kick_tracked' } }, { body: { type: 'poll_youtube_tracked' } }]);
 		sendBatch.mockRestore();
 	});
 

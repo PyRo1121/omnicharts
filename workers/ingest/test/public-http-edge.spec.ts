@@ -38,22 +38,32 @@ describe('public HTTP edge cases (worker.fetch)', () => {
 	it('GET /v1/rankings/channels?period=365d returns 400 invalid_period', async () => {
 		const res = await worker.fetch(new Request('http://ingest/v1/rankings/channels?period=365d'), testEnv({ DB: unusedIngestD1() }));
 		expect(res.status).toBe(400);
-		expect(await res.json()).toEqual({ error: { code: 'invalid_period' } });
+		expect(await res.json()).toEqual({
+			error: { code: 'invalid_period', message: 'period must be one of 24h, 7d, 30d, 90d' },
+		});
 	});
 
 	it('GET /v1/rankings/channels?language=english returns 400 invalid_language', async () => {
 		const buildSpy = vi.spyOn(channelsApi, 'buildRankingsChannelsResponse');
 		const res = await worker.fetch(new Request('http://ingest/v1/rankings/channels?language=english'), testEnv({ DB: unusedIngestD1() }));
 		expect(res.status).toBe(400);
-		expect(await res.json()).toEqual({ error: { code: 'invalid_language' } });
+		expect(await res.json()).toEqual({
+			error: {
+				code: 'invalid_language',
+				message: 'language must be a valid BCP 47 stream tag (e.g. en, es, zh-tw)',
+			},
+		});
 		expect(buildSpy).not.toHaveBeenCalled();
 	});
 
 	it('POST /admin/twitch/discover returns 401 when ADMIN_API_KEY set and header missing', async () => {
-		const res = await worker.fetch(new Request('http://ingest/admin/twitch/discover', { method: 'POST' }), testEnv({
-			ADMIN_API_KEY: 'secret',
-			DB: unusedIngestD1(),
-		}));
+		const res = await worker.fetch(
+			new Request('http://ingest/admin/twitch/discover', { method: 'POST' }),
+			testEnv({
+				ADMIN_API_KEY: 'secret',
+				DB: unusedIngestD1(),
+			}),
+		);
 		expect(res.status).toBe(401);
 	});
 
@@ -71,7 +81,9 @@ describe('public HTTP edge cases (worker.fetch)', () => {
 	it('GET /v1/rankings/games?period=365d returns 400 invalid_period', async () => {
 		const res = await worker.fetch(new Request('http://ingest/v1/rankings/games?period=365d'), testEnv({ DB: unusedIngestD1() }));
 		expect(res.status).toBe(400);
-		expect(await res.json()).toEqual({ error: { code: 'invalid_period' } });
+		expect(await res.json()).toEqual({
+			error: { code: 'invalid_period', message: 'period must be one of 24h, 7d, 30d, 90d' },
+		});
 	});
 
 	it('GET /v1/rankings/channels uses in-worker cache on repeat requests', async () => {
@@ -118,34 +130,49 @@ describe('public HTTP edge cases (worker.fetch)', () => {
 		expect((await worker.fetch(req(), env)).status).toBe(400);
 		const blocked = await worker.fetch(req(), env);
 		expect(blocked.status).toBe(429);
-		expect(await blocked.json()).toEqual({ error: { code: 'rate_limited' } });
+		expect(await blocked.json()).toEqual({ error: { code: 'rate_limited', message: 'Too many requests' } });
 	});
 
 	it('GET /v1/search/channels returns 400 when query too short', async () => {
 		const searchSpy = vi.spyOn(search, 'searchChannels').mockResolvedValue([]);
 		const res = await worker.fetch(new Request('http://ingest/v1/search/channels?q=a&platform=twitch'), testEnv({ DB: unusedIngestD1() }));
 		expect(res.status).toBe(400);
-		expect(await res.json()).toEqual({ error: { code: 'invalid_query' } });
+		expect(await res.json()).toEqual({
+			error: { code: 'invalid_query', message: 'q must be between 2 and 100 characters' },
+		});
 		expect(searchSpy).not.toHaveBeenCalled();
 	});
 
 	it('GET /v1/search/channels returns 400 when query exceeds 100 chars', async () => {
 		const searchSpy = vi.spyOn(search, 'searchChannels').mockResolvedValue([]);
-		const res = await worker.fetch(new Request(`http://ingest/v1/search/channels?q=${'z'.repeat(101)}&platform=twitch`), testEnv({
-			DB: unusedIngestD1(),
-		}));
+		const res = await worker.fetch(
+			new Request(`http://ingest/v1/search/channels?q=${'z'.repeat(101)}&platform=twitch`),
+			testEnv({
+				DB: unusedIngestD1(),
+			}),
+		);
 		expect(res.status).toBe(400);
-		expect(await res.json()).toEqual({ error: { code: 'invalid_query' } });
+		expect(await res.json()).toEqual({
+			error: { code: 'invalid_query', message: 'q must be between 2 and 100 characters' },
+		});
 		expect(searchSpy).not.toHaveBeenCalled();
 	});
 
 	it('GET /v1/search/channels returns 400 invalid_language', async () => {
 		const searchSpy = vi.spyOn(search, 'searchChannelsWithYoutubeSeed').mockResolvedValue([]);
-		const res = await worker.fetch(new Request('http://ingest/v1/search/channels?q=sh&platform=twitch&language=english'), testEnv({
-			DB: unusedIngestD1(),
-		}));
+		const res = await worker.fetch(
+			new Request('http://ingest/v1/search/channels?q=sh&platform=twitch&language=english'),
+			testEnv({
+				DB: unusedIngestD1(),
+			}),
+		);
 		expect(res.status).toBe(400);
-		expect(await res.json()).toEqual({ error: { code: 'invalid_language' } });
+		expect(await res.json()).toEqual({
+			error: {
+				code: 'invalid_language',
+				message: 'language must be a valid BCP 47 stream tag (e.g. en, es, zh-tw)',
+			},
+		});
 		expect(searchSpy).not.toHaveBeenCalled();
 	});
 });

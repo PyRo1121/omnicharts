@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { mockIngestD1, testEnv } from './helpers';
+import { mockIngestD1, testEnv, TEST_ENV_NO_EVENTSUB } from './helpers';
 import { handleTwitchEventSubWebhook } from '../src/twitch/eventsub/handler';
 import { buildEventSubHmacMessage } from '../src/twitch/eventsub/verify';
 import * as ingestLog from '../src/log';
@@ -69,7 +69,7 @@ describe('handleTwitchEventSubWebhook', () => {
 	});
 
 	it('503 when secret missing', async () => {
-		const res = await handleTwitchEventSubWebhook(new Request('http://x', { method: 'POST' }), testEnv());
+		const res = await handleTwitchEventSubWebhook(new Request('http://x', { method: 'POST' }), testEnv(TEST_ENV_NO_EVENTSUB));
 		expect(res.status).toBe(503);
 	});
 

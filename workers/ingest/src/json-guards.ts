@@ -91,8 +91,13 @@ export function parseHelixChannelFollowersResponse(data: unknown): HelixChannelF
 }
 
 function requireString(record: Record<string, unknown>, key: string): string | null {
-	const value = readString(record, key);
-	return value ?? null;
+	if (!(key in record)) return null;
+	const value = record[key];
+	return typeof value === 'string' ? value : null;
+}
+
+function optionalString(record: Record<string, unknown>, key: string): string {
+	return readString(record, key) ?? '';
 }
 
 export function parseHelixGame(item: unknown): HelixGame | null {
@@ -100,7 +105,7 @@ export function parseHelixGame(item: unknown): HelixGame | null {
 	const id = requireString(item, 'id');
 	const name = requireString(item, 'name');
 	const box_art_url = requireString(item, 'box_art_url');
-	if (!id || !name || !box_art_url) return null;
+	if (id == null || name == null || box_art_url == null) return null;
 	return { id, name, box_art_url };
 }
 
@@ -116,7 +121,18 @@ export function parseHelixStream(item: unknown): HelixStream | null {
 	const viewer_count = readNumber(item, 'viewer_count');
 	const started_at = requireString(item, 'started_at');
 	const type = requireString(item, 'type');
-	if (!id || !user_id || !user_login || !user_name || !game_id || !game_name || !title || viewer_count == null || !started_at || !type) {
+	if (
+		id == null ||
+		user_id == null ||
+		user_login == null ||
+		user_name == null ||
+		game_id == null ||
+		game_name == null ||
+		title == null ||
+		viewer_count == null ||
+		started_at == null ||
+		type == null
+	) {
 		return null;
 	}
 	const stream: HelixStream = {
@@ -152,7 +168,16 @@ export function parseHelixUser(item: unknown): HelixUser | null {
 	const description = requireString(item, 'description');
 	const profile_image_url = requireString(item, 'profile_image_url');
 	const created_at = requireString(item, 'created_at');
-	if (!id || !login || !display_name || !type || !broadcaster_type || !description || !profile_image_url || !created_at) {
+	if (
+		id == null ||
+		login == null ||
+		display_name == null ||
+		type == null ||
+		broadcaster_type == null ||
+		description == null ||
+		profile_image_url == null ||
+		created_at == null
+	) {
 		return null;
 	}
 	const user: HelixUser = {
@@ -181,7 +206,15 @@ export function parseHelixChannel(item: unknown): HelixChannel | null {
 	const game_name = requireString(item, 'game_name');
 	const title = requireString(item, 'title');
 	const tags = readStringArray(item, 'tags');
-	if (!broadcaster_id || !broadcaster_login || !broadcaster_name || !game_id || !game_name || !title || !tags) {
+	if (
+		broadcaster_id == null ||
+		broadcaster_login == null ||
+		broadcaster_name == null ||
+		game_id == null ||
+		game_name == null ||
+		title == null ||
+		tags == null
+	) {
 		return null;
 	}
 	const channel: HelixChannel = {
@@ -195,6 +228,8 @@ export function parseHelixChannel(item: unknown): HelixChannel | null {
 	};
 	const delay = readNumber(item, 'delay');
 	if (delay != null) channel.delay = delay;
+	const is_branded_content = readBoolean(item, 'is_branded_content');
+	if (is_branded_content != null) channel.is_branded_content = is_branded_content;
 	return channel;
 }
 
@@ -202,54 +237,24 @@ export function parseHelixVideo(item: unknown): HelixVideo | null {
 	if (!isRecord(item)) return null;
 	const id = requireString(item, 'id');
 	const user_id = requireString(item, 'user_id');
-	const user_login = requireString(item, 'user_login');
-	const user_name = requireString(item, 'user_name');
-	const title = requireString(item, 'title');
-	const description = requireString(item, 'description');
-	const created_at = requireString(item, 'created_at');
-	const published_at = requireString(item, 'published_at');
-	const url = requireString(item, 'url');
-	const thumbnail_url = requireString(item, 'thumbnail_url');
-	const viewable = requireString(item, 'viewable');
-	const view_count = readNumber(item, 'view_count');
-	const language = requireString(item, 'language');
 	const type = requireString(item, 'type');
-	const duration = requireString(item, 'duration');
-	if (
-		!id ||
-		!user_id ||
-		!user_login ||
-		!user_name ||
-		!title ||
-		!description ||
-		!created_at ||
-		!published_at ||
-		!url ||
-		!thumbnail_url ||
-		!viewable ||
-		view_count == null ||
-		!language ||
-		!type ||
-		!duration
-	) {
-		return null;
-	}
+	if (id == null || user_id == null || type == null) return null;
 	return {
 		id,
 		user_id,
-		user_login,
-		user_name,
-		title,
-		description,
-		created_at,
-		published_at,
-		url,
-		thumbnail_url,
-		viewable,
-		view_count,
-		language,
+		user_login: optionalString(item, 'user_login'),
+		user_name: optionalString(item, 'user_name'),
+		title: optionalString(item, 'title'),
+		description: optionalString(item, 'description'),
+		created_at: optionalString(item, 'created_at'),
+		published_at: optionalString(item, 'published_at'),
+		url: optionalString(item, 'url'),
+		thumbnail_url: optionalString(item, 'thumbnail_url'),
+		viewable: optionalString(item, 'viewable'),
+		view_count: readNumber(item, 'view_count') ?? 0,
+		language: optionalString(item, 'language'),
 		type,
-		duration,
+		duration: optionalString(item, 'duration'),
 	};
 }
 
@@ -331,15 +336,13 @@ export function parseEventSubWebhookBody(data: unknown): EventSubWebhookBody | n
 		const id = readString(subscriptionRaw, 'id');
 		const type = readString(subscriptionRaw, 'type');
 		const status = readString(subscriptionRaw, 'status');
-		if (id && type && status) {
+		if (id || type) {
 			const conditionRaw = subscriptionRaw.condition;
 			body.subscription = {
-				id,
-				type,
-				status,
-				condition: isRecord(conditionRaw)
-					? { broadcaster_user_id: readString(conditionRaw, 'broadcaster_user_id') }
-					: undefined,
+				id: id ?? '',
+				type: type ?? '',
+				status: status ?? '',
+				condition: isRecord(conditionRaw) ? { broadcaster_user_id: readString(conditionRaw, 'broadcaster_user_id') } : undefined,
 			};
 		}
 	}

@@ -73,7 +73,8 @@ function createChannelDbMock(opts: { existingChannel?: boolean; openSession?: bo
 	const viewerSamples: unknown[][] = [];
 	let sightings = opts.sightingCount ?? 0;
 
-	const db = mockIngestD1((sql) => {
+	const db = mockIngestD1(
+		(sql) => {
 			if (sql.includes('platform_channel_id IN')) {
 				return {
 					bind: () => ({
@@ -200,10 +201,12 @@ function createChannelDbMock(opts: { existingChannel?: boolean; openSession?: bo
 			return {
 				bind: () => ({ run: async () => ({}), first: async () => null, all: async () => ({}) }),
 			};
-	}, async (statements) => {
-		await Promise.all(statements.map((stmt) => stmt.run()));
-		return [];
-	});
+		},
+		async (statements) => {
+			await Promise.all(statements.map((stmt) => stmt.run()));
+			return [];
+		},
+	);
 
 	return { db, channelUpserts, sessionWrites, viewerSamples };
 }

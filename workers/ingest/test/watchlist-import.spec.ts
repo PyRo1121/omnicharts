@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { testEnv, mockIngestD1, unusedIngestD1 } from './helpers';
+import { testEnv, mockIngestD1, unusedIngestD1, TEST_ENV_NO_TWITCH_CREDS } from './helpers';
 import * as helixModule from '../src/twitch/helix';
 import * as kickApiModule from '../src/kick/api';
 import * as youtubeSeedModule from '../src/youtube/seed';
@@ -14,7 +14,9 @@ describe('importWatchlistRows', () => {
 	});
 
 	it('returns NEEDS_API for twitch rows when credentials missing', async () => {
-		const stats = await importWatchlistRows(testEnv({ DB: dbStub }), [{ line: 2, platform: 'twitch', slug: 'ninja' }]);
+		const stats = await importWatchlistRows(testEnv({ DB: dbStub, ...TEST_ENV_NO_TWITCH_CREDS }), [
+			{ line: 2, platform: 'twitch', slug: 'ninja' },
+		]);
 
 		expect(stats.needs_api).toMatch(/TWITCH/);
 		expect(stats.results[0]?.status).toBe('needs_api');

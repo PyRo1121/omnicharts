@@ -19,10 +19,7 @@ function mockDb() {
 		}),
 	}));
 	return {
-		db: mockIngestD1((sql) => prepare(sql), async (statements) => {
-			for (const stmt of statements) await stmt.run();
-			return [];
-		}),
+		db: mockIngestD1((sql) => prepare(sql), batch),
 		runs,
 		prepare,
 		batch,

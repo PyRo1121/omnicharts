@@ -21,6 +21,7 @@ import {
 	EVENTSUB_SECRET_MAX_LENGTH,
 	isValidTwitchEventSubSecret,
 } from '../../workers/ingest/src/twitch/eventsub/secret';
+import { parseHealthBody } from '../lib/json-guards';
 
 const REPO_ROOT = join(import.meta.dir, '../..');
 const DEV_VARS = join(REPO_ROOT, 'workers/ingest/.dev.vars');
@@ -132,9 +133,9 @@ async function ingestHealthStep(): Promise<boolean> {
 			log({ name: 'ingest health', pass: false, detail });
 			return false;
 		}
-		let parsed: { status?: string; db?: string } | null = null;
+		let parsed: ReturnType<typeof parseHealthBody> = null;
 		try {
-			parsed = JSON.parse(raw) as { status?: string; db?: string };
+			parsed = parseHealthBody(JSON.parse(raw));
 		} catch {
 			log({ name: 'ingest health', pass: false, detail: 'invalid JSON from /health' });
 			return false;

@@ -56,7 +56,11 @@ describe('db twitch helpers', () => {
 				},
 			}),
 		}));
-		const ids = await listPlatformIdsForProfileEnrichment(mockIngestD1((sql) => prepare(sql)), 10, 24);
+		const ids = await listPlatformIdsForProfileEnrichment(
+			mockIngestD1((sql) => prepare(sql)),
+			10,
+			24,
+		);
 		expect(ids).toEqual(['1']);
 	});
 

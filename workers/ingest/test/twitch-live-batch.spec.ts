@@ -121,7 +121,10 @@ describe('batchUpsertChannelsFromStreams', () => {
 				},
 			}),
 		}));
-		const db = mockIngestD1((sql) => prepare(sql), vi.fn(async () => []));
+		const db = mockIngestD1(
+			(sql) => prepare(sql),
+			vi.fn(async () => []),
+		);
 
 		await batchUpsertChannelsFromStreams(db, [stream], { minViewers: 5, promoteToTracked: true });
 		expect(prepare.mock.calls.some(([sql]) => sql.includes('INSERT INTO channels'))).toBe(true);

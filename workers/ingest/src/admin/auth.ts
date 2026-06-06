@@ -9,8 +9,9 @@ function adminKeysEqual(provided: string, expected: string): boolean {
 	const enc = new TextEncoder();
 	const a = enc.encode(provided);
 	const b = enc.encode(expected);
-	if ('timingSafeEqual' in crypto && typeof crypto.timingSafeEqual === 'function') {
-		return crypto.timingSafeEqual(a, b);
+	const timingSafeEqual = (crypto as Crypto & { timingSafeEqual?: (left: Uint8Array, right: Uint8Array) => boolean }).timingSafeEqual;
+	if (typeof timingSafeEqual === 'function') {
+		return timingSafeEqual(a, b);
 	}
 	return provided === expected;
 }

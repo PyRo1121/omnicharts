@@ -92,7 +92,10 @@
 				"typescript/no-unsafe-return": "off",
 				"typescript/no-unsafe-argument": "off",
 				"no-await-in-loop": "off",
-				"typescript/no-redundant-type-constituents": "off"
+				"typescript/no-redundant-type-constituents": "off",
+				"typescript/no-unsafe-type-assertion": "error",
+				"typescript/no-base-to-string": "error",
+				"typescript/unbound-method": "error"
 			}
 		},
 		{
@@ -106,7 +109,10 @@
 				"typescript/no-unsafe-call": "off",
 				"typescript/no-unsafe-return": "off",
 				"typescript/no-unsafe-argument": "off",
-				"typescript/no-base-to-string": "off"
+				"typescript/no-unsafe-type-assertion": "error",
+				"typescript/no-base-to-string": "error",
+				"typescript/restrict-template-expressions": "error",
+				"typescript/no-unnecessary-type-conversion": "error"
 			}
 		},
 		{

@@ -12,6 +12,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { join } from 'node:path';
+import { parseAdminOkBody, parseRankingsListBody, readResponseJson } from '../lib/json-guards';
 
 const REPO_ROOT = join(import.meta.dir, '../..');
 const DEV_VARS = join(REPO_ROOT, 'workers/ingest/.dev.vars');
@@ -73,23 +74,10 @@ async function ingestReachable(): Promise<boolean> {
 	}
 }
 
-type RankingsGamesBody = {
-	platform?: string;
-	period?: string;
-	updated_at?: string;
-	items?: unknown;
-};
-
-function isValidRankingsGamesBody(body: RankingsGamesBody): boolean {
-	return (
-		typeof body.platform === 'string' && typeof body.period === 'string' && typeof body.updated_at === 'string' && Array.isArray(body.items)
-	);
-}
-
 async function kickRankingsChannelsCheckpoint(): Promise<Step> {
 	try {
 		const res = await fetch(`${INGEST_BASE}/v1/rankings/channels?platform=kick&period=7d&limit=5`, { signal: AbortSignal.timeout(15_000) });
-		const body = (await res.json()) as RankingsGamesBody;
+		const body = await readResponseJson(res);
 		if (!res.ok) {
 			return {
 				name: 'kick rankings channels',
@@ -97,21 +85,22 @@ async function kickRankingsChannelsCheckpoint(): Promise<Step> {
 				detail: `HTTP ${res.status}: ${JSON.stringify(body).slice(0, 200)}`,
 			};
 		}
-		if (!isValidRankingsGamesBody(body)) {
+		const parsed = body ? parseRankingsListBody(body) : null;
+		if (!parsed) {
 			return {
 				name: 'kick rankings channels',
 				pass: false,
 				detail: `invalid JSON shape: ${JSON.stringify(body).slice(0, 200)}`,
 			};
 		}
-		if (body.platform !== 'kick') {
+		if (parsed.platform !== 'kick') {
 			return {
 				name: 'kick rankings channels',
 				pass: false,
-				detail: `expected platform kick, got ${body.platform}`,
+				detail: `expected platform kick, got ${parsed.platform}`,
 			};
 		}
-		const count = body.items?.length ?? 0;
+		const count = parsed.items.length;
 		return {
 			name: 'kick rankings channels',
 			pass: true,
@@ -129,7 +118,7 @@ async function kickRankingsChannelsCheckpoint(): Promise<Step> {
 async function kickRankingsGamesCheckpoint(): Promise<Step> {
 	try {
 		const res = await fetch(`${INGEST_BASE}/v1/rankings/games?platform=kick&period=7d&limit=5`, { signal: AbortSignal.timeout(15_000) });
-		const body = (await res.json()) as RankingsGamesBody;
+		const body = await readResponseJson(res);
 		if (!res.ok) {
 			return {
 				name: 'kick rankings games',
@@ -137,21 +126,22 @@ async function kickRankingsGamesCheckpoint(): Promise<Step> {
 				detail: `HTTP ${res.status}: ${JSON.stringify(body).slice(0, 200)}`,
 			};
 		}
-		if (!isValidRankingsGamesBody(body)) {
+		const parsed = body ? parseRankingsListBody(body) : null;
+		if (!parsed) {
 			return {
 				name: 'kick rankings games',
 				pass: false,
 				detail: `invalid JSON shape: ${JSON.stringify(body).slice(0, 200)}`,
 			};
 		}
-		if (body.platform !== 'kick') {
+		if (parsed.platform !== 'kick') {
 			return {
 				name: 'kick rankings games',
 				pass: false,
-				detail: `expected platform kick, got ${body.platform}`,
+				detail: `expected platform kick, got ${parsed.platform}`,
 			};
 		}
-		const count = body.items?.length ?? 0;
+		const count = parsed.items.length;
 		return {
 			name: 'kick rankings games',
 			pass: true,
@@ -178,12 +168,20 @@ async function kickDiscoverCheckpoint(): Promise<Step> {
 			body: JSON.stringify({ quick: true }),
 			signal: AbortSignal.timeout(120_000),
 		});
-		const body = (await res.json()) as { ok?: boolean; skipped?: boolean; stats?: unknown };
+		const raw = await readResponseJson(res);
 		if (!res.ok) {
 			return {
 				name: 'kick discover (quick)',
 				pass: false,
-				detail: `HTTP ${res.status}: ${JSON.stringify(body).slice(0, 200)}`,
+				detail: `HTTP ${res.status}: ${JSON.stringify(raw).slice(0, 200)}`,
+			};
+		}
+		const body = raw ? parseAdminOkBody(raw) : null;
+		if (!body) {
+			return {
+				name: 'kick discover (quick)',
+				pass: false,
+				detail: 'invalid JSON shape from POST /admin/kick/discover',
 			};
 		}
 		if (body.skipped) {

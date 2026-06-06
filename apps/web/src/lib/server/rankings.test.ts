@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { loadChannelRankings } from './rankings';
 import { testLoadContext, testLoadContextWithDb } from './test-helpers';
-import { mockD1Database } from './mock-d1';
+import { mockD1FromSql } from './mock-d1';
 
 vi.mock('$env/dynamic/private', () => ({
 	env: { INGEST_URL: 'http://ingest.test' },
@@ -10,21 +10,22 @@ vi.mock('$env/dynamic/private', () => ({
 describe('loadChannelRankings (twitch)', () => {
 	it('uses D1 only when binding present (no ingest fallback)', async () => {
 		const fetchFn = vi.fn();
-		const db = mockD1Database(() => ({
-			bind: vi.fn().mockReturnThis(),
-			all: vi.fn().mockResolvedValue({
-				results: [
-					{
-						slug: 'ninja',
-						display_name: 'Ninja',
-						avatar_url: 'https://cdn.example/a.png',
-						first_observed_at: '2026-01-01T00:00:00Z',
-						hours_watched: 12_000,
-						average_viewers: 500,
-						airtime_minutes: 1440,
-						peak_viewers: 800,
-					},
-				],
+		const db = mockD1FromSql(() => ({
+			bind: () => ({
+				all: async () => ({
+					results: [
+						{
+							slug: 'ninja',
+							display_name: 'Ninja',
+							avatar_url: 'https://cdn.example/a.png',
+							first_observed_at: '2026-01-01T00:00:00Z',
+							hours_watched: 12_000,
+							average_viewers: 500,
+							airtime_minutes: 1440,
+							peak_viewers: 800,
+						},
+					],
+				}),
 			}),
 		}));
 
@@ -49,6 +50,7 @@ describe('loadChannelRankings (twitch)', () => {
 						avatar_url: 'https://cdn.example/a.png',
 						hours_watched: 12_000,
 						average_viewers: 500,
+						stream_count: 1,
 					},
 				],
 			}),
@@ -68,6 +70,8 @@ describe('loadChannelRankings (twitch)', () => {
 		const fetchFn = vi.fn().mockResolvedValue({
 			ok: true,
 			json: async () => ({
+				platform: 'twitch',
+				period: '30d',
 				updated_at: '2026-06-01T00:00:00Z',
 				items: [],
 			}),
@@ -106,6 +110,7 @@ describe('loadChannelRankings (twitch)', () => {
 						avatar_url: null,
 						hours_watched: 1000,
 						average_viewers: 50,
+						stream_count: 1,
 					},
 				],
 			}),

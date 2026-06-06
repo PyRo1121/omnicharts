@@ -18,13 +18,10 @@ describe('runTwitchPollBatch offline updates', () => {
 
 		const userIds = Array.from({ length: 75 }, (_, i) => String(i));
 		const env = testEnv({
-			DB: mockIngestD1(
-				(sql) => {
-					prepareCalls.push(sql);
-					return { bind: vi.fn().mockReturnValue({ run }) };
-				},
-				batch,
-			),
+			DB: mockIngestD1((sql) => {
+				prepareCalls.push(sql);
+				return { bind: vi.fn().mockReturnValue({ run }) };
+			}, batch),
 			TWITCH_CLIENT_ID: 'id',
 			TWITCH_CLIENT_SECRET: 'secret',
 		});

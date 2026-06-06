@@ -24,7 +24,7 @@ export const load: PageServerLoad = async ({ fetch, params, url, setHeaders, pla
 		error(404, {
 			message: `Channel not found on ${platformId}`,
 			suggestions,
-		});
+		} as unknown as App.Error);
 	}
 
 	return { channel, periodNote };

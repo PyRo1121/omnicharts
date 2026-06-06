@@ -8,9 +8,7 @@ import { ingestHelixStream } from '../src/twitch/ingest-stream';
 import { runDailyRollup } from '../src/rollup/daily-job';
 
 const fixtureDir = dirname(fileURLToPath(import.meta.url));
-const helixPayload: { data: HelixStream[] } = JSON.parse(
-	readFileSync(join(fixtureDir, 'fixtures/helix-streams-sample.json'), 'utf8'),
-);
+const helixPayload: { data: HelixStream[] } = JSON.parse(readFileSync(join(fixtureDir, 'fixtures/helix-streams-sample.json'), 'utf8'));
 
 const ROLLUP_DATE = new Date().toISOString().slice(0, 10);
 const CHANNEL_ID = 'twitch-ch-545050196';

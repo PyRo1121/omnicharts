@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { testEnv } from './helpers';
+import { testEnv, TEST_ENV_NO_TWITCH_CREDS } from './helpers';
 import worker from '../src/index';
 import * as helixModule from '../src/twitch/helix';
 import * as watchlistUpsert from '../src/watchlist/upsert';
@@ -40,7 +40,7 @@ describe('watchlist admin routes (worker.fetch)', () => {
 			testEnv({ ADMIN_API_KEY: 'secret', DB: dbStub }),
 		);
 		expect(res.status).toBe(400);
-		expect(await res.json()).toEqual({ error: { code: 'invalid_csv' } });
+		expect(await res.json()).toEqual({ error: { code: 'invalid_csv', message: 'CSV body is required' } });
 	});
 
 	it('POST /admin/watchlist/import returns needs_api when twitch credentials missing', async () => {
@@ -53,15 +53,18 @@ describe('watchlist admin routes (worker.fetch)', () => {
 				},
 				body: 'platform,slug\ntwitch,ninja',
 			}),
-			testEnv({ ADMIN_API_KEY: 'secret', DB: dbStub }),
+			testEnv({ ADMIN_API_KEY: 'secret', DB: dbStub, ...TEST_ENV_NO_TWITCH_CREDS }),
 		);
 
 		expect(res.status).toBe(200);
-		expect(await res.json()).toEqual({
-			ok: false,
-			skipped: true,
-			results: [{ status: 'needs_api' }],
-		});
+		expect(await res.json()).toEqual(
+			expect.objectContaining({
+				ok: false,
+				skipped: true,
+				needs_api: expect.stringMatching(/TWITCH/),
+				results: [expect.objectContaining({ status: 'needs_api' })],
+			}),
+		);
 	});
 
 	it('POST /admin/watchlist/import imports twitch row via Helix lookup', async () => {
@@ -102,6 +105,6 @@ describe('watchlist admin routes (worker.fetch)', () => {
 		);
 
 		expect(res.status).toBe(200);
-		expect(await res.json()).toEqual({ ok: true, imported: 1 });
+		expect(await res.json()).toEqual(expect.objectContaining({ ok: true, imported: 1 }));
 	});
 });

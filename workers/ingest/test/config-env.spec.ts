@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { testEnv } from './helpers';
+import { testEnv, testEnvProductionDefaults } from './helpers';
 import {
 	DEFAULT_MIN_VIEWERS,
 	DEFAULT_EVENTSUB_SYNC_MAX_CHANNELS_PER_RUN,
@@ -11,7 +11,7 @@ import {
 
 describe('twitch config env parsers', () => {
 	it('minViewersFromEnv uses default and clamps invalid', () => {
-		expect(minViewersFromEnv(testEnv())).toBe(DEFAULT_MIN_VIEWERS);
+		expect(minViewersFromEnv(testEnvProductionDefaults())).toBe(DEFAULT_MIN_VIEWERS);
 		expect(minViewersFromEnv(testEnv({ TWITCH_MIN_VIEWERS: '-1' }))).toBe(DEFAULT_MIN_VIEWERS);
 		expect(minViewersFromEnv(testEnv({ TWITCH_MIN_VIEWERS: '5' }))).toBe(5);
 	});
@@ -27,7 +27,7 @@ describe('twitch config env parsers', () => {
 	});
 
 	it('eventsubSyncMaxChannelsFromEnv defaults to 125 and parses override', () => {
-		expect(eventsubSyncMaxChannelsFromEnv(testEnv())).toBe(DEFAULT_EVENTSUB_SYNC_MAX_CHANNELS_PER_RUN);
+		expect(eventsubSyncMaxChannelsFromEnv(testEnvProductionDefaults())).toBe(DEFAULT_EVENTSUB_SYNC_MAX_CHANNELS_PER_RUN);
 		expect(eventsubSyncMaxChannelsFromEnv(testEnv({ EVENTSUB_SYNC_MAX_CHANNELS_PER_RUN: '50' }))).toBe(50);
 		expect(eventsubSyncMaxChannelsFromEnv(testEnv({ EVENTSUB_SYNC_MAX_CHANNELS_PER_RUN: '0' }))).toBe(
 			DEFAULT_EVENTSUB_SYNC_MAX_CHANNELS_PER_RUN,

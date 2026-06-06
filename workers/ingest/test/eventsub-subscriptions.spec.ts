@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { testEnv, mockIngestD1 } from './helpers';
+import { testEnv, mockIngestD1, TEST_ENV_NO_EVENTSUB } from './helpers';
 import { listTrackedBroadcasterIds, markEventSubRevoked, upsertEventSubSubscription } from '../src/twitch/eventsub/subscriptions-db';
 import { TwitchEventSubApi } from '../src/twitch/eventsub/subscriptions-api';
 import { syncTwitchEventSubSubscriptions } from '../src/twitch/eventsub/sync';
@@ -61,7 +61,18 @@ describe('TwitchEventSubApi', () => {
 					return Promise.resolve(
 						new Response(
 							JSON.stringify({
-								data: [{ id: 'new-sub', type: 'stream.online', status: 'enabled' }],
+								data: [
+									{
+										id: 'new-sub',
+										type: 'stream.online',
+										version: '1',
+										status: 'enabled',
+										cost: 1,
+										created_at: '2026-06-01T00:00:00Z',
+										condition: { broadcaster_user_id: '123' },
+										transport: { method: 'webhook', callback: 'https://example.com/hook' },
+									},
+								],
 								total: 1,
 								total_cost: 1,
 								max_total_cost: 10000,
@@ -125,7 +136,7 @@ describe('TwitchEventSubApi', () => {
 
 describe('syncTwitchEventSubSubscriptions', () => {
 	it('returns error when EventSub env missing', async () => {
-		const stats = await syncTwitchEventSubSubscriptions(testEnv());
+		const stats = await syncTwitchEventSubSubscriptions(testEnv(TEST_ENV_NO_EVENTSUB));
 		expect(stats.errors).toBe(1);
 		expect(stats.errorSamples[0]).toMatch(/TWITCH_EVENTSUB/);
 	});
@@ -149,14 +160,16 @@ describe('syncTwitchEventSubSubscriptions', () => {
 			status: 'enabled',
 		});
 
-		const stats = await syncTwitchEventSubSubscriptions(testEnv({
-			DB: db,
-			TWITCH_CLIENT_ID: 'id',
-			TWITCH_CLIENT_SECRET: 'sec',
-			TWITCH_EVENTSUB_SECRET: 's3cre77890ab',
-			TWITCH_EVENTSUB_CALLBACK_URL: 'https://example.com/hook',
-			TWITCH_MAX_TRACKED: '10',
-		}));
+		const stats = await syncTwitchEventSubSubscriptions(
+			testEnv({
+				DB: db,
+				TWITCH_CLIENT_ID: 'id',
+				TWITCH_CLIENT_SECRET: 'sec',
+				TWITCH_EVENTSUB_SECRET: 's3cre77890ab',
+				TWITCH_EVENTSUB_CALLBACK_URL: 'https://example.com/hook',
+				TWITCH_MAX_TRACKED: '10',
+			}),
+		);
 
 		expect(stats.trackedChannels).toBe(1);
 		expect(stats.created).toBeGreaterThan(0);
@@ -178,14 +191,16 @@ describe('syncTwitchEventSubSubscriptions', () => {
 		vi.spyOn(TwitchEventSubApi.prototype, 'listAllEnabled').mockRejectedValue(new Error('EventSub list 503: upstream'));
 		const createSpy = vi.spyOn(TwitchEventSubApi.prototype, 'createSubscription');
 
-		const stats = await syncTwitchEventSubSubscriptions(testEnv({
-			DB: db,
-			TWITCH_CLIENT_ID: 'id',
-			TWITCH_CLIENT_SECRET: 'sec',
-			TWITCH_EVENTSUB_SECRET: 's3cre77890ab',
-			TWITCH_EVENTSUB_CALLBACK_URL: 'https://example.com/hook',
-			TWITCH_MAX_TRACKED: '10',
-		}));
+		const stats = await syncTwitchEventSubSubscriptions(
+			testEnv({
+				DB: db,
+				TWITCH_CLIENT_ID: 'id',
+				TWITCH_CLIENT_SECRET: 'sec',
+				TWITCH_EVENTSUB_SECRET: 's3cre77890ab',
+				TWITCH_EVENTSUB_CALLBACK_URL: 'https://example.com/hook',
+				TWITCH_MAX_TRACKED: '10',
+			}),
+		);
 
 		expect(stats.errors).toBe(1);
 		expect(stats.errorSamples[0]).toMatch(/listAllEnabled/);
@@ -225,15 +240,17 @@ describe('syncTwitchEventSubSubscriptions', () => {
 			.spyOn(TwitchEventSubApi.prototype, 'createSubscription')
 			.mockResolvedValue({ subscriptionId: 'sub-new', status: 'enabled' });
 
-		await syncTwitchEventSubSubscriptions(testEnv({
-			DB: db,
-			TWITCH_CLIENT_ID: 'id',
-			TWITCH_CLIENT_SECRET: 'sec',
-			TWITCH_EVENTSUB_SECRET: 's3cre77890ab',
-			TWITCH_EVENTSUB_CALLBACK_URL: 'https://example.com/hook',
-			TWITCH_MAX_TRACKED: '10',
-			EVENTSUB_SYNC_MAX_CHANNELS_PER_RUN: '1',
-		}));
+		await syncTwitchEventSubSubscriptions(
+			testEnv({
+				DB: db,
+				TWITCH_CLIENT_ID: 'id',
+				TWITCH_CLIENT_SECRET: 'sec',
+				TWITCH_EVENTSUB_SECRET: 's3cre77890ab',
+				TWITCH_EVENTSUB_CALLBACK_URL: 'https://example.com/hook',
+				TWITCH_MAX_TRACKED: '10',
+				EVENTSUB_SYNC_MAX_CHANNELS_PER_RUN: '1',
+			}),
+		);
 
 		expect(createSpy).toHaveBeenCalledTimes(2);
 		expect(savedCursor).toBe('1');
@@ -275,14 +292,16 @@ describe('syncTwitchEventSubSubscriptions', () => {
 			created_at: '2026-01-01T00:00:00Z',
 		}));
 
-		const stats = await syncTwitchEventSubSubscriptions(testEnv({
-			DB: db,
-			TWITCH_CLIENT_ID: 'id',
-			TWITCH_CLIENT_SECRET: 'sec',
-			TWITCH_EVENTSUB_SECRET: 's3cre77890ab',
-			TWITCH_EVENTSUB_CALLBACK_URL: 'https://example.com/hook',
-			TWITCH_MAX_TRACKED: '10',
-		}));
+		const stats = await syncTwitchEventSubSubscriptions(
+			testEnv({
+				DB: db,
+				TWITCH_CLIENT_ID: 'id',
+				TWITCH_CLIENT_SECRET: 'sec',
+				TWITCH_EVENTSUB_SECRET: 's3cre77890ab',
+				TWITCH_EVENTSUB_CALLBACK_URL: 'https://example.com/hook',
+				TWITCH_MAX_TRACKED: '10',
+			}),
+		);
 
 		expect(stats.skippedExisting).toBeGreaterThan(0);
 		expect(stats.errors).toBe(0);
@@ -333,14 +352,16 @@ describe('syncTwitchEventSubSubscriptions', () => {
 		]);
 		const createSpy = vi.spyOn(TwitchEventSubApi.prototype, 'createSubscription');
 
-		const stats = await syncTwitchEventSubSubscriptions(testEnv({
-			DB: db,
-			TWITCH_CLIENT_ID: 'id',
-			TWITCH_CLIENT_SECRET: 'sec',
-			TWITCH_EVENTSUB_SECRET: 's3cre77890ab',
-			TWITCH_EVENTSUB_CALLBACK_URL: 'https://example.com/hook',
-			TWITCH_MAX_TRACKED: '10',
-		}));
+		const stats = await syncTwitchEventSubSubscriptions(
+			testEnv({
+				DB: db,
+				TWITCH_CLIENT_ID: 'id',
+				TWITCH_CLIENT_SECRET: 'sec',
+				TWITCH_EVENTSUB_SECRET: 's3cre77890ab',
+				TWITCH_EVENTSUB_CALLBACK_URL: 'https://example.com/hook',
+				TWITCH_MAX_TRACKED: '10',
+			}),
+		);
 
 		expect(stats.created).toBe(0);
 		expect(stats.skippedExisting).toBe(2);
@@ -390,7 +411,7 @@ describe('deleteEventSubForRetiredChannels', () => {
 
 	it('no-ops when EventSub not configured', async () => {
 		const deleteSpy = vi.spyOn(TwitchEventSubApi.prototype, 'deleteSubscription');
-		const deleted = await deleteEventSubForRetiredChannels(testEnv(), ['999']);
+		const deleted = await deleteEventSubForRetiredChannels(testEnv(TEST_ENV_NO_EVENTSUB), ['999']);
 		expect(deleted).toBe(0);
 		expect(deleteSpy).not.toHaveBeenCalled();
 	});

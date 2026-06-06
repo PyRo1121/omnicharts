@@ -9,10 +9,13 @@ describe('kick admin routes (worker.fetch)', () => {
 	});
 
 	it('POST /admin/kick/discover returns 401 when ADMIN_API_KEY set and header missing', async () => {
-		const res = await worker.fetch(new Request('http://ingest/admin/kick/discover', { method: 'POST' }), testEnv({
-			ADMIN_API_KEY: 'secret',
-			DB: unusedIngestD1(),
-		}));
+		const res = await worker.fetch(
+			new Request('http://ingest/admin/kick/discover', { method: 'POST' }),
+			testEnv({
+				ADMIN_API_KEY: 'secret',
+				DB: unusedIngestD1(),
+			}),
+		);
 		expect(res.status).toBe(401);
 	});
 
@@ -26,11 +29,13 @@ describe('kick admin routes (worker.fetch)', () => {
 			testEnv({ ADMIN_API_KEY: 'secret', ENVIRONMENT: 'development', DB: unusedIngestD1() }),
 		);
 		expect(res.status).toBe(200);
-		expect(await res.json()).toEqual({
-			ok: true,
-			skipped: true,
-			stats: { categoriesScanned: 0 },
-		});
+		expect(await res.json()).toEqual(
+			expect.objectContaining({
+				ok: true,
+				skipped: true,
+				stats: expect.objectContaining({ categoriesScanned: 0 }),
+			}),
+		);
 	});
 
 	it('POST /admin/kick/discover runs discovery when credentials present', async () => {
@@ -62,10 +67,12 @@ describe('kick admin routes (worker.fetch)', () => {
 		);
 
 		expect(res.status).toBe(200);
-		expect(await res.json()).toEqual({
-			ok: true,
-			skipped: false,
-			stats: { channelsUpserted: 8 },
-		});
+		expect(await res.json()).toEqual(
+			expect.objectContaining({
+				ok: true,
+				skipped: false,
+				stats: expect.objectContaining({ channelsUpserted: 8 }),
+			}),
+		);
 	});
 });

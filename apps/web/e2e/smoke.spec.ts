@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { parseRankingsSlugList } from '../src/lib/server/json-guards';
 
 const INGEST_URL = process.env.INGEST_URL ?? 'http://127.0.0.1:8787';
 
@@ -35,8 +36,7 @@ test.describe('OmniCharts smoke (REM-035)', () => {
 		if (!rankingsRes.ok) {
 			test.skip(true, 'rankings endpoint unavailable');
 		}
-		const rankings = (await rankingsRes.json()) as { items?: { slug?: string }[] };
-		const slug = rankings.items?.[0]?.slug;
+		const slug = parseRankingsSlugList(await rankingsRes.json())[0];
 		if (!slug) {
 			test.skip(true, 'no ranked channels — run bun run twitch:checkpoint');
 		}

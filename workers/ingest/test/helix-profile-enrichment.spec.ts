@@ -203,7 +203,12 @@ describe('runTwitchProfileEnrichment', () => {
 		const db = mockIngestD1(
 			(sql) => {
 				sqlCalls.push(sql);
-				return { bind: () => ({ run: async () => ({}) }) };
+				return {
+					bind: () => ({
+						run: async () => ({}),
+						all: async () => ({ results: [] }),
+					}),
+				};
 			},
 			async (statements) => {
 				await Promise.all(statements.map((stmt) => stmt.run()));

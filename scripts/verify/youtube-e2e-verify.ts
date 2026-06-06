@@ -11,6 +11,7 @@
  */
 import { spawn } from 'node:child_process';
 import { join } from 'node:path';
+import { parseRankingsListBody, readResponseJson } from '../lib/json-guards';
 
 const REPO_ROOT = join(import.meta.dir, '../..');
 const INGEST_BASE = process.env.INGEST_URL ?? 'http://127.0.0.1:8787';
@@ -49,25 +50,12 @@ async function ingestReachable(): Promise<boolean> {
 	}
 }
 
-type RankingsBody = {
-	platform?: string;
-	period?: string;
-	updated_at?: string;
-	items?: unknown;
-};
-
-function isValidRankingsBody(body: RankingsBody): boolean {
-	return (
-		typeof body.platform === 'string' && typeof body.period === 'string' && typeof body.updated_at === 'string' && Array.isArray(body.items)
-	);
-}
-
 async function youtubeRankingsShapeCheckpoint(): Promise<Step> {
 	try {
 		const res = await fetch(`${INGEST_BASE}/v1/rankings/channels?platform=youtube&period=7d&limit=5`, {
 			signal: AbortSignal.timeout(15_000),
 		});
-		const body = (await res.json()) as RankingsBody;
+		const body = await readResponseJson(res);
 		if (!res.ok) {
 			return {
 				name: 'youtube rankings shape',
@@ -75,14 +63,15 @@ async function youtubeRankingsShapeCheckpoint(): Promise<Step> {
 				detail: `HTTP ${res.status}: ${JSON.stringify(body).slice(0, 200)}`,
 			};
 		}
-		if (!isValidRankingsBody(body) || body.platform !== 'youtube') {
+		const parsed = body ? parseRankingsListBody(body) : null;
+		if (!parsed || parsed.platform !== 'youtube') {
 			return {
 				name: 'youtube rankings shape',
 				pass: false,
 				detail: `invalid JSON: ${JSON.stringify(body).slice(0, 200)}`,
 			};
 		}
-		const count = body.items?.length ?? 0;
+		const count = parsed.items.length;
 		return {
 			name: 'youtube rankings shape',
 			pass: true,

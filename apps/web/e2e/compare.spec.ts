@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { parseRankingsSlugList } from '../src/lib/server/json-guards';
 import { firstRankedSlug, ingestRankingsReady, INGEST_URL } from './helpers';
 
 test.describe('Compare page (Phase 4 slice 4.4)', () => {
@@ -33,8 +34,7 @@ test.describe('Compare page (Phase 4 slice 4.4)', () => {
 
 		const res = await fetch(`${INGEST_URL}/v1/rankings/channels?platform=twitch&period=7d&limit=2`);
 		if (!res.ok) test.skip(true, 'rankings unavailable');
-		const body = (await res.json()) as { items?: { slug?: string }[] };
-		const slugs = (body.items ?? []).map((item) => item.slug).filter(Boolean) as string[];
+		const slugs = parseRankingsSlugList(await res.json());
 		if (slugs.length < 2) {
 			test.skip(true, 'need at least two ranked twitch channels');
 		}

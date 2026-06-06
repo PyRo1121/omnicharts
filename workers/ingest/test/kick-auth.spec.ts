@@ -42,10 +42,12 @@ describe('getKickAppAccessToken', () => {
 		const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ access_token: 'x', expires_in: 3600 }), { status: 200 }));
 		vi.stubGlobal('fetch', fetchMock);
 
-		await getKickAppAccessToken(testEnv({
-			KICK_CLIENT_ID: 'cid',
-			KICK_CLIENT_SECRET: 'csec',
-		}));
+		await getKickAppAccessToken(
+			testEnv({
+				KICK_CLIENT_ID: 'cid',
+				KICK_CLIENT_SECRET: 'csec',
+			}),
+		);
 
 		expect(fetchMock).toHaveBeenCalledWith('https://id.kick.com/oauth/token', expect.objectContaining({ method: 'POST' }));
 		const init = fetchMock.mock.calls[0]?.[1];

@@ -19,6 +19,29 @@ const TEST_ENV_DEFAULTS = {
 	DB: unusedIngestD1(),
 } satisfies Env;
 
+/** Clears Twitch app credentials while keeping other test defaults. */
+export const TEST_ENV_NO_TWITCH_CREDS = {
+	TWITCH_CLIENT_ID: '',
+	TWITCH_CLIENT_SECRET: '',
+} as const satisfies Partial<Env>;
+
+/** Clears admin API key while keeping other test defaults. */
+export const TEST_ENV_NO_ADMIN_KEY = {
+	ADMIN_API_KEY: '',
+} as const satisfies Partial<Env>;
+
+/** Clears EventSub transport config while keeping other test defaults. */
+export const TEST_ENV_NO_EVENTSUB = {
+	TWITCH_EVENTSUB_SECRET: '',
+	TWITCH_EVENTSUB_CALLBACK_URL: '',
+} as const satisfies Partial<Env>;
+
+/** Test env without wrangler numeric overrides — production parser defaults apply. */
+export function testEnvProductionDefaults(overrides?: Partial<Env>): Env {
+	const { LIVE_SWEEP_MAX_PAGES: _sweep, TWITCH_MIN_VIEWERS: _min, EVENTSUB_SYNC_MAX_CHANNELS_PER_RUN: _sync, ...rest } = testEnv(overrides);
+	return rest;
+}
+
 /** Full Env defaults for ingest tests; spread overrides as needed. */
 export function testEnv(overrides?: Partial<Env>): Env {
 	if (!overrides) {

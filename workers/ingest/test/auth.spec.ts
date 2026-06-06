@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { testEnv } from './helpers';
+import { testEnv, TEST_ENV_NO_TWITCH_CREDS } from './helpers';
 import { clearTokenCacheForTests, getAppAccessToken } from '../src/twitch/auth';
 import { HelixRateBudget } from '../src/twitch/rate-limit';
 
@@ -16,7 +16,7 @@ describe('getAppAccessToken', () => {
 	});
 
 	it('throws when credentials missing', async () => {
-		await expect(getAppAccessToken(testEnv(), budget)).rejects.toThrow(/Missing TWITCH/);
+		await expect(getAppAccessToken(testEnv(TEST_ENV_NO_TWITCH_CREDS), budget)).rejects.toThrow(/Missing TWITCH/);
 	});
 
 	it('caches token until near expiry', async () => {

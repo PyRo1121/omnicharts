@@ -83,10 +83,12 @@ describe('KickPublicApiClient', () => {
 		});
 		vi.stubGlobal('fetch', fetchMock);
 
-		const client = new KickPublicApiClient(testEnv({
-			KICK_CLIENT_ID: 'id',
-			KICK_CLIENT_SECRET: 'secret',
-		}));
+		const client = new KickPublicApiClient(
+			testEnv({
+				KICK_CLIENT_ID: 'id',
+				KICK_CLIENT_SECRET: 'secret',
+			}),
+		);
 		const page = await client.getCategoriesV2({ limit: 50 });
 
 		expect(page.data).toHaveLength(1);
@@ -125,10 +127,12 @@ describe('KickPublicApiClient', () => {
 		});
 		vi.stubGlobal('fetch', fetchMock);
 
-		const client = new KickPublicApiClient(testEnv({
-			KICK_CLIENT_ID: 'id',
-			KICK_CLIENT_SECRET: 'secret',
-		}));
+		const client = new KickPublicApiClient(
+			testEnv({
+				KICK_CLIENT_ID: 'id',
+				KICK_CLIENT_SECRET: 'secret',
+			}),
+		);
 		const streams = await client.getLivestreamsByCategoryId(42, {
 			limit: 100,
 			sort: 'viewer_count',
@@ -151,10 +155,12 @@ describe('KickPublicApiClient', () => {
 		});
 		vi.stubGlobal('fetch', fetchMock);
 
-		const client = new KickPublicApiClient(testEnv({
-			KICK_CLIENT_ID: 'id',
-			KICK_CLIENT_SECRET: 'secret',
-		}));
+		const client = new KickPublicApiClient(
+			testEnv({
+				KICK_CLIENT_ID: 'id',
+				KICK_CLIENT_SECRET: 'secret',
+			}),
+		);
 
 		await expect(client.getLivestreamsByCategoryId(1)).rejects.toThrow(/503/);
 	});

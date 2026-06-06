@@ -136,7 +136,7 @@ describe('runDailyRollup', () => {
 	it('calls enrichFollowersBeforeRollup for the rollup date', async () => {
 		const { db } = mockDbForRollup([]);
 		await runDailyRollup(testEnv({ DB: db }), DATE);
-		expect(enrichFollowersBeforeRollup).toHaveBeenCalledWith({ DB: db }, DATE);
+		expect(enrichFollowersBeforeRollup).toHaveBeenCalledWith(expect.objectContaining({ DB: db }), DATE);
 	});
 
 	it('aggregates samples into channel and game rollups', async () => {

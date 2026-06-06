@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { GET as getChannelRankings } from '../../routes/api/v1/rankings/channels/+server';
-import { mockD1Database } from './mock-d1';
+import { mockD1FromSql } from './mock-d1';
+import { testAppPlatform, testRankingsChannelsRequest } from './test-helpers';
 
 function mockD1WithRankings() {
-	return mockD1Database((sql: string) => {
+	return mockD1FromSql((sql: string) => {
 		const isRollup = sql.includes('channel_daily_rollups') || sql.includes('FROM channels');
 		return {
 			bind: (..._args: unknown[]) => ({
@@ -50,11 +51,13 @@ function mockD1WithRankings() {
 describe('GET /api/v1/rankings/channels?format=csv', () => {
 	it('returns text/csv with ranking header row', async () => {
 		const db = mockD1WithRankings();
-		const res = await getChannelRankings({
-			url: new URL('http://localhost/api/v1/rankings/channels?platform=twitch&period=7d&limit=20&format=csv'),
-			fetch: vi.fn(),
-			platform: { env: { DB: db } } as App.Platform,
-		} as unknown as Parameters<typeof getChannelRankings>[0]);
+		const res = await getChannelRankings(
+			testRankingsChannelsRequest({
+				url: new URL('http://localhost/api/v1/rankings/channels?platform=twitch&period=7d&limit=20&format=csv'),
+				fetch: vi.fn(),
+				platform: testAppPlatform(db),
+			}),
+		);
 
 		expect(res.status).toBe(200);
 		expect(res.headers.get('content-type')).toContain('text/csv');
@@ -64,11 +67,13 @@ describe('GET /api/v1/rankings/channels?format=csv', () => {
 	});
 
 	it('returns invalid_format for unknown format', async () => {
-		const res = await getChannelRankings({
-			url: new URL('http://localhost/api/v1/rankings/channels?platform=twitch&format=xlsx'),
-			fetch: vi.fn(),
-			platform: { env: { DB: mockD1WithRankings() } } as App.Platform,
-		} as unknown as Parameters<typeof getChannelRankings>[0]);
+		const res = await getChannelRankings(
+			testRankingsChannelsRequest({
+				url: new URL('http://localhost/api/v1/rankings/channels?platform=twitch&format=xlsx'),
+				fetch: vi.fn(),
+				platform: testAppPlatform(mockD1WithRankings()),
+			}),
+		);
 
 		expect(res.status).toBe(400);
 		expect(await res.json()).toEqual({

@@ -106,6 +106,7 @@ describe('YoutubeDataApiClient', () => {
 				JSON.stringify({
 					items: [
 						{
+							id: 'UCabc',
 							contentDetails: { relatedPlaylists: { uploads: 'UUuploads123' } },
 						},
 					],

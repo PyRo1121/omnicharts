@@ -1,31 +1,35 @@
 import { describe, it, expect, vi } from 'vitest';
 import { GET as getCompareChannels } from '../../routes/api/v1/compare/channels/+server';
-import { mockD1Database } from './mock-d1';
+import { mockD1FromSql } from './mock-d1';
+import { testAppPlatform, testCompareChannelsRequest } from './test-helpers';
 
 function mockD1WithChannels() {
-	return mockD1Database((sql: string) => {
+	return mockD1FromSql((sql: string) => {
 		if (sql.includes('lower(slug)')) {
 			return {
-				bind: (_platform: string, slug: string) => ({
-					first: async () => ({ slug }),
+				bind: (..._args: unknown[]) => ({
+					first: async () => ({ slug: typeof _args[1] === 'string' ? _args[1] : '' }),
 				}),
 			};
 		}
 		if (sql.includes('FROM channels') && sql.includes('display_name')) {
 			return {
-				bind: (_platform: string, slug: string) => ({
-					first: async () => ({
-						id: `id-${slug}`,
-						slug,
-						display_name: slug,
-						avatar_url: null,
-						language: null,
-						first_observed_at: '2026-01-01T00:00:00Z',
-						ingest_state: 'tracked',
-						follower_count: null,
-						description: null,
-					}),
-				}),
+				bind: (..._args: unknown[]) => {
+					const slug = typeof _args[1] === 'string' ? _args[1] : '';
+					return {
+						first: async () => ({
+							id: `id-${slug}`,
+							slug,
+							display_name: slug,
+							avatar_url: null,
+							language: null,
+							first_observed_at: '2026-01-01T00:00:00Z',
+							ingest_state: 'tracked',
+							follower_count: null,
+							description: null,
+						}),
+					};
+				},
 			};
 		}
 		if (sql.includes('channel_daily_rollups')) {
@@ -53,11 +57,13 @@ function mockD1WithChannels() {
 
 describe('GET /api/v1/compare/channels', () => {
 	it('returns doc-07 error when slugs missing', async () => {
-		const res = await getCompareChannels({
-			url: new URL('http://localhost/api/v1/compare/channels?platform=twitch'),
-			fetch: vi.fn(),
-			platform: { env: { DB: mockD1WithChannels() } } as App.Platform,
-		} as unknown as Parameters<typeof getCompareChannels>[0]);
+		const res = await getCompareChannels(
+			testCompareChannelsRequest({
+				url: new URL('http://localhost/api/v1/compare/channels?platform=twitch'),
+				fetch: vi.fn(),
+				platform: testAppPlatform(mockD1WithChannels()),
+			}),
+		);
 
 		expect(res.status).toBe(400);
 		expect(await res.json()).toEqual({
@@ -66,20 +72,19 @@ describe('GET /api/v1/compare/channels', () => {
 	});
 
 	it('returns rollup-backed compare payload', async () => {
-		const res = await getCompareChannels({
-			url: new URL('http://localhost/api/v1/compare/channels?a=ninja&b=shroud&platform=twitch&period=7d'),
-			fetch: vi.fn(),
-			platform: { env: { DB: mockD1WithChannels() } } as App.Platform,
-		} as unknown as Parameters<typeof getCompareChannels>[0]);
+		const res = await getCompareChannels(
+			testCompareChannelsRequest({
+				url: new URL('http://localhost/api/v1/compare/channels?a=ninja&b=shroud&platform=twitch&period=7d'),
+				fetch: vi.fn(),
+				platform: testAppPlatform(mockD1WithChannels()),
+			}),
+		);
 
 		expect(res.status).toBe(200);
-		const body = (await res.json()) as {
-			platform: string;
-			a: { found: boolean };
-			b: { found: boolean };
-		};
-		expect(body.platform).toBe('twitch');
-		expect(body.a.found).toBe(true);
-		expect(body.b.found).toBe(true);
+		expect(await res.json()).toMatchObject({
+			platform: 'twitch',
+			a: { found: true },
+			b: { found: true },
+		});
 	});
 });

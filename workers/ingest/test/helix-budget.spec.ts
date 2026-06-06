@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { testEnv } from './helpers';
+import { testEnv, testEnvProductionDefaults } from './helpers';
 import {
 	COVERAGE_FANOUT_PHASES,
 	DEFAULT_LIVE_SWEEP_MAX_PAGES,
@@ -81,8 +81,10 @@ describe('helix budget from wrangler env', () => {
 	});
 
 	it('auto-defaults sweep pages from coverage mode when LIVE_SWEEP_MAX_PAGES unset', () => {
-		expect(liveSweepMaxPagesFromEnv(testEnv({ INGEST_COVERAGE_MODE: 'full' }))).toBe(DEFAULT_LIVE_SWEEP_MAX_PAGES);
-		expect(liveSweepMaxPagesFromEnv(testEnv({ INGEST_COVERAGE_MODE: 'shards_only' }))).toBe(DEFAULT_LIVE_SWEEP_MAX_PAGES_LIGHT);
+		expect(liveSweepMaxPagesFromEnv(testEnvProductionDefaults({ INGEST_COVERAGE_MODE: 'full' }))).toBe(DEFAULT_LIVE_SWEEP_MAX_PAGES);
+		expect(liveSweepMaxPagesFromEnv(testEnvProductionDefaults({ INGEST_COVERAGE_MODE: 'shards_only' }))).toBe(
+			DEFAULT_LIVE_SWEEP_MAX_PAGES_LIGHT,
+		);
 	});
 
 	it('honors explicit wrangler sweep and game-pass caps', () => {

@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { parseIngestSearchResponse } from '../src/lib/server/json-guards';
 import { clickPlatform, expectPlatformSelected, ingestReachable, INGEST_URL } from './helpers';
 
 test.describe('Kick platform UX (docs/09, docs/16)', () => {
@@ -124,8 +125,8 @@ test.describe('Kick platform UX (docs/09, docs/16)', () => {
 			test.skip(true, 'kick search endpoint unavailable');
 		}
 
-		const body = (await searchRes.json()) as { results?: unknown[] };
-		if (!body.results?.length) {
+		const body = parseIngestSearchResponse(await searchRes.json());
+		if (!body?.results.length) {
 			test.skip(true, 'no kick channels in ingest — run kick discover/checkpoint');
 		}
 

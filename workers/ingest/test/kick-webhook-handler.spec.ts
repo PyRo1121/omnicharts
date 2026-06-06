@@ -63,37 +63,43 @@ describe('handleKickWebhook', () => {
 		keys = await generateTestRsaKeyPair();
 		env = testEnv({
 			KICK_WEBHOOK_PUBLIC_KEY: keys.publicPem,
-			DB: mockIngestD1((q) => ({
-				bind: (...args: unknown[]) => ({
-					run: async () => {
-						if (q.includes('DELETE FROM ingest_metadata')) {
-							metadata.delete(String(args[0]));
-							return { meta: { changes: 1 } };
-						}
-						if (q.includes('INSERT INTO ingest_metadata')) {
-							const key = String(args[0]);
-							if (q.includes('ON CONFLICT(key) DO NOTHING')) {
-								if (metadata.has(key)) return { meta: { changes: 0 } };
-								metadata.set(key, String(args[1]));
+			DB: mockIngestD1(
+				(q) => ({
+					bind: (...args: unknown[]) => ({
+						run: async () => {
+							if (q.includes('DELETE FROM ingest_metadata')) {
+								metadata.delete(String(args[0]));
 								return { meta: { changes: 1 } };
 							}
-							metadata.set(key, String(args[1]));
-						}
-						return { meta: { changes: 1 } };
-					},
-					first: async () => {
-						if (q.includes('ingest_metadata')) {
-							const key = String(args[0]);
-							const value = metadata.get(key);
-							return value ? { value } : null;
-						}
-						if (q.includes('SELECT id FROM channels')) {
-							return { id: 'kick-ch-123' };
-						}
-						return null;
-					},
+							if (q.includes('INSERT INTO ingest_metadata')) {
+								const key = String(args[0]);
+								if (q.includes('ON CONFLICT(key) DO NOTHING')) {
+									if (metadata.has(key)) return { meta: { changes: 0 } };
+									metadata.set(key, String(args[1]));
+									return { meta: { changes: 1 } };
+								}
+								metadata.set(key, String(args[1]));
+							}
+							return { meta: { changes: 1 } };
+						},
+						first: async () => {
+							if (q.includes('ingest_metadata')) {
+								const key = String(args[0]);
+								const value = metadata.get(key);
+								return value ? { value } : null;
+							}
+							if (q.includes('SELECT id FROM channels')) {
+								return { id: 'kick-ch-123' };
+							}
+							return null;
+						},
+					}),
 				}),
-			})),
+				async (statements) => {
+					for (const stmt of statements) await stmt.run();
+					return [];
+				},
+			),
 		});
 	});
 

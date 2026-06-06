@@ -8,6 +8,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { isValidTwitchEventSubSecret } from '../../workers/ingest/src/twitch/eventsub/secret';
+import { parseJsonRecord, readNestedRecord, readNumber, readString, readStringArray } from '../lib/json-guards';
 
 const REPO_ROOT = join(import.meta.dir, '../..');
 const BASE = process.env.INGEST_URL ?? 'http://127.0.0.1:8787';
@@ -66,17 +67,15 @@ async function main(): Promise<void> {
 		signal: AbortSignal.timeout(300_000),
 	});
 	const raw = await res.text();
-	let json: Record<string, unknown> | null = null;
-	try {
-		json = JSON.parse(raw) as Record<string, unknown>;
-	} catch {
-		/* wrangler HTML error page */
-	}
+	const json = parseJsonRecord(raw);
 
 	if (!res.ok || json?.ok !== true) {
-		const detail = typeof json?.error === 'string' ? json.error : raw.replace(/\s+/g, ' ').trim().slice(0, 400);
-		const samples = (json?.stats as { errorSamples?: string[] } | undefined)?.errorSamples ?? [];
-		const secretLengthIssue = [detail, ...samples].some((s) => /TWITCH_EVENTSUB_SECRET must be \d+–\d+ characters/i.test(String(s)));
+		const detail = json
+			? (readString(json, 'error') ?? raw.replace(/\s+/g, ' ').trim().slice(0, 400))
+			: raw.replace(/\s+/g, ' ').trim().slice(0, 400);
+		const stats = json ? readNestedRecord(json, 'stats') : undefined;
+		const samples = stats ? (readStringArray(stats, 'errorSamples') ?? []) : [];
+		const secretLengthIssue = [detail, ...samples].some((s) => /TWITCH_EVENTSUB_SECRET must be \d+–\d+ characters/i.test(s));
 		if (secretLengthIssue) {
 			console.log(
 				`SKIP: EventSub secret invalid in running ingest — fix workers/ingest/.dev.vars (10–100 chars) and restart: bun run dev:ingest`,
@@ -87,10 +86,11 @@ async function main(): Promise<void> {
 		process.exit(1);
 	}
 
-	const stats = json.stats as Record<string, unknown> | undefined;
+	const stats = json ? readNestedRecord(json, 'stats') : undefined;
 	console.log('PASS: EventSub sync', JSON.stringify(stats ?? {}));
-	if (stats && Number(stats.errors) > 0) {
-		console.error('FAIL: sync reported errors', stats.errorSamples ?? stats);
+	const errors = stats ? readNumber(stats, 'errors') : undefined;
+	if (errors != null && errors > 0) {
+		console.error('FAIL: sync reported errors', stats?.errorSamples ?? stats);
 		process.exit(1);
 	}
 }

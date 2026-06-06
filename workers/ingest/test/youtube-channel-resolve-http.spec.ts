@@ -28,10 +28,13 @@ describe('YouTube channel resolve (worker.fetch)', () => {
 			platform_id: 'youtube',
 		});
 
-		const res = await worker.fetch(new Request('http://ingest/v1/channels/resolve?slug=mrbeast&platform=youtube'), testEnv({
-			DB: db,
-			YOUTUBE_API_KEY: 'key',
-		}));
+		const res = await worker.fetch(
+			new Request('http://ingest/v1/channels/resolve?slug=mrbeast&platform=youtube'),
+			testEnv({
+				DB: db,
+				YOUTUBE_API_KEY: 'key',
+			}),
+		);
 
 		expect(res.status).toBe(200);
 		expect(await res.json()).toEqual({

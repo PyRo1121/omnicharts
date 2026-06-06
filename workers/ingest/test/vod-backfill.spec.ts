@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { testEnv, unusedIngestD1 } from './helpers';
+import { testEnv, unusedIngestD1, TEST_ENV_NO_TWITCH_CREDS } from './helpers';
 import { fetchAllArchiveVideosForUser, runTwitchVodBackfill } from '../src/twitch/vod-backfill';
 import { TwitchHelixClient, type HelixVideo } from '../src/twitch/helix';
 import * as vodSessions from '../src/db/vod-sessions';
@@ -57,7 +57,7 @@ describe('runTwitchVodBackfill', () => {
 	});
 
 	it('returns NEEDS_API when Twitch credentials missing', async () => {
-		const stats = await runTwitchVodBackfill(testEnv({ DB: unusedIngestD1() }));
+		const stats = await runTwitchVodBackfill(testEnv({ DB: unusedIngestD1(), ...TEST_ENV_NO_TWITCH_CREDS }));
 		expect(stats.skipped).toBe('NEEDS_API');
 		expect(stats.ok).toBe(false);
 	});

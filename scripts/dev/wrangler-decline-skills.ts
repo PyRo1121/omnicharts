@@ -7,6 +7,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { hasJsonVersion } from '../lib/json-guards';
 
 function globalWranglerDir(): string {
 	const legacy = join(homedir(), '.wrangler');
@@ -18,8 +19,8 @@ function globalWranglerDir(): string {
 const path = join(globalWranglerDir(), 'agents-skills-install.jsonc');
 if (existsSync(path)) {
 	try {
-		const parsed = JSON.parse(readFileSync(path, 'utf8')) as { version?: number };
-		if (parsed.version !== undefined) process.exit(0);
+		const parsed: unknown = JSON.parse(readFileSync(path, 'utf8'));
+		if (hasJsonVersion(parsed)) process.exit(0);
 	} catch {
 		/* rewrite below */
 	}

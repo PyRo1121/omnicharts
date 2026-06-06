@@ -6,6 +6,16 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';
+import {
+	formatJsonField,
+	parseJsonRecord,
+	readErrorMessage,
+	readItemSlug,
+	readResponseJson,
+	readStatsNestedNumber,
+	readStatsNumber,
+	readString,
+} from '../lib/json-guards';
 
 const REPO_ROOT = join(import.meta.dir, '../..');
 const DEV_VARS = join(REPO_ROOT, 'workers/ingest/.dev.vars');
@@ -110,7 +120,7 @@ function adminShouldRetry(status: number, raw: string): boolean {
 async function fetchHealth(): Promise<{ ok: boolean; status: number; body: Record<string, unknown> | null }> {
 	try {
 		const res = await fetch(`${BASE}/health`, { signal: AbortSignal.timeout(5000) });
-		const body = (await res.json()) as Record<string, unknown>;
+		const body = await readResponseJson(res);
 		return { ok: res.ok, status: res.status, body };
 	} catch {
 		return { ok: false, status: 0, body: null };
@@ -168,8 +178,8 @@ function bodySnippet(raw: string, maxLen = 200): string {
 
 function adminErrorHint(status: number, json: Record<string, unknown> | null, raw: string): string {
 	const snippet = bodySnippet(raw);
-	if (json?.error) {
-		const err = String(json.error);
+	const err = readErrorMessage(json);
+	if (err) {
 		return snippet && !err.includes(snippet) ? `${err} — ${snippet}` : err;
 	}
 	const line = raw.split('\n')[0]?.trim() ?? '';
@@ -196,12 +206,7 @@ async function postJson(
 		signal: AbortSignal.timeout(timeoutMs),
 	});
 	const raw = await res.text();
-	let json: Record<string, unknown> | null = null;
-	try {
-		json = JSON.parse(raw) as Record<string, unknown>;
-	} catch {
-		/* plain-text worker error */
-	}
+	const json = parseJsonRecord(raw);
 	return { status: res.status, json, raw };
 }
 
@@ -227,12 +232,7 @@ async function postJsonWithRetry(
 
 async function getJson(path: string): Promise<{ status: number; json: Record<string, unknown> | null }> {
 	const res = await fetch(`${BASE}${path}`, { signal: AbortSignal.timeout(60_000) });
-	let json: Record<string, unknown> | null = null;
-	try {
-		json = (await res.json()) as Record<string, unknown>;
-	} catch {
-		/* non-JSON */
-	}
+	const json = await readResponseJson(res);
 	return { status: res.status, json };
 }
 
@@ -250,10 +250,7 @@ function todayUtcDateString(): string {
 }
 
 function firstSlug(json: Record<string, unknown> | null): string | null {
-	const items = json?.items;
-	if (!Array.isArray(items) || items.length === 0) return null;
-	const first = items[0] as { slug?: string };
-	return typeof first?.slug === 'string' ? first.slug : null;
+	return readItemSlug(json?.items);
 }
 
 async function main(): Promise<number> {
@@ -314,7 +311,7 @@ async function main(): Promise<number> {
 		name: 'GET /health',
 		critical: true,
 		pass: true,
-		detail: `status=${health.body.status} db=${health.body.db} twitch=${twitch}`,
+		detail: `status=${formatJsonField(health.body.status)} db=${formatJsonField(health.body.db)} twitch=${formatJsonField(twitch)}`,
 	});
 
 	record({
@@ -336,7 +333,7 @@ async function main(): Promise<number> {
 		critical: false,
 		pass: reset.status >= 200 && reset.status < 300,
 		detail: isOkAdmin(reset.json, reset.status)
-			? `cleared ${(reset.json?.stats as { channelsDeleted?: number })?.channelsDeleted ?? 0} dev-seed channels`
+			? `cleared ${readStatsNumber(reset.json, 'channelsDeleted') ?? 0} dev-seed channels`
 			: adminErrorHint(reset.status, reset.json, reset.raw),
 	});
 
@@ -349,7 +346,7 @@ async function main(): Promise<number> {
 		critical: true,
 		pass: isOkAdmin(discover.json, discover.status),
 		detail: isOkAdmin(discover.json, discover.status)
-			? `games=${(discover.json?.stats as { gamesScanned?: number })?.gamesScanned ?? '?'} channels=${(discover.json?.stats as { channelsUpserted?: number })?.channelsUpserted ?? '?'}`
+			? `games=${readStatsNumber(discover.json, 'gamesScanned') ?? '?'} channels=${readStatsNumber(discover.json, 'channelsUpserted') ?? '?'}`
 			: adminErrorHint(discover.status, discover.json, discover.raw),
 	});
 
@@ -362,7 +359,7 @@ async function main(): Promise<number> {
 		critical: true,
 		pass: isOkAdmin(poll.json, poll.status),
 		detail: isOkAdmin(poll.json, poll.status)
-			? `mode=${String(poll.json?.mode ?? 'coverage_cycle')} streams=${(poll.json?.stats as { streamsSeen?: number })?.streamsSeen ?? (poll.json?.stats as { global?: { streamsSeen?: number } })?.global?.streamsSeen ?? '?'}`
+			? `mode=${formatJsonField(poll.json?.mode, 'coverage_cycle')} streams=${readStatsNumber(poll.json, 'streamsSeen') ?? readStatsNestedNumber(poll.json, 'global', 'streamsSeen') ?? '?'}`
 			: adminErrorHint(poll.status, poll.json, poll.raw),
 	});
 
@@ -375,7 +372,7 @@ async function main(): Promise<number> {
 			critical: true,
 			pass: isOkAdmin(poll2.json, poll2.status),
 			detail: isOkAdmin(poll2.json, poll2.status)
-				? `mode=${String(poll2.json?.mode ?? '?')} streams=${(poll2.json?.stats as { streamsSeen?: number })?.streamsSeen ?? '?'}`
+				? `mode=${formatJsonField(poll2.json?.mode)} streams=${readStatsNumber(poll2.json, 'streamsSeen') ?? '?'}`
 				: adminErrorHint(poll2.status, poll2.json, poll2.raw),
 		});
 	}
@@ -396,7 +393,7 @@ async function main(): Promise<number> {
 			pass: enrichOk || enrichSkip,
 			skip: enrichSkip && !enrichOk,
 			detail: enrichOk
-				? `updated=${(enrich.json?.stats as { updated?: number })?.updated ?? 0}`
+				? `updated=${readStatsNumber(enrich.json, 'updated') ?? 0}`
 				: enrichSkip
 					? `skipped — ${adminErrorHint(enrich.status, enrich.json, enrich.raw)}`
 					: adminErrorHint(enrich.status, enrich.json, enrich.raw),
@@ -413,7 +410,7 @@ async function main(): Promise<number> {
 		await waitForStableIngest();
 		rollup = await postJson('/admin/rollup/daily', { date: rollupDate });
 	}
-	const rollupChannels = (rollup.json?.stats as { channelsProcessed?: number })?.channelsProcessed;
+	const rollupChannels = readStatsNumber(rollup.json, 'channelsProcessed');
 	record({
 		name: 'POST /admin/rollup/daily',
 		critical: true,
@@ -462,7 +459,7 @@ async function main(): Promise<number> {
 	} else {
 		const channelPath = `/v1/channels/${encodeURIComponent(sampleSlug)}?platform=twitch`;
 		const channel = await getJson(channelPath);
-		const channelOk = channel.status === 200 && channel.json != null && typeof channel.json.slug === 'string';
+		const channelOk = channel.status === 200 && channel.json != null && readString(channel.json, 'slug') !== undefined;
 		record({
 			name: 'GET /v1/channels/{slug}',
 			critical: true,

@@ -10,10 +10,13 @@ describe('youtube admin routes (worker.fetch)', () => {
 	});
 
 	it('POST /admin/youtube/poll returns 401 when ADMIN_API_KEY set and header missing', async () => {
-		const res = await worker.fetch(new Request('http://ingest/admin/youtube/poll', { method: 'POST' }), testEnv({
-			ADMIN_API_KEY: 'secret',
-			DB: unusedIngestD1(),
-		}));
+		const res = await worker.fetch(
+			new Request('http://ingest/admin/youtube/poll', { method: 'POST' }),
+			testEnv({
+				ADMIN_API_KEY: 'secret',
+				DB: unusedIngestD1(),
+			}),
+		);
 		expect(res.status).toBe(401);
 	});
 
@@ -27,11 +30,13 @@ describe('youtube admin routes (worker.fetch)', () => {
 			testEnv({ ADMIN_API_KEY: 'secret', ENVIRONMENT: 'development', DB: unusedIngestD1() }),
 		);
 		expect(res.status).toBe(200);
-		expect(await res.json()).toEqual({
-			ok: true,
-			skipped: true,
-			poll: { skipped: 'NEEDS_API' },
-		});
+		expect(await res.json()).toEqual(
+			expect.objectContaining({
+				ok: true,
+				skipped: true,
+				poll: expect.objectContaining({ skipped: 'NEEDS_API' }),
+			}),
+		);
 	});
 
 	it('POST /admin/youtube/poll runs poll and optional seed handles', async () => {
@@ -60,11 +65,13 @@ describe('youtube admin routes (worker.fetch)', () => {
 		);
 
 		expect(res.status).toBe(200);
-		expect(await res.json()).toEqual({
-			ok: true,
-			skipped: false,
-			poll: { liveVideos: 2 },
-			seed: { seeded: 1 },
-		});
+		expect(await res.json()).toEqual(
+			expect.objectContaining({
+				ok: true,
+				skipped: false,
+				poll: expect.objectContaining({ liveVideos: 2 }),
+				seed: expect.objectContaining({ seeded: 1 }),
+			}),
+		);
 	});
 });

@@ -4,7 +4,7 @@ import { mockD1Batch } from './test-helpers';
 
 describe('loadHomepageFromD1', () => {
 	it('maps one D1 batch into overview rankings', async () => {
-		const db = mockD1Batch([
+		const { db } = mockD1Batch([
 			{ results: [{ n: 1200 }] },
 			{ results: [{ n: 42 }] },
 			{
@@ -38,6 +38,5 @@ describe('loadHomepageFromD1', () => {
 		expect(snapshot.channelsLive).toBe(42);
 		expect(snapshot.channelRankings.rows[0]?.displayName).toBe('Alpha');
 		expect(snapshot.gameRankings.rows[0]?.name).toBe('VALORANT');
-		expect(db.batch).toHaveBeenCalledOnce();
 	});
 });

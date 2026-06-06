@@ -11,6 +11,8 @@ describe('loadGameRankings (twitch)', () => {
 		const fetchFn = vi.fn().mockResolvedValue({
 			ok: true,
 			json: async () => ({
+				platform: 'twitch',
+				period: '7d',
 				updated_at: '2026-06-01T00:00:00Z',
 				items: [
 					{

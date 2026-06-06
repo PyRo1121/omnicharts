@@ -112,7 +112,10 @@ describe('batchUpsertKickChannelsFromLivestreams', () => {
 				first: async () => null,
 			}),
 		}));
-		const db = mockIngestD1((sql) => prepare(sql), vi.fn(async () => []));
+		const db = mockIngestD1(
+			(sql) => prepare(sql),
+			vi.fn(async () => []),
+		);
 
 		await batchUpsertKickChannelsFromLivestreams(db, [baseStream({ broadcaster_user_id: 42, slug: 'streamer' })], {
 			minViewers: 5,
@@ -188,7 +191,10 @@ describe('batchUpsertKickChannelsFromLivestreams', () => {
 				first: async () => null,
 			}),
 		}));
-		const db = mockIngestD1((sql) => prepare(sql), vi.fn(async () => []));
+		const db = mockIngestD1(
+			(sql) => prepare(sql),
+			vi.fn(async () => []),
+		);
 
 		await batchUpsertKickChannelsFromLivestreams(db, [baseStream()], { minViewers: 5, promoteToTracked: true, directoryListing: true });
 
@@ -354,7 +360,10 @@ describe('batchRecordKickLiveSamples', () => {
 				first: async () => null,
 			}),
 		}));
-		const db = mockIngestD1((sql) => prepare(sql), vi.fn(async () => []));
+		const db = mockIngestD1(
+			(sql) => prepare(sql),
+			vi.fn(async () => []),
+		);
 
 		await batchUpsertKickChannelsFromLivestreams(db, [baseStream({ viewer_count: 50 })], { minViewers: 5, promoteToTracked: true });
 
@@ -385,7 +394,10 @@ describe('batchRecordKickLiveSamples', () => {
 				first: async () => null,
 			}),
 		}));
-		const db = mockIngestD1((sql) => prepare(sql), vi.fn(async () => []));
+		const db = mockIngestD1(
+			(sql) => prepare(sql),
+			vi.fn(async () => []),
+		);
 
 		await batchUpsertKickChannelsFromLivestreams(db, [baseStream()], { minViewers: 5, promoteToTracked: true });
 

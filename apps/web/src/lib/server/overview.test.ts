@@ -9,7 +9,7 @@ vi.mock('$env/dynamic/private', () => ({
 describe('loadOverview', () => {
 	it('builds live stats from D1 batch without ingest fetch', async () => {
 		const fetchFn = vi.fn();
-		const db = mockD1Batch([
+		const { db } = mockD1Batch([
 			{ results: [{ n: 900 }] },
 			{ results: [{ n: 12 }] },
 			{
@@ -67,6 +67,8 @@ describe('loadOverview', () => {
 				return Promise.resolve({
 					ok: true,
 					json: async () => ({
+						platform: 'twitch',
+						period: '7d',
 						updated_at: '2026-06-01T00:00:00Z',
 						items: [
 							{
@@ -76,6 +78,7 @@ describe('loadOverview', () => {
 								avatar_url: null,
 								hours_watched: 100,
 								average_viewers: 10,
+								stream_count: 1,
 							},
 						],
 					}),
@@ -85,6 +88,8 @@ describe('loadOverview', () => {
 				return Promise.resolve({
 					ok: true,
 					json: async () => ({
+						platform: 'twitch',
+						period: '7d',
 						updated_at: '2026-06-01T00:00:00Z',
 						items: [
 							{
@@ -137,7 +142,9 @@ describe('loadKickOverview', () => {
 					json: async () => ({
 						status: 'ok',
 						tracked_channels: { twitch: 0, kick: 12, youtube: 0 },
+						channels_live: 3,
 						channels_live_by_platform: { twitch: 0, kick: 3, youtube: 0 },
+						discovery_new_24h: 0,
 					}),
 				});
 			}
@@ -145,6 +152,8 @@ describe('loadKickOverview', () => {
 				return Promise.resolve({
 					ok: true,
 					json: async () => ({
+						platform: 'kick',
+						period: '7d',
 						updated_at: '2026-06-01T00:00:00Z',
 						items: [
 							{
@@ -154,6 +163,7 @@ describe('loadKickOverview', () => {
 								avatar_url: null,
 								hours_watched: 100,
 								average_viewers: 10,
+								stream_count: 1,
 							},
 						],
 					}),
@@ -163,6 +173,8 @@ describe('loadKickOverview', () => {
 				return Promise.resolve({
 					ok: true,
 					json: async () => ({
+						platform: 'kick',
+						period: '7d',
 						updated_at: '2026-06-01T00:00:00Z',
 						items: [
 							{
@@ -204,7 +216,9 @@ describe('loadYoutubeOverview', () => {
 					json: async () => ({
 						status: 'ok',
 						tracked_channels: { twitch: 0, kick: 0, youtube: 8 },
+						channels_live: 2,
 						channels_live_by_platform: { twitch: 0, kick: 0, youtube: 2 },
+						discovery_new_24h: 0,
 					}),
 				});
 			}
@@ -212,6 +226,8 @@ describe('loadYoutubeOverview', () => {
 				return Promise.resolve({
 					ok: true,
 					json: async () => ({
+						platform: 'youtube',
+						period: '7d',
 						updated_at: '2026-06-01T00:00:00Z',
 						items: [
 							{
@@ -221,6 +237,7 @@ describe('loadYoutubeOverview', () => {
 								avatar_url: null,
 								hours_watched: 100,
 								average_viewers: 10,
+								stream_count: 1,
 							},
 						],
 					}),
@@ -230,6 +247,8 @@ describe('loadYoutubeOverview', () => {
 				return Promise.resolve({
 					ok: true,
 					json: async () => ({
+						platform: 'youtube',
+						period: '7d',
 						updated_at: '2026-06-01T00:00:00Z',
 						items: [],
 					}),

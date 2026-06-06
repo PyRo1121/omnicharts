@@ -5,6 +5,7 @@
  */
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
+import { parseWranglerJsonRows, readSqliteName } from '../lib/json-guards';
 
 const INGEST_CWD = join(import.meta.dir, '../..', 'workers', 'ingest');
 const DB = 'omnicharts';
@@ -86,21 +87,8 @@ function wranglerExecute(sql: string, remote: boolean): string {
 }
 
 function parseJsonRows(stdout: string): Record<string, unknown>[] {
-	const trimmed = stdout.trim();
-	if (!trimmed) return [];
 	try {
-		const parsed = JSON.parse(trimmed) as
-			| { results?: Record<string, unknown>[] }[]
-			| { result?: { results?: Record<string, unknown>[] }[] }
-			| Record<string, unknown>[];
-		if (Array.isArray(parsed)) {
-			if (parsed.length && parsed[0] && 'results' in parsed[0]) {
-				return (parsed as { results?: Record<string, unknown>[] }[]).flatMap((batch) => batch.results ?? []);
-			}
-			return parsed as Record<string, unknown>[];
-		}
-		const batch = parsed.result?.[0]?.results;
-		return batch ?? [];
+		return parseWranglerJsonRows(stdout);
 	} catch {
 		throw new Error(`Could not parse wrangler JSON:\n${stdout.slice(0, 500)}`);
 	}
@@ -112,19 +100,19 @@ function listTables(remote: boolean): Set<string> {
 		remote,
 	);
 	const rows = parseJsonRows(out);
-	return new Set(rows.map((r) => String(r.name ?? r.NAME ?? '')));
+	return new Set(rows.map((r) => readSqliteName(r)));
 }
 
 function tableColumns(table: string, remote: boolean): Set<string> {
 	const out = wranglerExecute(`PRAGMA table_info(${table})`, remote);
 	const rows = parseJsonRows(out);
-	return new Set(rows.map((r) => String(r.name ?? r.NAME ?? '')));
+	return new Set(rows.map((r) => readSqliteName(r)));
 }
 
 function listIndexes(remote: boolean): Set<string> {
 	const out = wranglerExecute(`SELECT name FROM sqlite_master WHERE type='index' AND name NOT LIKE 'sqlite_%' ORDER BY name`, remote);
 	const rows = parseJsonRows(out);
-	return new Set(rows.map((r) => String(r.name ?? r.NAME ?? '')));
+	return new Set(rows.map((r) => readSqliteName(r)));
 }
 
 function main() {

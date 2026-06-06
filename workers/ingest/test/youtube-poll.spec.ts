@@ -220,11 +220,13 @@ describe('youtube poll', () => {
 			},
 		);
 
-		const result = await runYoutubeCatalogPoll(testEnv({
-			YOUTUBE_API_KEY: 'key',
-			YOUTUBE_MIN_VIEWERS: '5',
-			DB: db,
-		}));
+		const result = await runYoutubeCatalogPoll(
+			testEnv({
+				YOUTUBE_API_KEY: 'key',
+				YOUTUBE_MIN_VIEWERS: '5',
+				DB: db,
+			}),
+		);
 
 		expect(result.batches).toBe(1);
 		expect(result.samplesWritten).toBe(1);

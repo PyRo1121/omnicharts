@@ -56,10 +56,12 @@ describe('KickPublicApiClient edge cases', () => {
 		});
 		vi.stubGlobal('fetch', fetchMock);
 
-		const client = new KickPublicApiClient(testEnv({
-			KICK_CLIENT_ID: 'id',
-			KICK_CLIENT_SECRET: 'secret',
-		}));
+		const client = new KickPublicApiClient(
+			testEnv({
+				KICK_CLIENT_ID: 'id',
+				KICK_CLIENT_SECRET: 'secret',
+			}),
+		);
 		const streams = await client.getLivestreamsByBroadcasterIds(['1']);
 		expect(streams).toHaveLength(1);
 		expect(liveCalls).toBe(2);
@@ -81,10 +83,12 @@ describe('KickPublicApiClient edge cases', () => {
 		vi.stubGlobal('fetch', fetchMock);
 
 		const ids = Array.from({ length: 51 }, (_, i) => String(i + 1));
-		const client = new KickPublicApiClient(testEnv({
-			KICK_CLIENT_ID: 'id',
-			KICK_CLIENT_SECRET: 'secret',
-		}));
+		const client = new KickPublicApiClient(
+			testEnv({
+				KICK_CLIENT_ID: 'id',
+				KICK_CLIENT_SECRET: 'secret',
+			}),
+		);
 		await client.getLivestreamsByBroadcasterIds(ids);
 
 		expect(liveCalls).toHaveLength(2);
@@ -112,10 +116,12 @@ describe('KickPublicApiClient edge cases', () => {
 		});
 		vi.stubGlobal('fetch', fetchMock);
 
-		const client = new KickPublicApiClient(testEnv({
-			KICK_CLIENT_ID: 'id',
-			KICK_CLIENT_SECRET: 'secret',
-		}));
+		const client = new KickPublicApiClient(
+			testEnv({
+				KICK_CLIENT_ID: 'id',
+				KICK_CLIENT_SECRET: 'secret',
+			}),
+		);
 		const channels = await client.getChannelsBySlug('not-a-real-channel-xyz');
 		expect(channels).toEqual([]);
 	});

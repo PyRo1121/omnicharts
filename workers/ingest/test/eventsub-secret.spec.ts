@@ -25,13 +25,15 @@ describe('Twitch EventSub secret length', () => {
 	});
 
 	it('sync rejects short secret before Helix', async () => {
-		const stats = await syncTwitchEventSubSubscriptions(testEnv({
-			DB: unusedIngestD1(),
-			TWITCH_CLIENT_ID: 'id',
-			TWITCH_CLIENT_SECRET: 'sec',
-			TWITCH_EVENTSUB_SECRET: 'tiny',
-			TWITCH_EVENTSUB_CALLBACK_URL: 'https://example.com/hook',
-		}));
+		const stats = await syncTwitchEventSubSubscriptions(
+			testEnv({
+				DB: unusedIngestD1(),
+				TWITCH_CLIENT_ID: 'id',
+				TWITCH_CLIENT_SECRET: 'sec',
+				TWITCH_EVENTSUB_SECRET: 'tiny',
+				TWITCH_EVENTSUB_CALLBACK_URL: 'https://example.com/hook',
+			}),
+		);
 
 		expect(stats.errors).toBe(1);
 		expect(stats.errorSamples[0]).toMatch(/10/);

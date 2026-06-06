@@ -66,10 +66,7 @@ describe('shouldArchiveSampleBatch', () => {
 		expect(shouldArchiveSampleBatch(testEnv({ SAMPLE_ARCHIVE_ENABLED: '0' }), 100)).toBe('disabled');
 		expect(shouldArchiveSampleBatch(testEnv({ SAMPLE_ARCHIVE_ENABLED: '1' }), 100)).toBe('no_bucket');
 		expect(
-			shouldArchiveSampleBatch(
-				testEnv({ SAMPLE_ARCHIVE_ENABLED: '1', SAMPLE_ARCHIVE_MIN_ROWS: '10', SAMPLES: samplesBucket(vi.fn()) }),
-				9,
-			),
+			shouldArchiveSampleBatch(testEnv({ SAMPLE_ARCHIVE_ENABLED: '1', SAMPLE_ARCHIVE_MIN_ROWS: '10', SAMPLES: samplesBucket(vi.fn()) }), 9),
 		).toBe('below_threshold');
 	});
 

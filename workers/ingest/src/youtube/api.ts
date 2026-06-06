@@ -1,9 +1,5 @@
 import { chunkArray } from '../db/d1-batch';
-import {
-	parseYoutubeChannelListResponse,
-	parseYoutubePlaylistItemsResponse,
-	parseYoutubeVideoListResponse,
-} from '../json-guards';
+import { parseYoutubeChannelListResponse, parseYoutubePlaylistItemsResponse, parseYoutubeVideoListResponse } from '../json-guards';
 import { YOUTUBE_API_BASE, YOUTUBE_VIDEOS_BATCH_SIZE, youtubeApiKeyConfigured } from './config';
 import type { YoutubeChannelItem, YoutubeVideoItem } from './types';
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { testEnv } from './helpers';
+import { testEnv, TEST_ENV_NO_TWITCH_CREDS } from './helpers';
 import { hasTwitchAppCredentials, twitchAppCredentialsErrorResponse } from '../src/twitch/credentials';
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -9,15 +9,17 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 describe('twitch app credentials', () => {
 	it('detects configured env', () => {
 		expect(
-			hasTwitchAppCredentials(testEnv({
-				TWITCH_CLIENT_ID: 'id',
-				TWITCH_CLIENT_SECRET: 'secret',
-			})),
+			hasTwitchAppCredentials(
+				testEnv({
+					TWITCH_CLIENT_ID: 'id',
+					TWITCH_CLIENT_SECRET: 'secret',
+				}),
+			),
 		).toBe(true);
 	});
 
 	it('detects missing env', () => {
-		expect(hasTwitchAppCredentials(testEnv())).toBe(false);
+		expect(hasTwitchAppCredentials(testEnv(TEST_ENV_NO_TWITCH_CREDS))).toBe(false);
 	});
 
 	it('error response includes restart hint', async () => {

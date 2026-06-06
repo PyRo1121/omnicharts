@@ -5,6 +5,7 @@
  */
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { parseCoverageFinal, readNumberArrayRecord, readNumberRecord, readStatementMap } from '../lib/json-guards';
 
 const INGEST_ROOT = join(import.meta.dir, '../..', 'workers', 'ingest');
 const COVERAGE_JSON = join(INGEST_ROOT, 'coverage', 'coverage-final.json');
@@ -31,7 +32,7 @@ function pct(t: { covered: number; total: number }): number {
 }
 
 function mergeFileTotals(into: Totals, file: Record<string, unknown>): void {
-	const statements = file.s as Record<string, number> | undefined;
+	const statements = readNumberRecord(file, 's');
 	if (statements) {
 		for (const hit of Object.values(statements)) {
 			into.statements.total += 1;
@@ -39,7 +40,7 @@ function mergeFileTotals(into: Totals, file: Record<string, unknown>): void {
 		}
 	}
 
-	const functions = file.f as Record<string, number> | undefined;
+	const functions = readNumberRecord(file, 'f');
 	if (functions) {
 		for (const hit of Object.values(functions)) {
 			into.functions.total += 1;
@@ -47,7 +48,7 @@ function mergeFileTotals(into: Totals, file: Record<string, unknown>): void {
 		}
 	}
 
-	const branches = file.b as Record<string, number[]> | undefined;
+	const branches = readNumberArrayRecord(file, 'b');
 	if (branches) {
 		for (const hits of Object.values(branches)) {
 			for (const hit of hits) {
@@ -57,8 +58,8 @@ function mergeFileTotals(into: Totals, file: Record<string, unknown>): void {
 		}
 	}
 
-	const statementMap = file.statementMap as Record<string, { start: { line: number } }> | undefined;
-	const stmtHits = file.s as Record<string, number> | undefined;
+	const statementMap = readStatementMap(file, 'statementMap');
+	const stmtHits = readNumberRecord(file, 's');
 	if (statementMap && stmtHits) {
 		const lineHits = new Map<number, boolean>();
 		for (const [id, hit] of Object.entries(stmtHits)) {
@@ -79,7 +80,11 @@ function main(): number {
 		return 1;
 	}
 
-	const raw = JSON.parse(readFileSync(COVERAGE_JSON, 'utf8')) as Record<string, Record<string, unknown>>;
+	const raw = parseCoverageFinal(JSON.parse(readFileSync(COVERAGE_JSON, 'utf8')));
+	if (!raw) {
+		console.error(`Invalid coverage JSON at ${COVERAGE_JSON}`);
+		return 1;
+	}
 	const prefix = `${INGEST_ROOT}/`;
 
 	const byGlob = new Map<string, Totals>();

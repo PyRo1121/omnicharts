@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
+import { parseChannelResolveBody, parseRankingsSlugList } from '../src/lib/server/json-guards';
 
 export const INGEST_URL = process.env.INGEST_URL ?? 'http://127.0.0.1:8787';
 
@@ -36,15 +37,13 @@ export async function ingestRankingsReady(): Promise<boolean> {
 	}
 }
 
-type RankedItem = { slug?: string };
-
 export async function firstRankedSlug(platform: 'twitch' | 'kick', kind: 'channels' | 'games'): Promise<string | null> {
 	const res = await fetch(`${INGEST_URL}/v1/rankings/${kind}?platform=${platform}&period=7d&limit=5`, {
 		signal: AbortSignal.timeout(5000),
 	});
 	if (!res.ok) return null;
-	const body = (await res.json()) as { items?: RankedItem[] };
-	return body.items?.find((item) => item.slug)?.slug ?? null;
+	const slugs = parseRankingsSlugList(await res.json());
+	return slugs[0] ?? null;
 }
 
 export async function channelExistsOnPlatform(slug: string, platform: string): Promise<boolean> {
@@ -57,14 +56,14 @@ export async function channelExistsOnPlatform(slug: string, platform: string): P
 export async function findKickOnlyChannelSlug(): Promise<string | null> {
 	const res = await fetch(`${INGEST_URL}/v1/rankings/channels?platform=kick&period=7d&limit=10`, { signal: AbortSignal.timeout(5000) });
 	if (!res.ok) return null;
-	const body = (await res.json()) as { items?: RankedItem[] };
-	for (const item of body.items ?? []) {
-		const slug = item.slug;
-		if (!slug) continue;
-		const [onKick, onTwitch] = await Promise.all([channelExistsOnPlatform(slug, 'kick'), channelExistsOnPlatform(slug, 'twitch')]);
-		if (onKick && !onTwitch) return slug;
-	}
-	return null;
+	const slugs = parseRankingsSlugList(await res.json());
+	const checks = await Promise.all(
+		slugs.map(async (slug) => {
+			const [onKick, onTwitch] = await Promise.all([channelExistsOnPlatform(slug, 'kick'), channelExistsOnPlatform(slug, 'twitch')]);
+			return onKick && !onTwitch ? slug : null;
+		}),
+	);
+	return checks.find((slug) => slug != null) ?? null;
 }
 
 export type SlugHistoryPair = { oldSlug: string; newSlug: string; platform: string };
@@ -84,6 +83,6 @@ export async function verifySlugHistoryRedirect(pair: SlugHistoryPair): Promise<
 		signal: AbortSignal.timeout(5000),
 	});
 	if (!res.ok) return false;
-	const body = (await res.json()) as { slug?: string; from_history?: boolean };
-	return body.from_history === true && body.slug === pair.newSlug;
+	const body = parseChannelResolveBody(await res.json());
+	return body?.from_history === true && body.slug === pair.newSlug;
 }

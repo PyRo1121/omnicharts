@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { testEnv } from './helpers';
+import { testEnv, TEST_ENV_NO_EVENTSUB } from './helpers';
 import worker from '../src/index';
 import { buildPublicHealth } from '../src/health/status';
 
@@ -35,6 +35,7 @@ function mockEnv(): Env {
 		DB: db,
 		TWITCH_CLIENT_ID: 'id',
 		TWITCH_CLIENT_SECRET: 'secret',
+		...TEST_ENV_NO_EVENTSUB,
 	});
 }
 

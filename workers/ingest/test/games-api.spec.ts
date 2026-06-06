@@ -37,7 +37,7 @@ describe('buildRankingsGamesResponse', () => {
 			limit: 20,
 		});
 
-		expect(spy).toHaveBeenCalledWith({}, expect.objectContaining({ platformId: 'kick', days: 7, limit: 20 }));
+		expect(spy).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ platformId: 'kick', days: 7, limit: 20 }));
 		expect(res.platform).toBe('kick');
 		expect(res.items[0]).toMatchObject({
 			rank: 1,

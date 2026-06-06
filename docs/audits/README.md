@@ -27,6 +27,12 @@
 |-----|------|
 | [phase3-signoff](./phase3-signoff.md) | MVP complete checklist — gates, parity matrix, ops deferrals (2026-06-05) |
 
+## Phase 4 sign-off
+
+| Doc | Role |
+|-----|------|
+| [phase4-signoff](./phase4-signoff.md) | Retention & agency complete — gates, slices 4.1–4.7 (2026-06-05) |
+
 ## Phase 4
 
 | Doc | Role |

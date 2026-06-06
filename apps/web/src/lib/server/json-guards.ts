@@ -19,6 +19,15 @@ function readArray(record: Record<string, unknown>, key: string): unknown[] | un
 	return Array.isArray(value) ? value : undefined;
 }
 
+export function parseRankingsSlugList(data: unknown): string[] {
+	const parsed = parseRankingsChannelsResponse(data);
+	if (parsed) return parsed.items.map((item) => item.slug);
+	if (!isRecord(data)) return [];
+	const itemsRaw = readArray(data, 'items');
+	if (!itemsRaw) return [];
+	return itemsRaw.map((item) => (isRecord(item) ? readString(item, 'slug') : undefined)).filter((slug): slug is string => slug != null);
+}
+
 export function parseRankingsChannelsResponse(data: unknown): RankingsChannelsResponse | null {
 	if (!isRecord(data)) return null;
 	const platform = readString(data, 'platform');
@@ -30,27 +39,29 @@ export function parseRankingsChannelsResponse(data: unknown): RankingsChannelsRe
 		platform,
 		period,
 		updated_at,
-		items: itemsRaw.map((item) => {
-			if (!isRecord(item)) return null;
-			const slug = readString(item, 'slug');
-			const display_name = readString(item, 'display_name');
-			const hours_watched = readNumber(item, 'hours_watched');
-			const average_viewers = readNumber(item, 'average_viewers');
-			const stream_count = readNumber(item, 'stream_count');
-			if (!slug || !display_name || hours_watched == null || average_viewers == null || stream_count == null) return null;
-			return {
-				rank: readNumber(item, 'rank') ?? 0,
-				slug,
-				display_name,
-				avatar_url: typeof item.avatar_url === 'string' || item.avatar_url === null ? item.avatar_url : null,
-				hours_watched,
-				average_viewers,
-				peak_viewers: readNumber(item, 'peak_viewers'),
-				airtime_hours: readNumber(item, 'airtime_hours'),
-				stream_count,
-				tracked_since: typeof item.tracked_since === 'string' || item.tracked_since === null ? item.tracked_since : null,
-			};
-		}).filter((item): item is NonNullable<typeof item> => item !== null),
+		items: itemsRaw
+			.map((item) => {
+				if (!isRecord(item)) return null;
+				const slug = readString(item, 'slug');
+				const display_name = readString(item, 'display_name');
+				const hours_watched = readNumber(item, 'hours_watched');
+				const average_viewers = readNumber(item, 'average_viewers');
+				const stream_count = readNumber(item, 'stream_count');
+				if (!slug || !display_name || hours_watched == null || average_viewers == null || stream_count == null) return null;
+				return {
+					rank: readNumber(item, 'rank') ?? 0,
+					slug,
+					display_name,
+					avatar_url: typeof item.avatar_url === 'string' || item.avatar_url === null ? item.avatar_url : null,
+					hours_watched,
+					average_viewers,
+					peak_viewers: readNumber(item, 'peak_viewers') ?? null,
+					airtime_hours: readNumber(item, 'airtime_hours') ?? null,
+					stream_count,
+					tracked_since: typeof item.tracked_since === 'string' || item.tracked_since === null ? item.tracked_since : null,
+				};
+			})
+			.filter((item): item is NonNullable<typeof item> => item !== null),
 	};
 }
 
@@ -79,9 +90,7 @@ export function parseRankingsGamesResponse(data: unknown): RankingsGamesResponse
 					name,
 					hours_watched,
 					average_viewers,
-					peak_viewers: readNumber(item, 'peak_viewers'),
-					airtime_hours: readNumber(item, 'airtime_hours'),
-					live_channels: readNumber(item, 'live_channels'),
+					box_art_url: typeof item.box_art_url === 'string' || item.box_art_url === null ? item.box_art_url : null,
 				};
 			})
 			.filter((item): item is NonNullable<typeof item> => item !== null),
@@ -158,15 +167,28 @@ export function parseIngestChannelResponse(data: unknown): ChannelDetailResponse
 	const peak_viewers = readNumber(totalsRaw, 'peak_viewers');
 	const airtime_hours = readNumber(totalsRaw, 'airtime_hours');
 	const stream_count = readNumber(totalsRaw, 'stream_count');
-	if (
-		hours_watched == null ||
-		average_viewers == null ||
-		peak_viewers == null ||
-		airtime_hours == null ||
-		stream_count == null
-	) {
+	if (hours_watched == null || average_viewers == null || peak_viewers == null || airtime_hours == null || stream_count == null) {
 		return null;
 	}
+	const dailyRaw = readArray(data, 'daily');
+	const daily = (dailyRaw ?? [])
+		.map((item) => {
+			if (!isRecord(item)) return null;
+			const date = readString(item, 'date');
+			const dayHours = readNumber(item, 'hours_watched');
+			const dayAverage = readNumber(item, 'average_viewers');
+			const dayPeak = readNumber(item, 'peak_viewers');
+			if (!date || dayHours == null || dayAverage == null || dayPeak == null) return null;
+			return {
+				date,
+				hours_watched: dayHours,
+				average_viewers: dayAverage,
+				peak_viewers: dayPeak,
+				airtime_hours: readNumber(item, 'airtime_hours') ?? 0,
+				stream_count: readNumber(item, 'stream_count') ?? 0,
+			};
+		})
+		.filter((item): item is NonNullable<typeof item> => item !== null);
 	return {
 		platform,
 		slug,
@@ -184,10 +206,9 @@ export function parseIngestChannelResponse(data: unknown): ChannelDetailResponse
 			peak_viewers,
 			airtime_hours,
 			stream_count,
-			followers_gain:
-				typeof totalsRaw.followers_gain === 'number' || totalsRaw.followers_gain === null ? totalsRaw.followers_gain : null,
+			followers_gain: typeof totalsRaw.followers_gain === 'number' || totalsRaw.followers_gain === null ? totalsRaw.followers_gain : null,
 		},
-		daily: [],
+		daily,
 	};
 }
 
@@ -207,14 +228,51 @@ export function parseIngestGameResponse(data: unknown): GameDetailResponse | nul
 	if (hours_watched == null || average_viewers == null || peak_viewers == null || airtime_hours == null || live_channels == null) {
 		return null;
 	}
+	const dailyRaw = readArray(data, 'daily');
+	const daily = (dailyRaw ?? [])
+		.map((item) => {
+			if (!isRecord(item)) return null;
+			const date = readString(item, 'date');
+			const dayHours = readNumber(item, 'hours_watched');
+			const dayAverage = readNumber(item, 'average_viewers');
+			const dayPeak = readNumber(item, 'peak_viewers');
+			if (!date || dayHours == null || dayAverage == null || dayPeak == null) return null;
+			return {
+				date,
+				hours_watched: dayHours,
+				average_viewers: dayAverage,
+				peak_viewers: dayPeak,
+				airtime_hours: readNumber(item, 'airtime_hours') ?? 0,
+				live_channels: readNumber(item, 'live_channels') ?? 0,
+			};
+		})
+		.filter((item): item is NonNullable<typeof item> => item !== null);
+	const topChannelsRaw = readArray(data, 'top_channels');
+	const top_channels = (topChannelsRaw ?? [])
+		.map((item) => {
+			if (!isRecord(item)) return null;
+			const rank = readNumber(item, 'rank');
+			const channelSlug = readString(item, 'slug');
+			const display_name = readString(item, 'display_name');
+			const channelHours = readNumber(item, 'hours_watched');
+			if (rank == null || !channelSlug || !display_name || channelHours == null) return null;
+			return {
+				rank,
+				slug: channelSlug,
+				display_name,
+				avatar_url: typeof item.avatar_url === 'string' || item.avatar_url === null ? item.avatar_url : null,
+				hours_watched: channelHours,
+			};
+		})
+		.filter((item): item is NonNullable<typeof item> => item !== null);
 	return {
 		platform,
 		slug,
 		name,
 		period,
 		totals: { hours_watched, average_viewers, peak_viewers, airtime_hours, live_channels },
-		daily: [],
-		top_channels: [],
+		daily,
+		top_channels,
 	};
 }
 

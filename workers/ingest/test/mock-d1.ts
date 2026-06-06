@@ -6,106 +6,60 @@ export type StmtHandlers = {
 	raw?: <T = unknown[]>(options?: { columnNames?: boolean }) => Promise<T[] | [string[], ...T[]]>;
 };
 
-class TestPreparedStatement extends D1PreparedStatement {
-	private handlers: StmtHandlers;
-
-	constructor(handlers: StmtHandlers) {
-		super();
-		this.handlers = handlers;
-	}
-
-	bind(...values: unknown[]): D1PreparedStatement {
-		if (this.handlers.bind) {
-			this.handlers = this.handlers.bind(...values);
-		}
-		return this;
-	}
-
-	first<T = Record<string, unknown>>(colName?: string): Promise<T | null> {
-		if (this.handlers.first) {
-			return this.handlers.first<T>(colName);
-		}
-		throw new Error('unexpected first()');
-	}
-
-	run<T = Record<string, unknown>>(): Promise<D1Result<T>> {
-		if (this.handlers.run) {
-			return this.handlers.run<T>();
-		}
-		throw new Error('unexpected run()');
-	}
-
-	all<T = Record<string, unknown>>(): Promise<D1Result<T>> {
-		if (this.handlers.all) {
-			return this.handlers.all<T>();
-		}
-		throw new Error('unexpected all()');
-	}
-
-	raw<T = unknown[]>(options: { columnNames: true }): Promise<[string[], ...T[]]>;
-	raw<T = unknown[]>(options?: { columnNames?: false }): Promise<T[]>;
-	raw<T = unknown[]>(options?: { columnNames?: boolean }): Promise<T[] | [string[], ...T[]]> {
-		if (this.handlers.raw) {
-			return this.handlers.raw<T>(options);
-		}
-		throw new Error('unexpected raw()');
-	}
+function createPreparedStatement(handlers: StmtHandlers): D1PreparedStatement {
+	const stmt: D1PreparedStatement = {
+		bind(...values: unknown[]) {
+			if (handlers.bind) {
+				handlers = handlers.bind(...values);
+			}
+			return stmt;
+		},
+		first<T = Record<string, unknown>>(colName?: string) {
+			if (handlers.first) {
+				return handlers.first<T>(colName);
+			}
+			throw new Error('unexpected first()');
+		},
+		run<T = Record<string, unknown>>() {
+			if (handlers.run) {
+				return handlers.run<T>();
+			}
+			throw new Error('unexpected run()');
+		},
+		all<T = Record<string, unknown>>() {
+			if (handlers.all) {
+				return handlers.all<T>();
+			}
+			throw new Error('unexpected all()');
+		},
+		raw<T = unknown[]>(options?: { columnNames?: boolean }) {
+			if (handlers.raw) {
+				return handlers.raw<T>(options);
+			}
+			throw new Error('unexpected raw()');
+		},
+	};
+	return stmt;
 }
 
-class TestD1DatabaseSession extends D1DatabaseSession {
-	constructor(
-		private readonly prepareFn: (query: string) => StmtHandlers,
-		private readonly batchFn?: (statements: D1PreparedStatement[]) => Promise<D1Result[]>,
-	) {
-		super();
-	}
-
-	prepare(query: string): D1PreparedStatement {
-		return new TestPreparedStatement(this.prepareFn(query));
-	}
-
-	batch<T = unknown>(statements: D1PreparedStatement[]): Promise<D1Result<T>[]> {
-		if (!this.batchFn) {
-			throw new Error('unexpected batch()');
-		}
-		return this.batchFn(statements);
-	}
-
-	getBookmark(): D1SessionBookmark | null {
-		throw new Error('unexpected getBookmark()');
-	}
-}
-
-class TestD1Database extends D1Database {
-	constructor(
-		private readonly prepareFn: (query: string) => StmtHandlers,
-		private readonly batchFn?: (statements: D1PreparedStatement[]) => Promise<D1Result[]>,
-	) {
-		super();
-	}
-
-	prepare(query: string): D1PreparedStatement {
-		return new TestPreparedStatement(this.prepareFn(query));
-	}
-
-	batch<T = unknown>(statements: D1PreparedStatement[]): Promise<D1Result<T>[]> {
-		if (!this.batchFn) {
-			throw new Error('unexpected batch()');
-		}
-		return this.batchFn(statements);
-	}
-
-	exec(_query: string): Promise<D1ExecResult> {
-		throw new Error('unexpected exec()');
-	}
-
-	withSession(_constraintOrBookmark?: D1SessionBookmark): D1DatabaseSession {
-		return new TestD1DatabaseSession(this.prepareFn, this.batchFn);
-	}
-
-	dump(): Promise<ArrayBuffer> {
-		throw new Error('unexpected dump()');
-	}
+function createSession(
+	prepareFn: (query: string) => StmtHandlers,
+	batchFn?: (statements: D1PreparedStatement[]) => Promise<D1Result[]>,
+): D1DatabaseSession {
+	return {
+		prepare(query: string) {
+			return createPreparedStatement(prepareFn(query));
+		},
+		batch(statements: D1PreparedStatement[]): Promise<D1Result[]> {
+			if (!batchFn) {
+				throw new Error('unexpected batch()');
+			}
+			return batchFn(statements);
+		},
+		getBookmark() {
+			return null;
+		},
+	};
 }
 
 /** Minimal D1 double with custom prepare (and optional batch) handlers per SQL string. */
@@ -113,7 +67,27 @@ export function mockIngestD1(
 	prepare: (sql: string) => StmtHandlers,
 	batch?: (statements: D1PreparedStatement[]) => Promise<D1Result[]>,
 ): D1Database {
-	return new TestD1Database(prepare, batch);
+	const db: D1Database = {
+		prepare(query: string) {
+			return createPreparedStatement(prepare(query));
+		},
+		batch(statements: D1PreparedStatement[]): Promise<D1Result[]> {
+			if (!batch) {
+				throw new Error('unexpected batch()');
+			}
+			return batch(statements);
+		},
+		exec(_query: string) {
+			throw new Error('unexpected exec()');
+		},
+		withSession(_constraintOrBookmark?: D1SessionBookmark) {
+			return createSession(prepare, batch);
+		},
+		dump() {
+			throw new Error('unexpected dump()');
+		},
+	};
+	return db;
 }
 
 /** D1 stub for tests where SQL is never executed (e.g. spied collaborators). */

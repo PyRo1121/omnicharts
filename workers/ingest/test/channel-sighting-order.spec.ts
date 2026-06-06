@@ -17,10 +17,7 @@ const stream: HelixStream = {
 	type: 'live',
 };
 
-function sightingOrderDb(
-	order: string[],
-	opts: { existingDiscovered?: boolean; sightingCount?: number } = {},
-) {
+function sightingOrderDb(order: string[], opts: { existingDiscovered?: boolean; sightingCount?: number } = {}) {
 	const prepareFn = (sql: string): StmtHandlers => {
 		if (sql.includes('platform_channel_id IN')) {
 			return {

@@ -16,18 +16,24 @@ describe('cronToMessages', () => {
 
 	it('*/1 with production env enqueues sweep+reconcile (game pass inline in sweep)', () => {
 		expect(
-			cronToMessages(TWITCH_CRON, testEnv({
-				INGEST_COVERAGE_MODE: 'full',
-			})),
+			cronToMessages(
+				TWITCH_CRON,
+				testEnv({
+					INGEST_COVERAGE_MODE: 'full',
+				}),
+			),
 		).toEqual([{ type: 'poll_twitch_sweep' }, { type: 'poll_twitch_reconcile' }]);
 	});
 
 	it('*/1 staging shards_only enqueues one catalog message', () => {
 		expect(
-			cronToMessages(TWITCH_CRON, testEnv({
-				INGEST_COVERAGE_MODE: 'shards_only',
-				TWITCH_MAX_TRACKED: '200',
-			})),
+			cronToMessages(
+				TWITCH_CRON,
+				testEnv({
+					INGEST_COVERAGE_MODE: 'shards_only',
+					TWITCH_MAX_TRACKED: '200',
+				}),
+			),
 		).toEqual([{ type: 'poll_twitch_catalog' }]);
 	});
 
@@ -37,10 +43,13 @@ describe('cronToMessages', () => {
 
 	it('*/5 staging shards_only enqueues one catalog message', () => {
 		expect(
-			cronToMessages(TWITCH_STAGING_CRON, testEnv({
-				INGEST_COVERAGE_MODE: 'shards_only',
-				TWITCH_MAX_TRACKED: '200',
-			})),
+			cronToMessages(
+				TWITCH_STAGING_CRON,
+				testEnv({
+					INGEST_COVERAGE_MODE: 'shards_only',
+					TWITCH_MAX_TRACKED: '200',
+				}),
+			),
 		).toEqual([{ type: 'poll_twitch_catalog' }]);
 	});
 
