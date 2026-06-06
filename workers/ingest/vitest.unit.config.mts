@@ -87,6 +87,7 @@ export default defineConfig({
 			'test/kick-auth.spec.ts',
 			'test/kick-api.spec.ts',
 			'test/kick-poll.spec.ts',
+			'test/kick-poll-offline-grace.spec.ts',
 			'test/kick-discover.spec.ts',
 			'test/kick-discover-edge.spec.ts',
 			'test/kick-api-edge.spec.ts',

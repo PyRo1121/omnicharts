@@ -154,6 +154,6 @@ Without the web migration, `bun run dev:web` returns 500 (`no such table: channe
 |------|---------|-------|
 | Lint | `bun run lint` | oxlint |
 | Format | `bun run format:check` | oxfmt |
-| Unit tests | `bun run test:ingest && bun run test:web` | Fast path; `test:rollup` has a known CSV escape assertion mismatch on main |
+| Unit tests | `bun run test` | Full unit gate (domain, rollup, ingest, web) |
 | Full verify | `bun run verify:twitch` | Requires `dev:ingest` running; CI sets `VERIFY_SKIP_CHECKPOINT=1` without Helix secrets |
 | Web build | `bun run check:web && bun run build:web` | SvelteKit + Cloudflare adapter |

@@ -49,11 +49,7 @@ function parseLivestreamStatusUpdated(body: unknown): KickLivestreamStatusUpdate
  * @see https://docs.kick.com/apis/livestreams — poll uses `channel_id` from livestreams response
  * @see https://docs.kick.com/events/event-types — webhook payload omits `channel_id`
  */
-async function resolveKickChannelIdForSession(
-	env: Env,
-	db: D1Database,
-	event: KickLivestreamStatusUpdatedEvent,
-): Promise<number | null> {
+async function resolveKickChannelIdForSession(env: Env, db: D1Database, event: KickLivestreamStatusUpdatedEvent): Promise<number | null> {
 	const broadcasterId = String(event.broadcaster.user_id);
 	if (event.channel_id != null) return event.channel_id;
 	if (event.broadcaster.channel_id != null) return event.broadcaster.channel_id;
