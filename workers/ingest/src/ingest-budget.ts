@@ -27,7 +27,7 @@ export const PLATFORM_BUDGET_SHARE: Record<IngestPlatform, number> = {
 
 /** Queue messages per cron tick (coverage enqueued directly — no poll_platform hop). */
 export const PLATFORM_QUEUE_FANOUT: Record<IngestPlatform, number> = {
-	twitch: 2,
+	twitch: 1,
 	kick: 1,
 	youtube: 1,
 };
@@ -158,7 +158,7 @@ export type IngestQueueBudgetInput = {
 	multiPlatformCronTicksPerDay: number;
 	/** Extra twitch messages per minute (default 0 — enrich inline in reconcile). */
 	twitchEnrichPerMinute?: number;
-	/** Discover + EventSub per 6h (default 8/day). */
+	/** Discover + EventSub per 6h (default 4 runs × 4 msgs). */
 	discoverMessagesPerDay?: number;
 	rollupMessagesPerDay?: number;
 	queueOpsPerMessage?: number;
@@ -170,7 +170,7 @@ export type IngestQueueBudgetInput = {
  */
 export function estimateIngestQueueBudget(input: IngestQueueBudgetInput): IngestQueueBudgetEstimate {
 	const enrich = input.twitchEnrichPerMinute ?? 0;
-	const discover = input.discoverMessagesPerDay ?? 8;
+	const discover = input.discoverMessagesPerDay ?? 16;
 	const rollup = input.rollupMessagesPerDay ?? 1;
 	const opsPerMsg = input.queueOpsPerMessage ?? 3;
 

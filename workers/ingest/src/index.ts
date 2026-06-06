@@ -10,7 +10,7 @@ import { enqueueTwitchPollShards, runTwitchCatalogPoll, runTwitchPollBatch } fro
 import { runTwitchLiveSweep } from './twitch/sweep';
 import { runTwitchCoverageCycle } from './twitch/coverage';
 import { runTwitchGamePass } from './twitch/game-pass';
-import { runTwitchSweepAndGamePass } from './twitch/sweep-game-pass';
+import { runTwitchSweepAndGamePass, runTwitchCoverageQueuePass } from './twitch/sweep-game-pass';
 import { runTwitchReconcileRecent } from './twitch/reconcile';
 import { runTwitchPollPlatform } from './twitch/poll-platform';
 import { runKickDiscovery } from './kick/discover';
@@ -29,7 +29,6 @@ import {
 	setCachedRankingsChannels,
 	setCachedRankingsGames,
 } from './http/rankings-cache';
-import { ENRICH_MAX_CHANNELS_PER_RUN } from './twitch/config';
 import { runTwitchProfileEnrichment } from './twitch/enrich-profiles';
 import { handleTwitchEventSubWebhook } from './twitch/eventsub/handler';
 import { handleKickWebhook } from './kick/webhook/handler';
@@ -228,6 +227,9 @@ async function handleQueueMessage(payload: IngestQueueMessage, env: Env, runOpts
 		case 'poll_youtube_tracked':
 			await runYoutubePollPlatform(env);
 			break;
+		case 'poll_twitch_coverage':
+			await runTwitchCoverageQueuePass(env, runOpts);
+			break;
 		case 'poll_twitch_sweep':
 			await runTwitchSweepAndGamePass(env, runOpts);
 			break;
@@ -238,14 +240,7 @@ async function handleQueueMessage(payload: IngestQueueMessage, env: Env, runOpts
 			const client = new TwitchHelixClient(env, {
 				budgetPoints: helixSafePointsPerMinuteFromEnv(env),
 			});
-			const reconcile = await runTwitchReconcileRecent(env, { client, runOpts });
-			const enrichIds = reconcile.platformChannelIds.slice(0, ENRICH_MAX_CHANNELS_PER_RUN);
-			if (enrichIds.length > 0) {
-				await runTwitchProfileEnrichment(env, {
-					platformChannelIds: enrichIds,
-					includeFollowers: false,
-				});
-			}
+			await runTwitchReconcileRecent(env, { client, runOpts });
 			break;
 		}
 		case 'poll_twitch_catalog':

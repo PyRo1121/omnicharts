@@ -6,6 +6,7 @@ export type IngestQueueMessage =
 	| { type: 'poll_platform'; platform: 'twitch' | 'kick' | 'youtube' }
 	| { type: 'poll_channel_batch'; platform: 'twitch' | 'kick' | 'youtube'; channel_ids: string[] }
 	| { type: 'poll_twitch_catalog' }
+	| { type: 'poll_twitch_coverage' }
 	| { type: 'poll_twitch_sweep' }
 	| { type: 'poll_twitch_game_pass' }
 	| { type: 'poll_twitch_reconcile' }
@@ -44,6 +45,7 @@ function isIngestQueueMessage(data: unknown): data is IngestQueueMessage {
 		case 'poll_channel_batch':
 			return isPlatform(msg.platform) && isStringArray(msg.channel_ids);
 		case 'poll_twitch_catalog':
+		case 'poll_twitch_coverage':
 		case 'poll_twitch_sweep':
 		case 'poll_twitch_game_pass':
 		case 'poll_twitch_reconcile':

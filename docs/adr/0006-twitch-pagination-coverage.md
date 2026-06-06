@@ -30,14 +30,13 @@ Run a **coverage cycle** each minute (`runTwitchCoverageCycle`):
 
 **Phase 1b:** EventSub `stream.online` / `stream.offline` — lifecycle truth; does not replace viewer sampling ([ADR-002](./0002-twitch-eventsub-vs-polling.md)).
 
-**Queue fan-out (`INGEST_COVERAGE_MODE=full`):** Cron enqueues **two** parallel queue messages per minute (not three):
+**Queue fan-out (`INGEST_COVERAGE_MODE=full`):** Cron enqueues **one** coalesced queue message per minute:
 
 | Message | Handler | Passes |
 |---------|---------|--------|
-| `poll_twitch_sweep` | `runTwitchSweepAndGamePass` | Global sweep **+** rotating game pass (shared Helix client + in-process `seenUserIds` dedup) |
-| `poll_twitch_reconcile` | `runTwitchReconcileRecent` (+ chained profile enrich) | Per-channel `user_id` lookup |
+| `poll_twitch_coverage` | `runTwitchCoverageQueuePass` | Global sweep **+** rotating game pass **+** reconcile (shared Helix client + in-process `seenUserIds` dedup) |
 
-Legacy `poll_twitch_game_pass` remains for admin/tests; production cron uses the combined sweep message. See `platform-coverage.ts`, `sweep-game-pass.ts`.
+Legacy `poll_twitch_sweep` / `poll_twitch_reconcile` remain for in-flight queue bodies and admin tests. Profile enrichment runs on the **6h discover cron** via `poll_twitch_enrich` (stale tracked channels), not inline after reconcile. See `platform-coverage.ts`, `sweep-game-pass.ts`, `cron-messages.ts`.
 
 **Not in scope:** Perfect census of all ~30k live streams every minute (impossible per API semantics + cost).
 

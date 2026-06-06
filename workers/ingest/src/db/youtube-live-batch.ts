@@ -1,42 +1,15 @@
 import { PLATFORM_YOUTUBE } from '@omnicharts/domain';
 import { chunkArray, D1_BATCH_MAX_STATEMENTS, maxRowsPerInsert, runD1Batches } from './d1-batch';
 import { logD1Meta } from './d1-meta';
-import { batchCloseStaleOpenSessionsForChannels } from './session-lifecycle';
+import { batchCloseStaleOpenSessionsForChannels, fetchLatestOpenSessionsByChannelId } from './session-lifecycle';
 import type { SampleArchiveRow } from '../r2/sample-archive';
 import type { YoutubeVideoItem } from '../youtube/types';
 import { parseYoutubeConcurrentViewers, youtubePlatformStreamId, youtubeSessionRowId } from '../youtube/stream-fields';
 
 const nowIso = () => new Date().toISOString();
 
-async function fetchOpenSessionsByChannelId(
-	db: D1Database,
-	channelIds: string[],
-): Promise<Map<string, { id: string; platform_stream_id: string; started_at: string }>> {
-	const latest = new Map<string, { id: string; platform_stream_id: string; started_at: string }>();
-	if (channelIds.length === 0) return latest;
-
-	for (const batch of chunkArray(channelIds, D1_BATCH_MAX_STATEMENTS)) {
-		const placeholders = batch.map(() => '?').join(', ');
-		const { results } = await db
-			.prepare(
-				`SELECT id, channel_id, platform_stream_id, started_at FROM stream_sessions
-         WHERE channel_id IN (${placeholders}) AND ended_at IS NULL`,
-			)
-			.bind(...batch)
-			.all<{ id: string; channel_id: string; platform_stream_id: string; started_at: string }>();
-
-		for (const row of results ?? []) {
-			const prev = latest.get(row.channel_id);
-			if (!prev || row.started_at > prev.started_at) {
-				latest.set(row.channel_id, {
-					id: row.id,
-					platform_stream_id: row.platform_stream_id,
-					started_at: row.started_at,
-				});
-			}
-		}
-	}
-	return latest;
+async function fetchOpenSessionsByChannelId(db: D1Database, channelIds: string[]) {
+	return fetchLatestOpenSessionsByChannelId(db, channelIds);
 }
 
 async function insertViewerSamplesMultiRow(
@@ -117,7 +90,7 @@ export async function batchRecordYoutubeLiveSamples(
 					)
 					.bind(sessionRowId, channelId, platformStreamId, video.snippet.title, startedAt, 'live'),
 			);
-		} else {
+		} else if (openSession.title !== video.snippet.title) {
 			sessionUpdateStatements.push(db.prepare(`UPDATE stream_sessions SET title = ? WHERE id = ?`).bind(video.snippet.title, sessionRowId));
 		}
 

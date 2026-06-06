@@ -1,8 +1,8 @@
 import type { IngestPlatform } from './ingest-budget';
 import type { IngestQueueMessage } from './messages';
 
-/** Minimum full-coverage fan-out (sweep+game pass shared dedup + reconcile). */
-export const TWITCH_COVERAGE_FANOUT_MESSAGES: IngestQueueMessage[] = [{ type: 'poll_twitch_sweep' }, { type: 'poll_twitch_reconcile' }];
+/** Minimum full-coverage fan-out (sweep + game pass + reconcile in one consumer). */
+export const TWITCH_COVERAGE_FANOUT_MESSAGES: IngestQueueMessage[] = [{ type: 'poll_twitch_coverage' }];
 
 /**
  * Per-platform queue fan-out — Kick/YouTube avoid Twitch global sweep duplication.

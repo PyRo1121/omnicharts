@@ -28,7 +28,7 @@
 | Kick/YT overview uses D1 counts when `ctx.db` (no ingest `/health` hop) | Done |
 | Search HW enrich capped at 8 rows | Done |
 | Rate-limit bucket Map idle eviction | Done |
-| Doc 23 queue calculator F=2 (~260k/mo) | Done |
+| Doc 23 queue calculator F=1 (~130k/mo) | Done |
 | Pages `observability` enabled | Done |
 | No `*/2` Kick/YouTube cron in wrangler (queue stubs no-op) | Done |
 | `SAMPLE_ARCHIVE_ENABLED=0` production default | Done |

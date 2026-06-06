@@ -287,6 +287,54 @@ describe('batchRecordKickLiveSamples', () => {
 									channel_id: 'kick-ch-42',
 									platform_stream_id: platformStreamId,
 									started_at: '2026-06-01T12:00:00Z',
+									title: 'Old title',
+									game_category_id: 'kick-game-7',
+									language: null,
+									tags_json: null,
+									thumbnail_url: null,
+									stream_type: 'live',
+								},
+							],
+						};
+					}
+					return { results: [] };
+				},
+			}),
+		}));
+		const batch = vi.fn(async () => []);
+		const db = mockIngestD1((sql) => prepare(sql), batch);
+
+		await batchRecordKickLiveSamples(db, [
+			{
+				channelId: 'kick-ch-42',
+				stream: baseStream({ stream_title: 'Live title' }),
+				gameCategoryId: 'kick-game-7',
+			},
+		]);
+
+		expect(prepare.mock.calls.some(([sql]) => sql.includes('UPDATE stream_sessions SET'))).toBe(true);
+	});
+
+	it('skips session UPDATE when open session metadata unchanged', async () => {
+		const platformStreamId = '420-2026-06-01T12:00:00Z';
+		const prepare = vi.fn((sql: string) => ({
+			bind: (..._args: unknown[]) => ({
+				run: async () => ({ meta: { changes: 1 } }),
+				all: async () => {
+					if (sql.includes('ended_at IS NULL')) {
+						return {
+							results: [
+								{
+									id: 'sess-1',
+									channel_id: 'kick-ch-42',
+									platform_stream_id: platformStreamId,
+									started_at: '2026-06-01T12:00:00Z',
+									title: 'Live title',
+									game_category_id: 'kick-game-7',
+									language: null,
+									tags_json: null,
+									thumbnail_url: null,
+									stream_type: 'live',
 								},
 							],
 						};
@@ -306,7 +354,8 @@ describe('batchRecordKickLiveSamples', () => {
 			},
 		]);
 
-		expect(prepare.mock.calls.some(([sql]) => sql.includes('UPDATE stream_sessions SET'))).toBe(true);
+		expect(prepare.mock.calls.some(([sql]) => sql.includes('UPDATE stream_sessions SET'))).toBe(false);
+		expect(prepare.mock.calls.some(([sql]) => sql.includes('INSERT INTO viewer_samples'))).toBe(true);
 	});
 
 	it('closes stale session and inserts new session when platform_stream_id changes', async () => {

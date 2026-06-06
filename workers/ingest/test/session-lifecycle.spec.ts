@@ -5,9 +5,23 @@ import {
 	batchCloseStaleOpenSessionsForChannels,
 	closeOpenSessionsForPlatformChannelIds,
 	closeStaleOpenSessionsForChannel,
+	sessionPersistFieldsUnchanged,
 } from '../src/db/session-lifecycle';
 
 describe('session-lifecycle', () => {
+	it('sessionPersistFieldsUnchanged compares nullable session fields', () => {
+		const row = {
+			title: 'Live',
+			game_category_id: 'g1',
+			language: 'en',
+			tags_json: '[]',
+			thumbnail_url: 'https://example.com/t.jpg',
+			stream_type: 'live',
+		};
+		expect(sessionPersistFieldsUnchanged(row, { ...row })).toBe(true);
+		expect(sessionPersistFieldsUnchanged(row, { ...row, title: 'New title' })).toBe(false);
+	});
+
 	it('closeOpenSessionsForPlatformChannelIds batches by platform_channel_id IN subquery', async () => {
 		const batch = vi.fn().mockResolvedValue([]);
 		const prepare = vi.fn((sql: string) => ({

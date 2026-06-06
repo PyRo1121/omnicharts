@@ -85,7 +85,7 @@ Requires **Workers Paid** + `[limits] cpu_ms` (30s) for queue consumer sweep/rol
 
 | Mode | Cron `poll_platform` behavior | Helix / message cost |
 |------|--------------------------------|----------------------|
-| `full` | Fan-out: `poll_twitch_sweep` + `poll_twitch_reconcile` (game pass inline in sweep) | Paid production |
+| `full` | Coalesced: `poll_twitch_coverage` (sweep + game pass + reconcile) | Paid production |
 | `shards_only` | `poll_channel_batch` shards via `sendBatch` | ~8 pts/min per 800 tracked IDs |
 | `sweep_only` | Single global sweep, capped by `LIVE_SWEEP_MAX_PAGES` | ~3 pts/min at cap 3 |
 

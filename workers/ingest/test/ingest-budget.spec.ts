@@ -26,11 +26,11 @@ describe('ingest budget allocator', () => {
 		expect(PLATFORM_BUDGET_SHARE.twitch + PLATFORM_BUDGET_SHARE.kick + PLATFORM_BUDGET_SHARE.youtube).toBe(1);
 	});
 
-	it('gives Twitch sweep+reconcile fan-out, Kick/YouTube single message', () => {
-		expect(queueFanoutMessagesPerPoll('twitch')).toBe(2);
+	it('gives Twitch one coalesced coverage message; Kick/YouTube single message', () => {
+		expect(queueFanoutMessagesPerPoll('twitch')).toBe(1);
 		expect(queueFanoutMessagesPerPoll('kick')).toBe(1);
 		expect(queueFanoutMessagesPerPoll('youtube')).toBe(1);
-		expect(PLATFORM_QUEUE_FANOUT.twitch).toBe(2);
+		expect(PLATFORM_QUEUE_FANOUT.twitch).toBe(1);
 	});
 
 	it('caps planned live streams per platform', () => {
@@ -43,16 +43,16 @@ describe('ingest budget allocator', () => {
 		expect(multiPlatformCronMessages()).toEqual([{ type: 'poll_kick_tracked' }, { type: 'poll_youtube_tracked' }]);
 	});
 
-	it('full cron uses two messages without poll_platform hop', () => {
-		expect(messagesPerTwitchCronTick('full', 3000)).toBe(2);
+	it('full cron uses one coalesced message without poll_platform hop', () => {
+		expect(messagesPerTwitchCronTick('full', 3000)).toBe(1);
 		const msgs = twitchCronEnqueueMessages(testEnv({ INGEST_COVERAGE_MODE: 'full' }));
-		expect(msgs.map((m) => m.type)).toEqual(['poll_twitch_sweep', 'poll_twitch_reconcile']);
+		expect(msgs.map((m) => m.type)).toEqual(['poll_twitch_coverage']);
 	});
 
-	it('shards_only at 3k upgrades to full fan-out (not 31 legacy shard msgs)', () => {
+	it('shards_only at 3k upgrades to coalesced coverage (not 31 legacy shard msgs)', () => {
 		expect(catalogShardMessageCount(3000)).toBe(30);
 		expect(legacyShardsOnlyMessagesPerTick(3000)).toBe(31);
-		expect(messagesPerTwitchCronTick('shards_only', 3000)).toBe(2);
+		expect(messagesPerTwitchCronTick('shards_only', 3000)).toBe(1);
 	});
 
 	it('staging shards_only consolidates catalog when tracked <= 500', () => {
@@ -72,9 +72,9 @@ describe('platform coverage messages', () => {
 		expect(coverageMessagesForPlatform('youtube')).toEqual([{ type: 'poll_youtube_tracked' }]);
 	});
 
-	it('twitch keeps sweep+reconcile fan-out (game pass runs inside sweep)', () => {
+	it('twitch enqueues one coalesced coverage message (sweep + game pass + reconcile)', () => {
 		const twitch = coverageMessagesForPlatform('twitch');
-		expect(twitch).toEqual([{ type: 'poll_twitch_sweep' }, { type: 'poll_twitch_reconcile' }]);
+		expect(twitch).toEqual([{ type: 'poll_twitch_coverage' }]);
 	});
 });
 

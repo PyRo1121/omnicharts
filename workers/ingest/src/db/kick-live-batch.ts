@@ -1,6 +1,10 @@
 import { PLATFORM_KICK } from '@omnicharts/domain';
 import { chunkArray, D1_BATCH_MAX_STATEMENTS, maxRowsPerInsert, runD1Batches } from './d1-batch';
-import { batchCloseStaleOpenSessionsForChannels } from './session-lifecycle';
+import {
+	batchCloseStaleOpenSessionsForChannels,
+	fetchLatestOpenSessionsByChannelId,
+	sessionPersistFieldsUnchanged,
+} from './session-lifecycle';
 import { shouldPromoteDiscoveredToTracked } from './live-sightings';
 import type { SampleArchiveRow } from '../r2/sample-archive';
 import { slugify, slugWithPlatformChannelFallback } from '../twitch/slug';
@@ -87,35 +91,8 @@ async function fetchKickSlugOwners(db: D1Database, slugs: string[]): Promise<Map
 	return map;
 }
 
-async function fetchOpenSessionsByChannelId(
-	db: D1Database,
-	channelIds: string[],
-): Promise<Map<string, { id: string; platform_stream_id: string; started_at: string }>> {
-	const latest = new Map<string, { id: string; platform_stream_id: string; started_at: string }>();
-	if (channelIds.length === 0) return latest;
-
-	for (const batch of chunkArray(channelIds, D1_BATCH_MAX_STATEMENTS)) {
-		const placeholders = batch.map(() => '?').join(', ');
-		const { results } = await db
-			.prepare(
-				`SELECT id, channel_id, platform_stream_id, started_at FROM stream_sessions
-         WHERE channel_id IN (${placeholders}) AND ended_at IS NULL`,
-			)
-			.bind(...batch)
-			.all<{ id: string; channel_id: string; platform_stream_id: string; started_at: string }>();
-
-		for (const row of results ?? []) {
-			const prev = latest.get(row.channel_id);
-			if (!prev || row.started_at > prev.started_at) {
-				latest.set(row.channel_id, {
-					id: row.id,
-					platform_stream_id: row.platform_stream_id,
-					started_at: row.started_at,
-				});
-			}
-		}
-	}
-	return latest;
+async function fetchOpenSessionsByChannelId(db: D1Database, channelIds: string[]) {
+	return fetchLatestOpenSessionsByChannelId(db, channelIds);
 }
 
 async function fetchSightingCounts14d(db: D1Database, channelIds: string[]): Promise<Map<string, number>> {
@@ -470,10 +447,19 @@ export async function batchRecordKickLiveSamples(
 					),
 			);
 		} else {
-			sessionUpdateStatements.push(
-				db
-					.prepare(
-						`UPDATE stream_sessions SET
+			const nextFields = {
+				title: stream.stream_title,
+				game_category_id: resolvedGameCategoryId,
+				language: sessionFields.language,
+				tags_json: sessionFields.tags_json,
+				thumbnail_url: sessionFields.thumbnail_url,
+				stream_type: sessionFields.stream_type,
+			};
+			if (!sessionPersistFieldsUnchanged(openSession, nextFields)) {
+				sessionUpdateStatements.push(
+					db
+						.prepare(
+							`UPDATE stream_sessions SET
                title = ?,
                game_category_id = ?,
                language = ?,
@@ -481,17 +467,18 @@ export async function batchRecordKickLiveSamples(
                thumbnail_url = ?,
                stream_type = ?
              WHERE id = ?`,
-					)
-					.bind(
-						stream.stream_title,
-						resolvedGameCategoryId,
-						sessionFields.language,
-						sessionFields.tags_json,
-						sessionFields.thumbnail_url,
-						sessionFields.stream_type,
-						sessionRowId,
-					),
-			);
+						)
+						.bind(
+							nextFields.title,
+							nextFields.game_category_id,
+							nextFields.language,
+							nextFields.tags_json,
+							nextFields.thumbnail_url,
+							nextFields.stream_type,
+							sessionRowId,
+						),
+				);
+			}
 		}
 
 		sampleRows.push({

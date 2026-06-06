@@ -14,7 +14,7 @@ describe('cronToMessages', () => {
 		expect(cronToMessages(TWITCH_CRON)).toEqual([{ type: 'poll_platform', platform: 'twitch' }]);
 	});
 
-	it('*/1 with production env enqueues sweep+reconcile (game pass inline in sweep)', () => {
+	it('*/1 with production env enqueues coalesced twitch coverage', () => {
 		expect(
 			cronToMessages(
 				TWITCH_CRON,
@@ -22,7 +22,7 @@ describe('cronToMessages', () => {
 					INGEST_COVERAGE_MODE: 'full',
 				}),
 			),
-		).toEqual([{ type: 'poll_twitch_sweep' }, { type: 'poll_twitch_reconcile' }]);
+		).toEqual([{ type: 'poll_twitch_coverage' }]);
 	});
 
 	it('*/1 staging shards_only enqueues one catalog message', () => {
@@ -61,9 +61,10 @@ describe('cronToMessages', () => {
 		expect(cronToMessages(ROLLUP_CRON)).toEqual([{ type: 'rollup_daily' }]);
 	});
 
-	it('discover cron enqueues twitch discover + eventsub sync + kick discover', () => {
+	it('discover cron enqueues twitch discover, stale enrich, eventsub sync, kick discover', () => {
 		expect(cronToMessages(DISCOVER_TWITCH_CRON)).toEqual([
 			{ type: 'discover_twitch' },
+			{ type: 'poll_twitch_enrich' },
 			{ type: 'sync_eventsub_twitch' },
 			{ type: 'discover_kick' },
 		]);
@@ -72,6 +73,7 @@ describe('cronToMessages', () => {
 	it('discover cron optionally enqueues vod backfill when enabled', () => {
 		expect(cronToMessages(DISCOVER_TWITCH_CRON, testEnv({ VOD_BACKFILL_ON_DISCOVER: '1' }))).toEqual([
 			{ type: 'discover_twitch' },
+			{ type: 'poll_twitch_enrich' },
 			{ type: 'sync_eventsub_twitch' },
 			{ type: 'discover_kick' },
 			{ type: 'vod_backfill_twitch' },

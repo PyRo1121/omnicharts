@@ -72,12 +72,12 @@ describe('helix budget from wrangler env', () => {
 		expect(helixSafePointsPerMinuteFromEnv(env)).toBe(708);
 	});
 
-	it('splits safe budget across coverage fan-out phases in full mode', () => {
+	it('uses full safe Helix budget for coalesced coverage in full mode', () => {
 		const env = testEnv({ INGEST_COVERAGE_MODE: 'full' });
 		const safe = helixSafePointsPerMinuteFromEnv(env);
 		expect(safe).toBe(710);
-		expect(helixPhaseBudgetFromEnv(env)).toBe(Math.floor(safe / COVERAGE_FANOUT_PHASES));
-		expect(COVERAGE_FANOUT_PHASES).toBe(2);
+		expect(helixPhaseBudgetFromEnv(env)).toBe(safe);
+		expect(COVERAGE_FANOUT_PHASES).toBe(1);
 	});
 
 	it('auto-defaults sweep pages from coverage mode when LIVE_SWEEP_MAX_PAGES unset', () => {

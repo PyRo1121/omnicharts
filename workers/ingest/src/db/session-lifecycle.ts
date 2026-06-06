@@ -7,6 +7,77 @@ export type StaleSessionClose = {
 	platformStreamId: string;
 };
 
+/** Open session row loaded once per poll batch for session UPDATE elision. */
+export type OpenSessionRow = {
+	id: string;
+	platform_stream_id: string;
+	started_at: string;
+	title: string;
+	game_category_id: string | null;
+	language: string | null;
+	tags_json: string | null;
+	thumbnail_url: string | null;
+	stream_type: string | null;
+};
+
+export type SessionPersistFields = Pick<
+	OpenSessionRow,
+	'title' | 'game_category_id' | 'language' | 'tags_json' | 'thumbnail_url' | 'stream_type'
+>;
+
+export function sessionPersistFieldsUnchanged(existing: SessionPersistFields, next: SessionPersistFields): boolean {
+	return (
+		existing.title === next.title &&
+		(existing.game_category_id ?? null) === (next.game_category_id ?? null) &&
+		(existing.language ?? null) === (next.language ?? null) &&
+		(existing.tags_json ?? null) === (next.tags_json ?? null) &&
+		(existing.thumbnail_url ?? null) === (next.thumbnail_url ?? null) &&
+		(existing.stream_type ?? null) === (next.stream_type ?? null)
+	);
+}
+
+/** Latest open session per channel (by started_at) including persist fields for diff. */
+export async function fetchLatestOpenSessionsByChannelId(db: D1Database, channelIds: string[]): Promise<Map<string, OpenSessionRow>> {
+	const latest = new Map<string, OpenSessionRow & { channel_id: string }>();
+	if (channelIds.length === 0) return latest;
+
+	for (const batch of chunkArray(channelIds, D1_BATCH_MAX_STATEMENTS)) {
+		const placeholders = batch.map(() => '?').join(', ');
+		const { results } = await db
+			.prepare(
+				`SELECT id, channel_id, platform_stream_id, started_at, title, game_category_id,
+                language, tags_json, thumbnail_url, stream_type
+         FROM stream_sessions
+         WHERE channel_id IN (${placeholders}) AND ended_at IS NULL`,
+			)
+			.bind(...batch)
+			.all<OpenSessionRow & { channel_id: string }>();
+
+		for (const row of results ?? []) {
+			const prev = latest.get(row.channel_id);
+			if (!prev || row.started_at > prev.started_at) {
+				latest.set(row.channel_id, row);
+			}
+		}
+	}
+
+	const out = new Map<string, OpenSessionRow>();
+	for (const [channelId, row] of latest) {
+		out.set(channelId, {
+			id: row.id,
+			platform_stream_id: row.platform_stream_id,
+			started_at: row.started_at,
+			title: row.title,
+			game_category_id: row.game_category_id,
+			language: row.language,
+			tags_json: row.tags_json,
+			thumbnail_url: row.thumbnail_url,
+			stream_type: row.stream_type,
+		});
+	}
+	return out;
+}
+
 /** Close open sessions whose Helix stream id no longer matches (batched, ≤50 per `batch()`). */
 export async function batchCloseStaleOpenSessionsForChannels(
 	db: D1Database,

@@ -13,7 +13,12 @@ export const ROLLUP_CRON = '15 0 * * *';
 export const DISCOVER_TWITCH_CRON = '0 */6 * * *';
 
 export function discoverTwitchCronMessages(env?: Env): IngestQueueMessage[] {
-	const messages: IngestQueueMessage[] = [{ type: 'discover_twitch' }, { type: 'sync_eventsub_twitch' }, { type: 'discover_kick' }];
+	const messages: IngestQueueMessage[] = [
+		{ type: 'discover_twitch' },
+		{ type: 'poll_twitch_enrich' },
+		{ type: 'sync_eventsub_twitch' },
+		{ type: 'discover_kick' },
+	];
 	if (env?.VOD_BACKFILL_ON_DISCOVER === '1') {
 		messages.push({ type: 'vod_backfill_twitch' });
 	}

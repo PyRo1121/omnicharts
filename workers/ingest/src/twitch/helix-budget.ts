@@ -33,7 +33,7 @@ export function helixSafePointsPerMinuteFromEnv(env: Env): number {
 
 /**
  * Per-queue-consumer Helix budget.
- * `full` mode fans out sweep+game (inline) + reconcile in parallel — each shares one client-id bucket.
+ * `full` mode uses one coalesced consumer (sweep + game pass + reconcile sequential).
  */
 export function helixPhaseBudgetFromEnv(env: Env): number {
 	const safe = helixSafePointsPerMinuteFromEnv(env);

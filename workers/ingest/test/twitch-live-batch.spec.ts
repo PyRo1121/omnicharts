@@ -258,4 +258,54 @@ describe('batchRecordLiveSamples', () => {
 		const sampleInsert = prepare.mock.calls.find((c) => c[0].includes('INSERT INTO viewer_samples'));
 		expect(sampleInsert?.[0]).toContain('VALUES (?, ?, ?)');
 	});
+
+	it('skips session UPDATE when open session metadata unchanged', async () => {
+		const platformStreamId = 's1';
+		const prepare = vi.fn((sql: string) => ({
+			bind: vi.fn().mockReturnValue({
+				run: vi.fn().mockResolvedValue({ success: true }),
+				all: vi.fn().mockImplementation(async () => {
+					if (sql.includes('ended_at IS NULL')) {
+						return {
+							results: [
+								{
+									id: 'sess-1',
+									channel_id: 'twitch-ch-1',
+									platform_stream_id: platformStreamId,
+									started_at: '2026-06-01T00:00:00Z',
+									title: 'T',
+									game_category_id: 'twitch-game-10',
+									language: null,
+									tags_json: null,
+									thumbnail_url: null,
+									stream_type: 'live',
+								},
+							],
+						};
+					}
+					return { results: [] };
+				}),
+			}),
+		}));
+		const batch = vi.fn().mockResolvedValue([]);
+		const db = mockIngestD1((sql) => prepare(sql), batch);
+
+		const stream: HelixStream = {
+			id: platformStreamId,
+			user_id: '1',
+			user_login: 'u1',
+			user_name: 'U1',
+			game_id: '10',
+			game_name: 'G',
+			title: 'T',
+			viewer_count: 50,
+			started_at: '2026-06-01T00:00:00Z',
+			type: 'live',
+		};
+
+		await batchRecordLiveSamples(db, [{ channelId: 'twitch-ch-1', stream, gameCategoryId: 'twitch-game-10' }]);
+
+		expect(prepare.mock.calls.some(([sql]) => sql.includes('UPDATE stream_sessions SET'))).toBe(false);
+		expect(prepare.mock.calls.some(([sql]) => sql.includes('INSERT INTO viewer_samples'))).toBe(true);
+	});
 });

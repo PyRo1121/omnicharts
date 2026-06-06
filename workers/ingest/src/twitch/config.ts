@@ -38,8 +38,8 @@ export const LIVE_SWEEP_MAX_PAGES = DEFAULT_LIVE_SWEEP_MAX_PAGES;
 
 export type IngestCoverageMode = 'full' | 'shards_only' | 'sweep_only';
 
-/** Parallel coverage fan-out queue consumers per minute (sweep+game pass + reconcile). */
-export const COVERAGE_FANOUT_PHASES = 2;
+/** Sequential coverage phases per minute (single coalesced queue consumer). */
+export const COVERAGE_FANOUT_PHASES = 1;
 
 /** Production game-pass slice (full top-100 games ≈ 20 min rotation). */
 export const DEFAULT_GAME_PASS_GAMES_PRODUCTION = 5;

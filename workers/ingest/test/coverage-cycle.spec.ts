@@ -11,7 +11,7 @@ describe('runTwitchCoverageCycle', () => {
 		vi.restoreAllMocks();
 	});
 
-	it('runs global sweep, game pass, reconcile, and enrichment', async () => {
+	it('runs global sweep, game pass, and reconcile without inline enrichment', async () => {
 		vi.spyOn(sweep, 'runTwitchLiveSweep').mockResolvedValue({
 			pagesFetched: 1,
 			streamsSeen: 1,
@@ -37,19 +37,13 @@ describe('runTwitchCoverageCycle', () => {
 			retired: 0,
 		});
 		const enrich = await import('../src/twitch/enrich-profiles');
-		vi.spyOn(enrich, 'runTwitchProfileEnrichment').mockResolvedValue({
-			candidates: 1,
-			userBatches: 1,
-			channelBatches: 1,
-			updated: 1,
-			skipped: 0,
-			retired: 0,
-		});
+		const enrichSpy = vi.spyOn(enrich, 'runTwitchProfileEnrichment');
 
 		const stats = await runTwitchCoverageCycle(testEnv());
 		expect(stats.global.pagesFetched).toBe(1);
 		expect(stats.gamePass.gamesScanned).toBe(1);
-		expect(stats.profileEnrichment.updated).toBe(1);
+		expect(stats.reconcile.batches).toBe(1);
+		expect(enrichSpy).not.toHaveBeenCalled();
 	});
 
 	it('shares one Helix client and seenUserIds across sweep and game pass', async () => {
@@ -76,15 +70,6 @@ describe('runTwitchCoverageCycle', () => {
 			batches: 0,
 			liveFound: 0,
 			samplesWritten: 0,
-			retired: 0,
-		});
-		const enrich = await import('../src/twitch/enrich-profiles');
-		vi.spyOn(enrich, 'runTwitchProfileEnrichment').mockResolvedValue({
-			candidates: 0,
-			userBatches: 0,
-			channelBatches: 0,
-			updated: 0,
-			skipped: 0,
 			retired: 0,
 		});
 
