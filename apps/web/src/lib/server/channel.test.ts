@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import * as rollup from '@omnicharts/rollup';
 import { findChannelOnOtherPlatforms, loadChannelDetail, parseChannelPeriod, resolveChannelSlugFromHistory } from './channel';
-import { testLoadContext, testLoadContextWithDb } from './test-helpers';
+import { mockD1Batch, testLoadContext, testLoadContextWithDb } from './test-helpers';
 import { unusedMockD1 } from './mock-d1';
 
 vi.mock('$env/dynamic/private', () => ({
@@ -91,6 +91,41 @@ describe('loadChannelDetail', () => {
 });
 
 describe('findChannelOnOtherPlatforms', () => {
+	it('uses D1 when bound without ingest fetch', async () => {
+		vi.spyOn(rollup, 'buildChannelDetailResponse').mockImplementation(async (_db, opts) => {
+			if (opts.platform === 'kick') {
+				return {
+					platform: 'kick',
+					slug: 'xqc',
+					display_name: 'xQc',
+					avatar_url: null,
+					language: null,
+					tracked_since: null,
+					ingest_state: 'tracked',
+					follower_count: null,
+					description: null,
+					period: '7d',
+					totals: {
+						hours_watched: 0,
+						average_viewers: 0,
+						peak_viewers: 0,
+						airtime_hours: 0,
+						stream_count: 0,
+						followers_gain: null,
+					},
+					daily: [],
+				};
+			}
+			return null;
+		});
+		const fetchFn = vi.fn();
+		const { db } = mockD1Batch([]);
+		const suggestions = await findChannelOnOtherPlatforms(testLoadContextWithDb(fetchFn as typeof fetch, db), 'xqc', 'twitch');
+		expect(suggestions).toEqual([{ slug: 'xqc', platform: 'kick', displayName: 'xQc' }]);
+		expect(fetchFn).not.toHaveBeenCalled();
+		vi.restoreAllMocks();
+	});
+
 	it('returns matches on platforms other than the requested tab', async () => {
 		const fetchFn = vi.fn().mockImplementation((input: string | URL) => {
 			const url = String(input);

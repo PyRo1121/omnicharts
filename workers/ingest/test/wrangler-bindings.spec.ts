@@ -6,6 +6,7 @@ const WRANGLER_PATH = join(import.meta.dirname, '../wrangler.jsonc');
 
 type WranglerBinding = { binding: string };
 type WranglerEnvBlock = {
+	observability?: { enabled: boolean; logs?: { head_sampling_rate: number } };
 	triggers?: { crons: string[] };
 	vars?: Record<string, string>;
 	limits?: { cpu_ms: number };
@@ -13,7 +14,7 @@ type WranglerEnvBlock = {
 };
 type WranglerConfig = {
 	compatibility_date?: string;
-	observability?: { enabled: boolean };
+	observability?: { enabled: boolean; logs?: { head_sampling_rate: number } };
 	alias?: Record<string, string>;
 	d1_databases?: WranglerBinding[];
 	r2_buckets?: WranglerBinding[];
@@ -40,8 +41,18 @@ describe('wrangler ingest bindings (lane 4)', () => {
 	const config = parseWrangler();
 
 	it('sets compatibility_date and observability', () => {
-		expect(config.compatibility_date).toBe('2026-06-01');
-		expect(config.observability).toEqual({ enabled: true });
+		expect(config.compatibility_date).toBe('2026-06-05');
+		expect(config.observability).toEqual({
+			enabled: true,
+			logs: { head_sampling_rate: 1 },
+		});
+	});
+
+	it('production samples logs at 25% for observability quota', () => {
+		expect(config.env?.production?.observability).toEqual({
+			enabled: true,
+			logs: { head_sampling_rate: 0.25 },
+		});
 	});
 
 	it('aliases @omnicharts workspace packages to package src', () => {

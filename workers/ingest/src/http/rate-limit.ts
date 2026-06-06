@@ -4,6 +4,9 @@ const buckets = new Map<string, { tokens: number; lastRefillMs: number }>();
 
 const DEFAULT_LIMIT_PER_MINUTE = 60;
 const DEV_LIMIT_PER_MINUTE = 10_000;
+/** Evict idle IPs so long-lived isolates do not grow Maps without bound. */
+const BUCKET_IDLE_MS = 120_000;
+const MAX_BUCKETS = 2048;
 
 function rateLimitPerMinute(env: Env): number {
 	const raw = env.INGEST_RATE_LIMIT_PER_MINUTE?.trim();
@@ -28,6 +31,18 @@ function clientKey(request: Request): string {
 	return request.headers.get('CF-Connecting-IP') ?? request.headers.get('X-Forwarded-For')?.split(',')[0]?.trim() ?? 'local';
 }
 
+function pruneIdleBuckets(now: number): void {
+	if (buckets.size <= MAX_BUCKETS) return;
+	for (const [key, bucket] of buckets) {
+		if (now - bucket.lastRefillMs > BUCKET_IDLE_MS) buckets.delete(key);
+	}
+	while (buckets.size > MAX_BUCKETS) {
+		const oldest = buckets.keys().next().value;
+		if (oldest === undefined) break;
+		buckets.delete(oldest);
+	}
+}
+
 /**
  * Returns 429 Response when over limit; null when allowed.
  * @see https://developers.cloudflare.com/workers/platform/limits/
@@ -39,6 +54,7 @@ export function checkPublicRateLimit(request: Request, env: Env, pathname = new 
 	const limit = rateLimitPerMinute(env);
 	const key = `${clientKey(request)}:${limit}`;
 	const now = Date.now();
+	pruneIdleBuckets(now);
 	let bucket = buckets.get(key);
 	if (!bucket) {
 		bucket = { tokens: limit, lastRefillMs: now };

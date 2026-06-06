@@ -126,4 +126,27 @@ describe('enrichSearchResultsWithRollups', () => {
 
 		expect(enriched[0]?.hoursWatched7d).toBe('512');
 	});
+
+	it('caps HW enrichment to SEARCH_HW_ENRICH_MAX rows', async () => {
+		const fetchFn = vi.fn().mockResolvedValue({
+			ok: true,
+			status: 200,
+			json: async () => channelDetailBody('twitch', 100),
+		});
+		const ctx = testLoadContext(fetchFn as typeof fetch);
+		const rows = Array.from({ length: 12 }, (_, i) => ({
+			id: String(i),
+			slug: `ch-${i}`,
+			displayName: `Ch ${i}`,
+			avatarUrl: null,
+			platform: 'twitch',
+			hoursWatched7d: null,
+		}));
+
+		const enriched = await enrichSearchResultsWithRollups(ctx, rows);
+
+		expect(fetchFn).toHaveBeenCalledTimes(8);
+		expect(enriched[0]?.hoursWatched7d).toBe('100');
+		expect(enriched[11]?.hoursWatched7d).toBeNull();
+	});
 });

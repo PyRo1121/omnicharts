@@ -67,7 +67,7 @@ Wrangler snippet (also in `workers/ingest/wrangler.jsonc` → `env.production`):
 
 | Var | Value |
 |-----|-------|
-| `INGEST_COVERAGE_MODE` | `full` — fan-out 3 queue messages/min (`sweep`, `game_pass`, `reconcile`) |
+| `INGEST_COVERAGE_MODE` | `full` — fan-out 2 queue messages/min (`sweep`+game pass inline, `reconcile`) |
 | `ENVIRONMENT` | `production` |
 | Cron | `*/1` (minute Twitch platform tick) |
 | `TWITCH_MIN_VIEWERS` | `20` |
@@ -85,7 +85,7 @@ Requires **Workers Paid** + `[limits] cpu_ms` (30s) for queue consumer sweep/rol
 
 | Mode | Cron `poll_platform` behavior | Helix / message cost |
 |------|--------------------------------|----------------------|
-| `full` | Fan-out: `poll_twitch_sweep` + `poll_twitch_game_pass` + `poll_twitch_reconcile` (+ chained enrich) | Paid production |
+| `full` | Fan-out: `poll_twitch_sweep` + `poll_twitch_reconcile` (game pass inline in sweep) | Paid production |
 | `shards_only` | `poll_channel_batch` shards via `sendBatch` | ~8 pts/min per 800 tracked IDs |
 | `sweep_only` | Single global sweep, capped by `LIVE_SWEEP_MAX_PAGES` | ~3 pts/min at cap 3 |
 
@@ -106,6 +106,7 @@ Official limits: [Workers](https://developers.cloudflare.com/workers/platform/li
 | D1 rows read | 5,000,000 | Rankings + health (rollup-first) | Same |
 | Worker subrequests / invocation | 50 | Each shard message: 1 Helix + batched D1 (+1 R2 put if archive on) | Sweep message: up to `LIVE_SWEEP_MAX_PAGES` Helix + D1 |
 | Worker CPU / invocation | 10 ms | `max_batch_size=5` consumer; shards + sweep cap 3 | `cpu_ms=30000`; `max_batch_size=3` |
+| Workers Logs events | **200k/day** (Free) | `head_sampling_rate=1` (staging wrangler) | `head_sampling_rate=0.25` (prod wrangler) — [Workers Logs](https://developers.cloudflare.com/workers/observability/logs/workers-logs/) |
 | R2 Class A (writes) | 1M / month | 0 (archive off) | Optional: 1 NDJSON object per poll shard / sweep page when `SAMPLE_ARCHIVE_ENABLED=1` |
 
 ### Queue ops formula
@@ -126,7 +127,7 @@ Example (staging):
 
 Example (production `full`, `*/1`):
 
-- 1,440 `poll_platform`/day → each `sendBatch` of 3 coverage messages → **4,320** coverage deliveries
+- 1,440 cron ticks/day → each `sendBatch` of **2** coverage messages → **2,880** coverage deliveries
 - Plus reconcile → enrich messages, daily rollup, discover — budget **Paid** plan (1M ops/month included)
 
 ### D1 write formula (rough)
@@ -163,7 +164,7 @@ Set `LIVE_SWEEP_MAX_PAGES=3` on Free even when budget is healthy.
 | `DB.batch()` offline `last_seen` | `twitch/poll.ts` |
 | Remove post-upsert channel SELECT | `db/twitch.ts` |
 | Index `viewer_samples(sampled_at)` | migration `0007` |
-| D1 meta logs (`rows_read` / `rows_written`) | `db/d1-meta.ts` — on when `ENVIRONMENT ≠ production` or `D1_META_LOG=1` |
+| D1 meta logs (`rows_read` / `rows_written`) | `db/d1-meta.ts` — per-batch from D1 `meta`; queue summary `d1:poll_cycle` — on when `ENVIRONMENT ≠ production` or `D1_META_LOG=1` (staging wrangler bakes `D1_META_LOG=1`) |
 
 Apply migrations locally:
 

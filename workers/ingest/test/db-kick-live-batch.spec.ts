@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { mockIngestD1 } from './helpers';
+import { mockIngestD1, testEnv } from './helpers';
 import type { KickLivestream } from '../src/kick/types';
 import {
 	batchRecordKickLiveSamples,
@@ -158,6 +158,40 @@ describe('batchUpsertKickChannelsFromLivestreams', () => {
 		expect(prepare.mock.calls.some(([sql]) => sql.includes('INSERT INTO slug_history'))).toBe(true);
 	});
 
+	it('uses lightweight last_seen UPDATE for unchanged tracked channel', async () => {
+		const prepare = vi.fn((sql: string) => ({
+			bind: (..._args: unknown[]) => ({
+				run: async () => ({ meta: { changes: 1 } }),
+				all: async () => {
+					if (sql.includes('platform_channel_id IN')) {
+						return {
+							results: [
+								{
+									id: 'kick-ch-42',
+									slug: 'streamer',
+									display_name: 'streamer',
+									language: null,
+									ingest_state: 'tracked',
+									first_observed_at: '2026-01-01T00:00:00Z',
+									platform_channel_id: '42',
+								},
+							],
+						};
+					}
+					return { results: [] };
+				},
+				first: async () => null,
+			}),
+		}));
+		const batch = vi.fn(async () => []);
+		const db = mockIngestD1((sql) => prepare(sql), batch);
+
+		await batchUpsertKickChannelsFromLivestreams(db, [baseStream()], { minViewers: 5, promoteToTracked: true });
+
+		expect(prepare.mock.calls.some(([sql]) => sql.includes('UPDATE channels SET last_seen_at'))).toBe(true);
+		expect(prepare.mock.calls.some(([sql]) => sql.includes('INSERT INTO channels'))).toBe(false);
+	});
+
 	it('promotes discovered channel immediately for directoryListing', async () => {
 		const { db, runs } = mockDb();
 		await batchUpsertKickChannelsFromLivestreams(db, [baseStream({ viewer_count: 100 })], {
@@ -215,6 +249,15 @@ describe('batchRecordKickLiveSamples', () => {
 		]);
 		expect(archive).toHaveLength(1);
 		expect(archive[0]?.platform).toBe('kick');
+		expect(runs.some((s) => s.includes('INSERT INTO viewer_samples'))).toBe(true);
+	});
+
+	it('accepts batchOpts env for D1 meta logging on viewer samples', async () => {
+		const { db, runs } = mockDb();
+		await batchRecordKickLiveSamples(db, [{ channelId: 'kick-ch-42', stream: baseStream(), gameCategoryId: 'kick-game-7' }], {
+			env: testEnv(),
+			scope: 'kick:samples',
+		});
 		expect(runs.some((s) => s.includes('INSERT INTO viewer_samples'))).toBe(true);
 	});
 

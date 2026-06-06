@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import * as rollup from '@omnicharts/rollup';
 import { loadKickOverview, loadOverview, loadYoutubeOverview } from './overview';
 import { mockD1Batch, testLoadContext, testLoadContextWithDb } from './test-helpers';
 
@@ -133,6 +134,54 @@ describe('loadOverview', () => {
 });
 
 describe('loadKickOverview', () => {
+	it('builds stats from D1 batch without ingest health fetch', async () => {
+		vi.spyOn(rollup, 'buildRankingsChannelsResponse').mockResolvedValue({
+			platform: 'kick',
+			period: '7d',
+			updated_at: '2026-06-01T00:00:00Z',
+			items: [
+				{
+					rank: 1,
+					slug: 'xqc',
+					display_name: 'xQc',
+					avatar_url: null,
+					hours_watched: 100,
+					average_viewers: 10,
+					peak_viewers: 20,
+					airtime_hours: 1,
+					stream_count: 1,
+					tracked_since: null,
+				},
+			],
+		});
+		vi.spyOn(rollup, 'buildRankingsGamesResponse').mockResolvedValue({
+			platform: 'kick',
+			period: '7d',
+			updated_at: '2026-06-01T00:00:00Z',
+			items: [
+				{
+					rank: 1,
+					slug: 'just-chatting',
+					name: 'Just Chatting',
+					average_viewers: 50,
+					hours_watched: 200,
+					box_art_url: null,
+				},
+			],
+		});
+		const fetchFn = vi.fn();
+		const { db } = mockD1Batch([{ results: [{ n: 12 }] }, { results: [{ n: 3 }] }]);
+
+		const load = await loadKickOverview(testLoadContextWithDb(fetchFn as typeof fetch, db));
+		expect(load.source).toBe('live');
+		expect(load.ingestStatus).toBe('ok');
+		expect(load.topChannelName).toBe('xQc');
+		expect(load.stats[0]?.value).toBe('12');
+		expect(load.stats[1]?.value).toBe('3');
+		expect(fetchFn).not.toHaveBeenCalled();
+		vi.restoreAllMocks();
+	});
+
 	it('builds stats from kick rankings with ingest health when live', async () => {
 		const fetchFn = vi.fn().mockImplementation((url: string | URL) => {
 			const u = String(url);

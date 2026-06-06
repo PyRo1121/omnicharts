@@ -1,5 +1,7 @@
 /** Queue payloads — docs/15-ingest-runbook.md */
 
+import { isPlatformId } from '@omnicharts/domain';
+
 export type IngestQueueMessage =
 	| { type: 'poll_platform'; platform: 'twitch' | 'kick' | 'youtube' }
 	| { type: 'poll_channel_batch'; platform: 'twitch' | 'kick' | 'youtube'; channel_ids: string[] }
@@ -26,7 +28,7 @@ export type IngestQueueMessage =
 const INGEST_PLATFORMS = ['twitch', 'kick', 'youtube'] as const;
 
 function isPlatform(value: unknown): value is (typeof INGEST_PLATFORMS)[number] {
-	return typeof value === 'string' && (INGEST_PLATFORMS as readonly string[]).includes(value);
+	return typeof value === 'string' && isPlatformId(value);
 }
 
 function isStringArray(value: unknown): value is string[] {

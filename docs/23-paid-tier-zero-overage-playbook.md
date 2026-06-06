@@ -16,7 +16,7 @@ Workers Paid is a **$5/month account minimum** on the **Standard** usage model. 
 | Included on Workers Paid (monthly, account-level unless noted) | Typical OmniCharts use |
 |------------------------------------------------------------------|------------------------|
 | **10M Worker requests** + **30M CPU-ms** | Ingest cron + queue consumer + Pages Functions ([pricing](https://developers.cloudflare.com/workers/platform/pricing/)) |
-| **1M Queue operations** | Twitch `full` fan-out (~390k ops/mo at `*/1` — see calculator below) |
+| **1M Queue operations** | Twitch `full` fan-out (~260k ops/mo at `*/1` — see calculator below) |
 | **25B D1 rows read** | Rollup-first UI + health (low if indexed) |
 | **50M D1 rows written** | **Primary budget risk** at minute-level samples |
 | **5 GB D1 storage** (then $0.75/GB-mo) | Hot `viewer_samples` 14d + rollups |
@@ -80,14 +80,14 @@ Use these formulas with dashboard `rows_read` / `rows_written` and queue analyti
 | Symbol | Meaning | Default / prod |
 |--------|---------|----------------|
 | `C` | Cron ticks per day | `*/1` → **1440**; staging `*/5` → **288** |
-| `F` | Fan-out messages per `*/1` twitch cron (`full`) | **3** — [`platform-coverage.ts`](../workers/ingest/src/platform-coverage.ts) |
+| `F` | Fan-out messages per `*/1` twitch cron (`full`) | **2** (`sweep`+game pass inline, `reconcile`) — [`platform-coverage.ts`](../workers/ingest/src/platform-coverage.ts) |
 | `E` | Extra enrich queue messages | **0** (inline in `poll_twitch_reconcile`) |
 | `S` | Catalog shard messages per tick (`shards_only`) | `ceil(TWITCH_MAX_TRACKED / 100)` |
 | `P` | Sweep pages per sweep message | `LIVE_SWEEP_MAX_PAGES` (default **80**, prod unset → 80) |
 | `L` | Live streams ≥ `TWITCH_MIN_VIEWERS` sampled per minute | **200–800** typical; stress **1500–4000** |
 | `W` | D1 rows written per live sample (order of magnitude) | **3–6** (channel + session + sample; indexes add +1) |
 | `B_t`, `B_k`, `B_y` | Platform budget shares (D1 + planning) | **0.55 / 0.25 / 0.20** — [`ingest-budget.ts`](../workers/ingest/src/ingest-budget.ts) |
-| `F_p` | Queue fan-out per `poll_platform` tick | Twitch **3**; Kick **1**; YouTube **1** (no duplicate sweeps) |
+| `F_p` | Queue fan-out per `poll_platform` tick | Twitch **2**; Kick **1**; YouTube **1** (no duplicate sweeps) |
 | `C_2` | `*/2` cron ticks per day | **720** (Kick + YouTube enqueue only) |
 
 ### Shared budget allocator (3-way)
@@ -97,7 +97,7 @@ Code: [`workers/ingest/src/ingest-budget.ts`](../workers/ingest/src/ingest-budge
 | Pool | Total (planning) | Twitch | Kick | YouTube |
 |------|------------------|--------|------|---------|
 | D1 writes/day target | **1.2M** (`PAID_D1_WRITES_PER_DAY_TARGET`) | 55% (~660k) | 25% (~300k) | 20% (~240k) |
-| Queue fan-out per poll | — | **3** msgs (`sweep`, `game_pass`, `reconcile`) | **1** (`poll_kick_tracked`) | **1** (`poll_youtube_tracked`) |
+| Queue fan-out per poll | — | **2** msgs (`sweep` incl. game pass, `reconcile`) | **1** (`poll_kick_tracked`) | **1** (`poll_youtube_tracked`) |
 | Helix points/min | **720** | 100% | — (Kick ~60 req/min separate) | — (10k units/day separate) |
 | Planned live cap `L` | additive | ≤500 | ≤120 | ≤80 |
 
@@ -126,13 +126,13 @@ Cron enqueues coverage messages directly (no `poll_platform` hop). Reconcile run
 
 | Term | Count/day |
 |------|-----------|
-| Fan-out (`F=3`) | 4,320 |
+| Fan-out (`F=2`) | 2,880 |
 | Enrich (`E=0`) | 0 |
 | Discover + EventSub (`0 */6`) | 8 |
 | Rollup | 1 |
-| **Messages** | **~4,329** |
-| **Queue ops** (`×3`) | **~13k** |
-| **Queue ops / month** | **~390k** → **inside 1M included** |
+| **Messages** | **~2,889** |
+| **Queue ops** (`×3`) | **~8.7k** |
+| **Queue ops / month** | **~260k** → **inside 1M included** |
 
 **Legacy `shards_only` at `TWITCH_MAX_TRACKED=3000` (per-shard messages, pre–lane-3):**
 
@@ -141,7 +141,7 @@ Cron enqueues coverage messages directly (no `poll_platform` hop). Reconcile run
 | Platform + shards | 1,440 × (1 + 30) = **45,120** |
 | **Queue ops / month** | **~4.0M** → **~$1.20** overage at $0.40/M (above 1M bundle) |
 
-**Current code:** `shards_only` with `TWITCH_MAX_TRACKED ≤ 500` → **1** `poll_twitch_catalog` message/tick; above 500 → auto **full** fan-out (3 msgs). Prefer **`INGEST_COVERAGE_MODE=full`** in production.
+**Current code:** `shards_only` with `TWITCH_MAX_TRACKED ≤ 500` → **1** `poll_twitch_catalog` message/tick; above 500 → auto **full** fan-out (2 msgs). Prefer **`INGEST_COVERAGE_MODE=full`** in production.
 
 ### D1 rows written / day
 
@@ -170,7 +170,7 @@ Rollup-first rankings: **low** (thousands–millions/day). Risk: unindexed `view
 requests_month ≈ (ingest_cron + ingest_queue + pages_ssr + public_api) × 30
 ```
 
-Ingest-only rough: **(1440 + 7200) × 30 ≈ 259k/mo** — well under **10M**. Pages traffic dominates at scale; static assets on Pages are **free** ([Workers pricing](https://developers.cloudflare.com/workers/platform/pricing/)).
+Ingest-only rough (1 cron + ~1 consumer/msg, `F=2`): **(1440 + 2880) × 30 ≈ 130k/mo** — well under **10M**. Legacy estimate `(1440 + 7200)` assumed `poll_platform` + 3-msg fan-out. Pages traffic dominates at scale; static assets on Pages are **free** ([Workers pricing](https://developers.cloudflare.com/workers/platform/pricing/)).
 
 ### CPU-ms / month
 
@@ -203,12 +203,12 @@ Roadmap Phase 3 ([ROADMAP](../ROADMAP.md), [05-ingestion](./05-ingestion-per-pla
 
 | Platform | Catalog cap (doc) | Cron | Queue per tick | D1 share |
 |----------|-------------------|------|----------------|----------|
-| Twitch | 1.5k–3k | `*/1` | 1 + `F_t=3` fan-out + enrich | `B_t=0.55` |
+| Twitch | 1.5k–3k | `*/1` | `F_t=2` fan-out + enrich (`E=0` inline) | `B_t=0.55` |
 | Kick | 300–800 | `*/2` | 1 → `poll_kick_tracked` only | `B_k=0.25` |
 | YouTube | 150–350 live | `*/2` | 1 → `poll_youtube_tracked` only | `B_y=0.20` |
 
 ```
-messages_per_day ≈ C×(1 + F_t + E) + C_2×(F_k + F_y) + discover + rollup
+messages_per_day ≈ C×(F_t + E) + C_2×(F_k + F_y) + discover + rollup
 L_total ≈ L_twitch + L_kick + L_youtube   (each L capped by allocator + doc 05)
 writes_per_day ≈ 1440 × W × L_total
 ```
@@ -262,7 +262,7 @@ Parquet encode remains **deferred** (no DuckDB in Workers). Do not lower `SAMPLE
 
 | Knob | Env / config | Stay-in-bundle effect |
 |------|--------------|------------------------|
-| **`INGEST_COVERAGE_MODE`** | `full` (prod) vs `shards_only` / `sweep_only` | `full` = 3 queue msgs/min; `shards_only` at 3k IDs = **30 msgs/min** (queue risk) |
+| **`INGEST_COVERAGE_MODE`** | `full` (prod) vs `shards_only` / `sweep_only` | `full` = 2 queue msgs/min; `shards_only` at 3k IDs = **30 msgs/min** (queue risk) |
 | **`TWITCH_MAX_TRACKED`** | Default **3000** in root `wrangler.jsonc`; staging **200** | Caps catalog shards only; does not cap sweep discovery |
 | **`LIVE_SWEEP_MAX_PAGES`** | Prod wrangler **40**; Free/staging **3**; code default **80** if unset | Linear Helix + D1 + subrequests per sweep message |
 | **`TWITCH_MIN_VIEWERS`** | Prod **20** | Lowers `L` (live streams written) — largest D1 lever |
@@ -273,17 +273,18 @@ Parquet encode remains **deferred** (no DuckDB in Workers). Do not lower `SAMPLE
 | **`COLD_ARCHIVE_ENABLED`** | **0** in prod ([`wrangler.jsonc`](../workers/ingest/wrangler.jsonc)) | Parquet cold path off until hot prune stable; cap batches per rollup run when enabled |
 | **`limits.cpu_ms`** | **30000** prod | Prevents runaway CPU-ms billing |
 | **Queue `max_retries`** | staging **2**, prod **3** | Retries multiply queue ops |
-| **Queue `max_batch_size`** | staging **5**, prod **3** | Prod matches twitch `F=3` fan-out per tick ([`wrangler.jsonc`](../workers/ingest/wrangler.jsonc)) |
+| **Queue `max_batch_size`** | staging **5**, prod **3** | Prod headroom for twitch `F=2` fan-out per tick ([`wrangler.jsonc`](../workers/ingest/wrangler.jsonc)) |
 | **Pages SSR** | Direct D1 for rollups (shipped) | Cuts Worker requests vs ingest proxy |
 | **Pages `TWITCH_*` vars** | `apps/web/wrangler.jsonc` `env.production.vars` | Same ranking eligibility as ingest prod (`20` / `60`) |
 | **`D1_META_LOG=1`** | Staging | Audit `meta.rows_*` before prod scale |
+| **`observability.logs.head_sampling_rate`** | staging **1**, prod ingest/Pages **0.25** | Paid **10M** log events/mo included ([Workers Logs pricing](https://developers.cloudflare.com/workers/observability/logs/workers-logs/#pricing)); 25% on `*/1` cron + queue consumers keeps headroom |
 
 **Baked defaults (no operator env flags):** All caps below live in [`workers/ingest/wrangler.jsonc`](../workers/ingest/wrangler.jsonc) `env.production` / `env.staging` `vars` (secrets stay in `wrangler secret put` only).
 
 | Knob | Staging (`--env staging`, Workers Free) | Production (`--env production`, Workers Paid) | Budget note |
 |------|----------------------------------------|-----------------------------------------------|-------------|
 | **Cron** | `*/5` | `*/1` | Staging ~288 platform ticks/day; prod **1,440** |
-| **`INGEST_COVERAGE_MODE`** | `shards_only` | `full` | Prod fan-out **~648k queue ops/mo** (&lt; 1M included) |
+| **`INGEST_COVERAGE_MODE`** | `shards_only` | `full` | Prod fan-out **~260k queue ops/mo** (&lt; 1M included) |
 | **`limits.cpu_ms`** | *(unset — Free 10 ms cap)* | `30000` | Paid default per [limits](https://developers.cloudflare.com/workers/platform/limits/) |
 | **`TWITCH_MAX_TRACKED`** | `200` | `3000` | Shards only; prod catalog cap |
 | **`LIVE_SWEEP_MAX_PAGES`** | `3` | `40` | Prod below code default **80** — Helix/CPU headroom; governor still throttles |
@@ -291,9 +292,10 @@ Parquet encode remains **deferred** (no DuckDB in Workers). Do not lower `SAMPLE
 | **`TWITCH_RANKING_MIN_AIRTIME_MINUTES`** | `60` | `60` | Rankings gate (ingest + Pages) |
 | **`SAMPLE_ARCHIVE_ENABLED`** | `0` | `0` | R2 Class A off until prune proven |
 | **`COLD_ARCHIVE_ENABLED`** | `0` | `0` | Parquet archive off; enable only after 14d hot prune + Class A model |
-| **Queue consumer** | root: `max_batch_size=5`, `max_retries=2` | `max_batch_size=3`, `max_retries=3` | Prod matches twitch `F=3` fan-out per tick |
+| **Queue consumer** | root: `max_batch_size=5`, `max_batch_timeout=5`, `max_retries=2` | `max_batch_size=3`, `max_batch_timeout=5`, `max_retries=3` | One consumer invocation drains full fan-out (3 msgs/tick); queue **ops** per message unchanged |
+| **Observability logs** | `head_sampling_rate=1` | ingest + Pages: `head_sampling_rate=0.25` | Explicit sampling in wrangler; raise to `1` briefly when debugging prod |
 
-**Modeled prod month (Twitch-only, table above):** queue ops **~390k**, D1 writes **~35M** at moderate `L` — inside Paid **1M** / **50M** bundles ([§8](#8-example-monthly-bill-twitch-only-beta-target)). Tune `TWITCH_MIN_VIEWERS` or `LIVE_SWEEP_MAX_PAGES` only after dashboard evidence — not via manual `.dev.vars` on deploy.
+**Modeled prod month (Twitch-only, table above):** queue ops **~260k**, D1 writes **~35M** at moderate `L` — inside Paid **1M** / **50M** bundles ([§8](#8-example-monthly-bill-twitch-only-beta-target)). Tune `TWITCH_MIN_VIEWERS` or `LIVE_SWEEP_MAX_PAGES` only after dashboard evidence — not via manual `.dev.vars` on deploy.
 
 **Helix governor:** Dynamic sweep cap when rate-limit budget low ([22-ingest-free-tier-tuning](./22-ingest-free-tier-tuning.md)).
 
@@ -357,7 +359,7 @@ Enable **`D1_META_LOG=1`** in staging and sample `logD1Meta` output ([`d1-meta.t
 | Workers subscription | — | — | **$5.00** |
 | Requests | 500k/mo | &lt; 10M | $0 |
 | CPU-ms | 15M/mo | &lt; 30M | $0 |
-| Queue ops | 390k/mo | &lt; 1M | $0 |
+| Queue ops | 260k/mo | &lt; 1M | $0 |
 | D1 writes | 35M/mo | &lt; 50M | $0 |
 | D1 reads | 500M/mo | &lt; 25B | $0 |
 | R2 | Archive off | Free tier | $0 |
@@ -414,7 +416,7 @@ Patterns observed in public `wrangler.jsonc` / Cloudflare docs — not OmniChart
 | **KV for precomputed hot keys** | Optional read-path cache; Paid **10M reads/mo** included | [Workers pricing — KV](https://developers.cloudflare.com/workers/platform/pricing/) |
 | **`wrangler types` in CI** | Generated `Env` matches bindings after config edits | [Workers best practices (Feb 2026)](https://developers.cloudflare.com/changelog/post/2026-02-15-workers-best-practices/) |
 
-**OmniCharts defaults (already in repo):** ingest production `cpu_ms=30000`, `max_batch_size=3`, `max_retries=3`, archive off; staging `shards_only`, smaller batches — see §4 and [`workers/ingest/wrangler.jsonc`](../workers/ingest/wrangler.jsonc).
+**OmniCharts defaults (already in repo):** ingest production `cpu_ms=30000`, `max_batch_size=3`, `max_retries=3`, `observability.logs.head_sampling_rate=0.25`, archive off; staging `shards_only`, full log sampling (`1`); Pages production matches **0.25** — see §4, [`workers/ingest/wrangler.jsonc`](../workers/ingest/wrangler.jsonc), [`apps/web/wrangler.jsonc`](../apps/web/wrangler.jsonc).
 
 ---
 
@@ -424,10 +426,10 @@ Patterns observed in public `wrangler.jsonc` / Cloudflare docs — not OmniChart
 
 | Path | Module | Behavior |
 |------|--------|----------|
-| Cron `*/1` | [`cron-messages.ts`](../workers/ingest/src/cron-messages.ts) → [`twitchCronEnqueueMessages`](../workers/ingest/src/ingest-budget.ts) | `full` → 3 messages; no `poll_platform` hop |
-| Full fan-out | [`platform-coverage.ts`](../workers/ingest/src/platform-coverage.ts) | `poll_twitch_sweep` + `poll_twitch_game_pass` + `poll_twitch_reconcile` |
+| Cron `*/1` | [`cron-messages.ts`](../workers/ingest/src/cron-messages.ts) → [`twitchCronEnqueueMessages`](../workers/ingest/src/ingest-budget.ts) | `full` → 2 messages; no `poll_platform` hop |
+| Full fan-out | [`platform-coverage.ts`](../workers/ingest/src/platform-coverage.ts) | `poll_twitch_sweep` (game pass inline) + `poll_twitch_reconcile` |
 | Catalog / staging | [`poll.ts`](../workers/ingest/src/twitch/poll.ts) `poll_twitch_catalog` | One queue message; Helix batches of 100 in one consumer |
-| `shards_only` misconfig | `ingest-budget.ts` | `TWITCH_MAX_TRACKED > 500` → same 3-message full fan-out (avoids 30+ shard messages/tick) |
+| `shards_only` misconfig | `ingest-budget.ts` | `TWITCH_MAX_TRACKED > 500` → same 2-message full fan-out (avoids 30+ shard messages/tick) |
 | Reconcile enrich | [`index.ts`](../workers/ingest/src/index.ts) | Inline in `poll_twitch_reconcile` — no chained `poll_twitch_enrich` by default |
 | Calculator | `estimateIngestQueueBudget`, `messagesPerTwitchCronTick` | Tests in [`ingest-budget.spec.ts`](../workers/ingest/test/ingest-budget.spec.ts) |
 

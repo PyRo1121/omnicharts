@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { mockIngestD1 } from './helpers';
+import { mockIngestD1, testEnv } from './helpers';
 import type { YoutubeVideoItem } from '../src/youtube/types';
 import { batchRecordYoutubeLiveSamples, clearYoutubeLiveVideoIds } from '../src/db/youtube-live-batch';
 
@@ -48,6 +48,15 @@ describe('batchRecordYoutubeLiveSamples', () => {
 		expect(archive[0]?.viewer_count).toBe(120);
 		expect(runs.some((s) => s.includes('INSERT INTO viewer_samples'))).toBe(true);
 		expect(runs.some((s) => s.includes('INSERT INTO stream_sessions'))).toBe(true);
+	});
+
+	it('accepts batchOpts env for D1 meta logging on viewer samples', async () => {
+		const { db, runs } = mockDb();
+		await batchRecordYoutubeLiveSamples(db, [{ channelId: 'youtube-ch-1', video: liveVideo() }], {
+			env: testEnv(),
+			scope: 'youtube:samples',
+		});
+		expect(runs.some((s) => s.includes('INSERT INTO viewer_samples'))).toBe(true);
 	});
 
 	it('skips hidden concurrentViewers', async () => {

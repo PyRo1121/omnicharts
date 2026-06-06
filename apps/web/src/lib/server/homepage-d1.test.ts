@@ -4,7 +4,7 @@ import { mockD1Batch } from './test-helpers';
 
 describe('loadHomepageFromD1', () => {
 	it('maps one D1 batch into overview rankings', async () => {
-		const { db } = mockD1Batch([
+		const { db, batchMock } = mockD1Batch([
 			{ results: [{ n: 1200 }] },
 			{ results: [{ n: 42 }] },
 			{
@@ -34,6 +34,8 @@ describe('loadHomepageFromD1', () => {
 		]);
 
 		const snapshot = await loadHomepageFromD1(db, '7d', 5, 5);
+		expect(batchMock).toHaveBeenCalledOnce();
+		expect(batchMock.mock.calls[0]?.[0]).toHaveLength(4);
 		expect(snapshot.trackedChannels).toBe(1200);
 		expect(snapshot.channelsLive).toBe(42);
 		expect(snapshot.channelRankings.rows[0]?.displayName).toBe('Alpha');

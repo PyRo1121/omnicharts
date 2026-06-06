@@ -24,7 +24,12 @@
 | In-worker rankings cache 60s | Done |
 | Pages SSR direct D1 rollups + `Cache-Control` on ranking pages | Done |
 | Pages `platform.env` TWITCH vars parity with ingest production | Done |
-| Homepage rankings dedupe via `loadOverview` | Done |
+| Homepage D1 counts batched | Done |
+| Kick/YT overview uses D1 counts when `ctx.db` (no ingest `/health` hop) | Done |
+| Search HW enrich capped at 8 rows | Done |
+| Rate-limit bucket Map idle eviction | Done |
+| Doc 23 queue calculator F=2 (~260k/mo) | Done |
+| Pages `observability` enabled | Done |
 | No `*/2` Kick/YouTube cron in wrangler (queue stubs no-op) | Done |
 | `SAMPLE_ARCHIVE_ENABLED=0` production default | Done |
 

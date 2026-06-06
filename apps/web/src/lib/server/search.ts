@@ -7,6 +7,9 @@ import type { ServerLoadContext } from '$lib/server/load-context';
 
 const SEARCH_HW_PLATFORMS = new Set<PlatformId>(['twitch', 'kick', 'youtube']);
 
+/** Cap parallel channel-detail loads per search — D1 / ingest quota (docs/23). */
+export const SEARCH_HW_ENRICH_MAX = 8;
+
 export type SearchResultRow = {
 	id: string;
 	slug: string;
@@ -53,18 +56,20 @@ export async function searchChannels(
 	}
 }
 
+async function enrichRowWithHoursWatched(ctx: ServerLoadContext, row: SearchResultRow): Promise<SearchResultRow> {
+	if (!isPlatformId(row.platform) || !SEARCH_HW_PLATFORMS.has(row.platform)) return row;
+
+	const detail = await loadChannelDetail(ctx, row.slug, row.platform, '7d');
+	const hoursWatched7d = detail.source === 'live' && detail.totals.hoursWatched > 0 ? formatHoursWatched(detail.totals.hoursWatched) : null;
+
+	return { ...row, hoursWatched7d };
+}
+
 export async function enrichSearchResultsWithRollups(ctx: ServerLoadContext, results: SearchResultRow[]): Promise<SearchResultRow[]> {
 	if (results.length === 0) return results;
 
-	return Promise.all(
-		results.map(async (row) => {
-			if (!isPlatformId(row.platform) || !SEARCH_HW_PLATFORMS.has(row.platform)) return row;
-
-			const detail = await loadChannelDetail(ctx, row.slug, row.platform, '7d');
-			const hoursWatched7d =
-				detail.source === 'live' && detail.totals.hoursWatched > 0 ? formatHoursWatched(detail.totals.hoursWatched) : null;
-
-			return { ...row, hoursWatched7d };
-		}),
-	);
+	const head = results.slice(0, SEARCH_HW_ENRICH_MAX);
+	const tail = results.slice(SEARCH_HW_ENRICH_MAX);
+	const enrichedHead = await Promise.all(head.map((row) => enrichRowWithHoursWatched(ctx, row)));
+	return [...enrichedHead, ...tail];
 }

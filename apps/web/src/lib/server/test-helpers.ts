@@ -183,19 +183,20 @@ function stubD1Session(): D1DatabaseSession {
 
 /** Minimal D1 mock for homepage batch tests. */
 export function mockD1Batch(batchResults: MockD1BatchEntry[]): { db: D1Database; batchMock: ReturnType<typeof vi.fn> } {
-	const normalized = batchResults.map(
-		(entry) =>
-			({
-				success: true,
-				results: entry.results ?? [],
-				meta: D1_META,
-			}) as D1Result,
-	);
-	const batchMock = vi.fn().mockResolvedValue(normalized);
-	const prepareQueue = [...batchResults];
+	const queue = [...batchResults];
+	const toResult = (entry: MockD1BatchEntry): D1Result =>
+		({
+			success: true,
+			results: entry.results ?? [],
+			meta: D1_META,
+		}) as D1Result;
+	const batchMock = vi.fn().mockImplementation(async (statements: unknown[]) => {
+		const count = Array.isArray(statements) ? statements.length : queue.length;
+		return queue.splice(0, count).map(toResult);
+	});
 	const allMock = vi.fn().mockImplementation(async () => {
-		const entry = prepareQueue.shift() ?? { results: [] };
-		return { success: true, results: entry.results ?? [], meta: D1_META };
+		const entry = queue.shift() ?? { results: [] };
+		return toResult(entry);
 	});
 	const db: D1Database = {
 		batch: batchMock,

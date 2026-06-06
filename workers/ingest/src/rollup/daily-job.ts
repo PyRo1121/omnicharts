@@ -7,7 +7,7 @@ import {
 } from '../db/follower-snapshots';
 import { runRetentionWithColdArchive } from '../db/cold-archive';
 import { D1_BATCH_MAX_STATEMENTS } from '../db/d1-batch';
-import { logD1BatchScope, logD1Meta } from '../db/d1-meta';
+import { logD1BatchScope, logD1Meta, emptyD1MetaTotals, sumD1MetaTotals, sumD1Results, type IngestRunOpts } from '../db/d1-meta';
 import { enrichFollowersBeforeRollup } from '../twitch/enrich-profiles';
 import { requireDb } from '../worker-bindings';
 
@@ -158,7 +158,7 @@ export async function upsertGameDailyRollup(
 /**
  * UTC daily rollup — docs/06-storage-and-rollup-design.md
  */
-export async function runDailyRollup(env: Env, dateOverride?: string): Promise<RollupDailyStats> {
+export async function runDailyRollup(env: Env, dateOverride?: string, runOpts?: IngestRunOpts): Promise<RollupDailyStats> {
 	const db = requireDb(env);
 	const date = resolveRollupDate(dateOverride);
 	await enrichFollowersBeforeRollup(env, date);
@@ -187,6 +187,7 @@ export async function runDailyRollup(env: Env, dateOverride?: string): Promise<R
 	const nextSnapshots = new Map<string, number>();
 
 	const channelEntries = [...channelSessions.entries()];
+	let channelRollupMeta = emptyD1MetaTotals();
 	for (let i = 0; i < channelEntries.length; i += D1_BATCH_MAX_STATEMENTS) {
 		const chunk = channelEntries.slice(i, i + D1_BATCH_MAX_STATEMENTS);
 		const statements = chunk.map(([channelId, sessions]) => {
@@ -198,10 +199,10 @@ export async function runDailyRollup(env: Env, dateOverride?: string): Promise<R
 			return prepareChannelDailyRollup(db, channelId, date, combined, followersDelta);
 		});
 		const batchResult = await db.batch(statements);
-		logD1BatchScope('rollup:channel_daily', statements.length, env);
-		for (const result of batchResult) {
-			logD1Meta('rollup:channel_daily', result, env);
-		}
+		channelRollupMeta = sumD1MetaTotals(channelRollupMeta, sumD1Results(batchResult));
+	}
+	if (channelEntries.length > 0) {
+		logD1BatchScope('rollup:channel_daily', channelRollupMeta, { env, pollCycle: runOpts?.pollCycle });
 	}
 
 	await storeFollowerSnapshots(db, nextSnapshots);
@@ -223,6 +224,7 @@ export async function runDailyRollup(env: Env, dateOverride?: string): Promise<R
 	}
 
 	const gameEntries = [...gameSessions.entries()];
+	let gameRollupMeta = emptyD1MetaTotals();
 	for (let i = 0; i < gameEntries.length; i += D1_BATCH_MAX_STATEMENTS) {
 		const chunk = gameEntries.slice(i, i + D1_BATCH_MAX_STATEMENTS);
 		const statements = chunk.map(([gameId, sessions]) => {
@@ -233,10 +235,10 @@ export async function runDailyRollup(env: Env, dateOverride?: string): Promise<R
 			});
 		});
 		const batchResult = await db.batch(statements);
-		logD1BatchScope('rollup:game_daily', statements.length, env);
-		for (const result of batchResult) {
-			logD1Meta('rollup:game_daily', result, env);
-		}
+		gameRollupMeta = sumD1MetaTotals(gameRollupMeta, sumD1Results(batchResult));
+	}
+	if (gameEntries.length > 0) {
+		logD1BatchScope('rollup:game_daily', gameRollupMeta, { env, pollCycle: runOpts?.pollCycle });
 	}
 
 	const metadataResult = await db
@@ -247,7 +249,7 @@ export async function runDailyRollup(env: Env, dateOverride?: string): Promise<R
 		.bind(new Date().toISOString())
 		.run();
 
-	logD1Meta('rollup:metadata', metadataResult, env);
+	logD1Meta('rollup:metadata', metadataResult, { env, pollCycle: runOpts?.pollCycle });
 
 	await markChannelsDormantWithoutRecentActivity(db, DORMANT_INACTIVE_DAYS);
 

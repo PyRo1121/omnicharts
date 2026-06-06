@@ -7,6 +7,7 @@ import { shouldContinueHelixPagination } from './helix-pagination';
 import { resolveTopGamesForCoverage } from './top-games-cache';
 import { ingestStreamPage, type StreamPageIngestStats } from './stream-page';
 import { requireDb } from '../worker-bindings';
+import type { IngestRunOpts } from '../db/d1-meta';
 
 export type GamePassStats = StreamPageIngestStats & {
 	gamesScanned: number;
@@ -20,6 +21,7 @@ export type GamePassOptions = {
 	client?: TwitchHelixClient;
 	/** Dedupe user_ids across sweep and game pass in the same cycle. */
 	seenUserIds?: Set<string>;
+	runOpts?: IngestRunOpts;
 };
 
 /**
@@ -78,7 +80,7 @@ export async function runTwitchGamePass(env: Env, opts: GamePassOptions = {}): P
 			}
 			consecutiveEmptyPages = 0;
 
-			const { pageMaxViewers } = await ingestStreamPage(env, streams, minViewers, seenUserIds, stats);
+			const { pageMaxViewers } = await ingestStreamPage(env, streams, minViewers, seenUserIds, stats, opts.runOpts);
 
 			if (pageMaxViewers < minViewers) break;
 

@@ -4,12 +4,14 @@ import {
 	formatCompactMetric,
 	formatHoursWatched,
 	normalizeBatchResult,
-	queryTopChannelsByHoursWatched,
-	queryTopGamesByAverageViewers,
+	prepareTopChannelsByHoursWatched,
+	prepareTopGamesByAverageViewers,
 	rankTopChannelsFromRollupRows,
 	rankTopGamesFromRollupRows,
 	TWITCH_LIVE_COUNT_SQL,
 	TWITCH_TRACKED_COUNT_SQL,
+	type ChannelRollupQueryRow,
+	type GameRollupQueryRow,
 } from '@omnicharts/rollup';
 import type { ChannelRankingsLoad } from '$lib/server/rankings';
 import type { GameRankingsLoad } from '$lib/server/game-rankings';
@@ -46,12 +48,16 @@ export async function loadHomepageFromD1(
 		minAverageViewers: eligibility.minAverageViewers,
 	};
 
-	const [trackedBatch, liveBatch, channelRows, gameRows] = await Promise.all([
-		db.prepare(TWITCH_TRACKED_COUNT_SQL).bind(PLATFORM_TWITCH).all(),
-		db.prepare(TWITCH_LIVE_COUNT_SQL).bind(PLATFORM_TWITCH).all(),
-		queryTopChannelsByHoursWatched(db, { ...rankingOpts, limit: channelQueryLimit }),
-		queryTopGamesByAverageViewers(db, { ...rankingOpts, limit: gameLimit }),
+	const channelStmt = prepareTopChannelsByHoursWatched(db, { ...rankingOpts, limit: channelQueryLimit });
+	const gameStmt = prepareTopGamesByAverageViewers(db, { ...rankingOpts, limit: gameLimit });
+	const [trackedBatch, liveBatch, channelBatch, gameBatch] = await db.batch([
+		db.prepare(TWITCH_TRACKED_COUNT_SQL).bind(PLATFORM_TWITCH),
+		db.prepare(TWITCH_LIVE_COUNT_SQL).bind(PLATFORM_TWITCH),
+		channelStmt as D1PreparedStatement,
+		gameStmt as D1PreparedStatement,
 	]);
+	const channelRows = (normalizeBatchResult(channelBatch).results ?? []) as ChannelRollupQueryRow[];
+	const gameRows = (normalizeBatchResult(gameBatch).results ?? []) as GameRollupQueryRow[];
 
 	const rankedChannels = rankTopChannelsFromRollupRows(channelRows, channelLimit);
 	const rankedGames = rankTopGamesFromRollupRows(gameRows, gameLimit);

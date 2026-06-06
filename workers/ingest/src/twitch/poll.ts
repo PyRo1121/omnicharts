@@ -13,6 +13,7 @@ import { closeOpenSessionsForPlatformChannelIds } from '../db/session-lifecycle'
 import type { IngestQueueMessage } from '../messages';
 import { archiveSampleBatch } from '../r2/sample-archive';
 import { requireDb, requireIngestQueue } from '../worker-bindings';
+import { withIngestRunOpts, type IngestRunOpts } from '../db/d1-meta';
 
 export type PollShardResult = {
 	batches: number;
@@ -27,7 +28,7 @@ export async function enqueueTwitchPollShards(env: Env): Promise<number> {
 }
 
 /** Run tracked-catalog poll in-process (100 user_ids per Helix batch). */
-export async function runTwitchCatalogPoll(env: Env): Promise<PollShardResult> {
+export async function runTwitchCatalogPoll(env: Env, runOpts?: IngestRunOpts): Promise<PollShardResult> {
 	const db = requireDb(env);
 	const limit = maxTrackedFromEnv(env);
 	const userIds = await listChannelIdsToPoll(db, limit);
@@ -35,7 +36,7 @@ export async function runTwitchCatalogPoll(env: Env): Promise<PollShardResult> {
 
 	for (let i = 0; i < userIds.length; i += STREAMS_BATCH_SIZE) {
 		const chunk = userIds.slice(i, i + STREAMS_BATCH_SIZE);
-		const batch = await runTwitchPollBatch(env, chunk);
+		const batch = await runTwitchPollBatch(env, chunk, runOpts);
 		totals.batches += batch.batches;
 		totals.liveStreams += batch.liveStreams;
 		totals.samplesWritten += batch.samplesWritten;
@@ -44,7 +45,7 @@ export async function runTwitchCatalogPoll(env: Env): Promise<PollShardResult> {
 	return totals;
 }
 
-export async function runTwitchPollBatch(env: Env, userIds: string[]): Promise<PollShardResult> {
+export async function runTwitchPollBatch(env: Env, userIds: string[], runOpts?: IngestRunOpts): Promise<PollShardResult> {
 	const db = requireDb(env);
 	const client = new TwitchHelixClient(env);
 	const minViewers = minViewersFromEnv(env);
@@ -71,7 +72,7 @@ export async function runTwitchPollBatch(env: Env, userIds: string[]): Promise<P
 		db,
 		liveStreams,
 		{ minViewers, promoteToTracked: true },
-		{ env, scope: 'poll:channels' },
+		withIngestRunOpts({ env, scope: 'poll:channels' }, runOpts),
 	);
 
 	const sampleInputs: LiveSampleInput[] = [];
@@ -87,10 +88,7 @@ export async function runTwitchPollBatch(env: Env, userIds: string[]): Promise<P
 		});
 	}
 
-	const archiveRows = await batchRecordLiveSamples(db, sampleInputs, {
-		env,
-		scope: 'poll:samples',
-	});
+	const archiveRows = await batchRecordLiveSamples(db, sampleInputs, withIngestRunOpts({ env, scope: 'poll:samples' }, runOpts));
 	result.samplesWritten = archiveRows.length;
 
 	await archiveSampleBatch(env, archiveRows);
@@ -101,14 +99,14 @@ export async function runTwitchPollBatch(env: Env, userIds: string[]): Promise<P
 	const offlineStatements = offlineIds.map((uid) =>
 		db.prepare(`UPDATE channels SET last_seen_at = ? WHERE platform_id = 'twitch' AND platform_channel_id = ?`).bind(now, uid),
 	);
-	await runD1Batches(db, offlineStatements, {
-		env,
-		scope: 'poll:offline_last_seen',
-	});
-	await closeOpenSessionsForPlatformChannelIds(db, PLATFORM_TWITCH, offlineIds, now, {
-		env,
-		scope: 'poll:offline_close_sessions',
-	});
+	await runD1Batches(db, offlineStatements, withIngestRunOpts({ env, scope: 'poll:offline_last_seen' }, runOpts));
+	await closeOpenSessionsForPlatformChannelIds(
+		db,
+		PLATFORM_TWITCH,
+		offlineIds,
+		now,
+		withIngestRunOpts({ env, scope: 'poll:offline_close_sessions' }, runOpts),
+	);
 
 	return result;
 }

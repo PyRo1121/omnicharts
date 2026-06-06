@@ -4,6 +4,7 @@ import { shouldContinueHelixPagination } from './helix-pagination';
 import { TwitchHelixClient } from './helix';
 import { helixBudgetAllowsFetch, helixBudgetPageCap } from './rate-limit';
 import { ingestStreamPage, type StreamPageIngestStats } from './stream-page';
+import type { IngestRunOpts } from '../db/d1-meta';
 
 export type LiveSweepStats = StreamPageIngestStats & {
 	pagesFetched: number;
@@ -21,6 +22,7 @@ export type LiveSweepOptions = {
 	client?: TwitchHelixClient;
 	/** Dedupe user_ids across sweep and game pass in the same cycle. */
 	seenUserIds?: Set<string>;
+	runOpts?: IngestRunOpts;
 };
 
 export async function runTwitchLiveSweep(env: Env, opts: LiveSweepOptions = {}): Promise<LiveSweepStats> {
@@ -69,7 +71,7 @@ export async function runTwitchLiveSweep(env: Env, opts: LiveSweepOptions = {}):
 		}
 		consecutiveEmptyPages = 0;
 
-		const { pageMaxViewers } = await ingestStreamPage(env, streams, minViewers, seenUserIds, stats);
+		const { pageMaxViewers } = await ingestStreamPage(env, streams, minViewers, seenUserIds, stats, opts.runOpts);
 
 		if (pageMaxViewers < minViewers) {
 			stats.stoppedBecause = 'below_threshold';

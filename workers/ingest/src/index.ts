@@ -68,7 +68,10 @@ import { importWatchlistCsv } from './watchlist/import';
 import { runTwitchVodBackfill } from './twitch/vod-backfill';
 import { ingestNonFatalError, ingestWarn } from './log';
 import { cronToMessages } from './cron-messages';
+import { createD1PollCycle, finishD1PollCycle, type IngestRunOpts } from './db/d1-meta';
 import { requireDb, requireIngestQueue } from './worker-bindings';
+import { helixSafePointsPerMinuteFromEnv } from './twitch/helix-budget';
+import { TwitchHelixClient } from './twitch/helix';
 export default {
 	async fetch(request, env, ctx): Promise<Response> {
 		const url = new URL(request.url);
@@ -188,6 +191,9 @@ export default {
 
 	async queue(batch, env): Promise<void> {
 		for (const message of batch.messages) {
+			const pollCycle = createD1PollCycle();
+			const runOpts: IngestRunOpts = { pollCycle };
+			let messageType = 'unknown';
 			try {
 				const payload = parseQueueBody(message.body);
 				if (!payload) {
@@ -195,23 +201,26 @@ export default {
 					message.ack();
 					continue;
 				}
-				await handleQueueMessage(payload, env);
+				messageType = payload.type;
+				await handleQueueMessage(payload, env, runOpts);
 				message.ack();
 			} catch (err) {
 				ingestNonFatalError('queue message failed', err);
 				message.retry();
+			} finally {
+				finishD1PollCycle(pollCycle, messageType, env);
 			}
 		}
 	},
 } satisfies ExportedHandler<Env>;
 
-async function handleQueueMessage(payload: IngestQueueMessage, env: Env): Promise<void> {
+async function handleQueueMessage(payload: IngestQueueMessage, env: Env, runOpts?: IngestRunOpts): Promise<void> {
 	switch (payload.type) {
 		case 'poll_platform':
 			if (payload.platform === 'twitch') {
 				await runTwitchPollPlatform(env);
 			}
-			// Phase 3: Kick/YouTube poll_platform handlers — no-op until ADR-003 ingest ships.
+			// Legacy queue body: kick/youtube use poll_kick_tracked / poll_youtube_tracked (cron enqueues those directly).
 			break;
 		case 'poll_kick_tracked':
 			await runKickPollPlatform(env);
@@ -220,13 +229,16 @@ async function handleQueueMessage(payload: IngestQueueMessage, env: Env): Promis
 			await runYoutubePollPlatform(env);
 			break;
 		case 'poll_twitch_sweep':
-			await runTwitchSweepAndGamePass(env);
+			await runTwitchSweepAndGamePass(env, runOpts);
 			break;
 		case 'poll_twitch_game_pass':
-			await runTwitchGamePass(env);
+			await runTwitchGamePass(env, { runOpts });
 			break;
 		case 'poll_twitch_reconcile': {
-			const reconcile = await runTwitchReconcileRecent(env);
+			const client = new TwitchHelixClient(env, {
+				budgetPoints: helixSafePointsPerMinuteFromEnv(env),
+			});
+			const reconcile = await runTwitchReconcileRecent(env, { client, runOpts });
 			const enrichIds = reconcile.platformChannelIds.slice(0, ENRICH_MAX_CHANNELS_PER_RUN);
 			if (enrichIds.length > 0) {
 				await runTwitchProfileEnrichment(env, {
@@ -237,7 +249,7 @@ async function handleQueueMessage(payload: IngestQueueMessage, env: Env): Promis
 			break;
 		}
 		case 'poll_twitch_catalog':
-			await runTwitchCatalogPoll(env);
+			await runTwitchCatalogPoll(env, runOpts);
 			break;
 		case 'poll_twitch_enrich':
 			await runTwitchProfileEnrichment(env, {
@@ -247,7 +259,7 @@ async function handleQueueMessage(payload: IngestQueueMessage, env: Env): Promis
 			break;
 		case 'poll_channel_batch':
 			if (payload.platform === 'twitch') {
-				await runTwitchPollBatch(env, payload.channel_ids);
+				await runTwitchPollBatch(env, payload.channel_ids, runOpts);
 			}
 			break;
 		case 'discover_twitch':
@@ -264,7 +276,7 @@ async function handleQueueMessage(payload: IngestQueueMessage, env: Env): Promis
 			await syncTwitchEventSubSubscriptions(env);
 			break;
 		case 'rollup_daily':
-			await runDailyRollup(env, payload.date);
+			await runDailyRollup(env, payload.date, runOpts);
 			break;
 		case 'vod_backfill_twitch':
 			await runTwitchVodBackfill(env, {

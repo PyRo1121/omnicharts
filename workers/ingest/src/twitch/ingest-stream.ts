@@ -1,10 +1,16 @@
 import type { HelixStream } from './helix';
 import { batchRecordLiveSamples, batchUpsertChannelsFromStreams, batchUpsertGameCategories, type LiveSampleInput } from '../db/twitch';
+import { withIngestRunOpts, type IngestRunOpts } from '../db/d1-meta';
 import { archiveSampleBatch, type SampleArchiveRow } from '../r2/sample-archive';
 import { requireDb } from '../worker-bindings';
 
 /** Batch upsert metadata + viewer samples for one Helix page or poll shard. */
-export async function ingestHelixStreamsBatch(env: Env, streams: HelixStream[], minViewers: number): Promise<SampleArchiveRow[]> {
+export async function ingestHelixStreamsBatch(
+	env: Env,
+	streams: HelixStream[],
+	minViewers: number,
+	runOpts?: IngestRunOpts,
+): Promise<SampleArchiveRow[]> {
 	if (streams.length === 0) return [];
 
 	const db = requireDb(env);
@@ -21,7 +27,7 @@ export async function ingestHelixStreamsBatch(env: Env, streams: HelixStream[], 
 		db,
 		streams,
 		{ minViewers, promoteToTracked: true },
-		{ env, scope: 'ingest:channels' },
+		withIngestRunOpts({ env, scope: 'ingest:channels' }, runOpts),
 	);
 
 	const sampleInputs: LiveSampleInput[] = [];
@@ -37,7 +43,7 @@ export async function ingestHelixStreamsBatch(env: Env, streams: HelixStream[], 
 		});
 	}
 
-	return batchRecordLiveSamples(db, sampleInputs, { env, scope: 'ingest:samples' });
+	return batchRecordLiveSamples(db, sampleInputs, withIngestRunOpts({ env, scope: 'ingest:samples' }, runOpts));
 }
 
 /** Upsert channel/game metadata and optionally record a viewer sample. */

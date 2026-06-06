@@ -5,13 +5,16 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "omnicharts-ingest",
 	"main": "src/index.ts",
-	"compatibility_date": "2026-06-01",
+	"compatibility_date": "2026-06-05",
 	"compatibility_flags": ["nodejs_compat"],
 	"alias": {
 		"@omnicharts/domain": "../../packages/domain/src/index.ts",
 		"@omnicharts/rollup": "../../packages/rollup/src/index.ts"
 	},
-	"observability": { "enabled": true },
+	"observability": {
+		"enabled": true,
+		"logs": { "head_sampling_rate": 1 }
+	},
 	"dev": {
 		"ip": "127.0.0.1",
 		"port": 8787,
@@ -69,6 +72,10 @@
 	},
 	"env": {
 		"staging": {
+			"observability": {
+				"enabled": true,
+				"logs": { "head_sampling_rate": 1 }
+			},
 			"triggers": {
 				// */2 kick+youtube tracked poll — safe on staging shards_only twitch budget (docs/23 §6)
 				"crons": ["*/5 * * * *", "*/2 * * * *", "15 0 * * *", "0 */6 * * *"]
@@ -83,10 +90,15 @@
 				"TWITCH_RANKING_MIN_AIRTIME_MINUTES": "60",
 				"SAMPLE_ARCHIVE_ENABLED": "0",
 				"SAMPLE_ARCHIVE_MIN_ROWS": "10",
-				"COLD_ARCHIVE_ENABLED": "0"
+				"COLD_ARCHIVE_ENABLED": "0",
+				"D1_META_LOG": "1"
 			}
 		},
 		"production": {
+			"observability": {
+				"enabled": true,
+				"logs": { "head_sampling_rate": 0.25 }
+			},
 			"triggers": {
 				"crons": ["*/1 * * * *", "15 0 * * *", "0 */6 * * *"]
 			},

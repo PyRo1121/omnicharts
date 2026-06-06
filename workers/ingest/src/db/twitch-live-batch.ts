@@ -1,5 +1,6 @@
 import { PLATFORM_TWITCH } from '@omnicharts/domain';
 import { chunkArray, D1_BATCH_MAX_STATEMENTS, maxRowsPerInsert, runD1Batches } from './d1-batch';
+import { logD1Meta, type D1LogOpts } from './d1-meta';
 import { batchCloseStaleOpenSessionsForChannels } from './session-lifecycle';
 import { shouldPromoteDiscoveredToTracked } from './live-sightings';
 import type { SampleArchiveRow } from '../r2/sample-archive';
@@ -12,10 +13,28 @@ const nowIso = () => new Date().toISOString();
 type ExistingChannel = {
 	id: string;
 	slug: string;
+	display_name: string;
+	language: string | null;
 	ingest_state: string;
 	first_observed_at: string;
 	platform_channel_id: string;
 };
+
+function channelNeedsFullUpsert(
+	existing: ExistingChannel | undefined,
+	slug: string,
+	displayName: string,
+	language: string | null,
+	ingestState: string,
+	recordSighting: boolean,
+): boolean {
+	if (!existing || recordSighting) return true;
+	if (existing.slug !== slug) return true;
+	if (existing.display_name !== displayName) return true;
+	if ((existing.language ?? null) !== language) return true;
+	if (existing.ingest_state !== ingestState) return true;
+	return false;
+}
 
 async function fetchExistingChannelsByUserIds(db: D1Database, userIds: string[]): Promise<Map<string, ExistingChannel>> {
 	const map = new Map<string, ExistingChannel>();
@@ -25,7 +44,7 @@ async function fetchExistingChannelsByUserIds(db: D1Database, userIds: string[])
 		const placeholders = batch.map(() => '?').join(', ');
 		const { results } = await db
 			.prepare(
-				`SELECT id, slug, ingest_state, first_observed_at, platform_channel_id
+				`SELECT id, slug, display_name, language, ingest_state, first_observed_at, platform_channel_id
          FROM channels
          WHERE platform_id = ? AND platform_channel_id IN (${placeholders})`,
 			)
@@ -162,7 +181,7 @@ export async function batchUpsertChannelsFromStreams(
 	db: D1Database,
 	streams: HelixStream[],
 	opts: { minViewers: number; promoteToTracked: boolean },
-	batchOpts?: { env?: Env; scope?: string },
+	batchOpts?: D1LogOpts,
 ): Promise<Map<string, string>> {
 	const channelIdByUserId = new Map<string, string>();
 	if (streams.length === 0) return channelIdByUserId;
@@ -182,6 +201,7 @@ export async function batchUpsertChannelsFromStreams(
 
 	const slugHistoryStatements: D1PreparedStatement[] = [];
 	const channelUpsertStatements: D1PreparedStatement[] = [];
+	const channelLastSeenStatements: D1PreparedStatement[] = [];
 	const sightingStatements: D1PreparedStatement[] = [];
 	const sightingChannelIds: string[] = [];
 	for (const stream of streams) {
@@ -228,26 +248,30 @@ export async function batchUpsertChannelsFromStreams(
 		const channelId = existing?.id ?? id;
 		channelIdByUserId.set(stream.user_id, channelId);
 
-		channelUpsertStatements.push(
-			db
-				.prepare(
-					`INSERT INTO channels (
-             id, platform_id, platform_channel_id, slug, display_name,
-             first_observed_at, last_seen_at, ingest_state, language
-           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-           ON CONFLICT(platform_id, platform_channel_id) DO UPDATE SET
-             slug = excluded.slug,
-             display_name = excluded.display_name,
-             last_seen_at = excluded.last_seen_at,
-             language = excluded.language,
-             ingest_state = CASE
-               WHEN channels.ingest_state = 'retired' THEN channels.ingest_state
-               WHEN excluded.ingest_state = 'tracked' THEN 'tracked'
-               ELSE channels.ingest_state
-             END`,
-				)
-				.bind(channelId, PLATFORM_TWITCH, stream.user_id, slug, stream.user_name, firstObserved, now, ingestState, language),
-		);
+		if (channelNeedsFullUpsert(existing, slug, stream.user_name, language, ingestState, recordSighting)) {
+			channelUpsertStatements.push(
+				db
+					.prepare(
+						`INSERT INTO channels (
+               id, platform_id, platform_channel_id, slug, display_name,
+               first_observed_at, last_seen_at, ingest_state, language
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+             ON CONFLICT(platform_id, platform_channel_id) DO UPDATE SET
+               slug = excluded.slug,
+               display_name = excluded.display_name,
+               last_seen_at = excluded.last_seen_at,
+               language = excluded.language,
+               ingest_state = CASE
+                 WHEN channels.ingest_state = 'retired' THEN channels.ingest_state
+                 WHEN excluded.ingest_state = 'tracked' THEN 'tracked'
+                 ELSE channels.ingest_state
+               END`,
+					)
+					.bind(channelId, PLATFORM_TWITCH, stream.user_id, slug, stream.user_name, firstObserved, now, ingestState, language),
+			);
+		} else {
+			channelLastSeenStatements.push(db.prepare(`UPDATE channels SET last_seen_at = ? WHERE id = ?`).bind(now, channelId));
+		}
 
 		if (recordSighting) {
 			sightingChannelIds.push(channelId);
@@ -271,14 +295,20 @@ export async function batchUpsertChannelsFromStreams(
 		}
 	}
 
-	await runD1Batches(db, slugHistoryStatements, {
-		scope: batchOpts?.scope ? `${batchOpts.scope}:slug_history` : undefined,
-		env: batchOpts?.env,
-	});
-	await runD1Batches(db, channelUpsertStatements, {
-		scope: batchOpts?.scope ? `${batchOpts.scope}:channels` : undefined,
-		env: batchOpts?.env,
-	});
+	await Promise.all([
+		runD1Batches(db, slugHistoryStatements, {
+			scope: batchOpts?.scope ? `${batchOpts.scope}:slug_history` : undefined,
+			env: batchOpts?.env,
+		}),
+		runD1Batches(db, channelUpsertStatements, {
+			scope: batchOpts?.scope ? `${batchOpts.scope}:channels` : undefined,
+			env: batchOpts?.env,
+		}),
+		runD1Batches(db, channelLastSeenStatements, {
+			scope: batchOpts?.scope ? `${batchOpts.scope}:channels:last_seen` : undefined,
+			env: batchOpts?.env,
+		}),
+	]);
 	await runD1Batches(db, sightingStatements, {
 		scope: batchOpts?.scope ? `${batchOpts.scope}:sightings` : undefined,
 		env: batchOpts?.env,
@@ -311,6 +341,7 @@ export type LiveSampleInput = {
 async function insertViewerSamplesMultiRow(
 	db: D1Database,
 	rows: { sessionRowId: string; sampledAt: string; viewerCount: number }[],
+	batchOpts?: D1LogOpts,
 ): Promise<void> {
 	if (rows.length === 0) return;
 	const cols = 3;
@@ -319,7 +350,7 @@ async function insertViewerSamplesMultiRow(
 	for (const chunk of chunkArray(rows, rowCap)) {
 		const placeholders = chunk.map(() => '(?, ?, ?)').join(', ');
 		const binds = chunk.flatMap((r) => [r.sessionRowId, r.sampledAt, r.viewerCount]);
-		await db
+		const result = await db
 			.prepare(
 				`INSERT INTO viewer_samples (stream_session_id, sampled_at, viewer_count)
          VALUES ${placeholders}
@@ -327,6 +358,9 @@ async function insertViewerSamplesMultiRow(
 			)
 			.bind(...binds)
 			.run();
+		if (batchOpts?.env) {
+			logD1Meta(batchOpts.scope ?? 'ingest:viewer_samples', result, batchOpts);
+		}
 	}
 }
 
@@ -334,7 +368,7 @@ async function insertViewerSamplesMultiRow(
 export async function batchRecordLiveSamples(
 	db: D1Database,
 	inputs: LiveSampleInput[],
-	batchOpts?: { env?: Env; scope?: string },
+	batchOpts?: D1LogOpts,
 ): Promise<SampleArchiveRow[]> {
 	if (inputs.length === 0) return [];
 
@@ -348,11 +382,12 @@ export async function batchRecordLiveSamples(
 			});
 		}
 	}
-	const gameIdToCategoryId = await batchUpsertGameCategories(db, gamesNeedingUpsert);
-
 	const now = nowIso();
 	const channelIds = inputs.map((i) => i.channelId);
-	const openByChannel = await fetchOpenSessionsByChannelId(db, channelIds);
+	const [gameIdToCategoryId, openByChannel] = await Promise.all([
+		batchUpsertGameCategories(db, gamesNeedingUpsert),
+		fetchOpenSessionsByChannelId(db, channelIds),
+	]);
 
 	const sessionInsertStatements: D1PreparedStatement[] = [];
 	const sessionUpdateStatements: D1PreparedStatement[] = [];
@@ -450,15 +485,24 @@ export async function batchRecordLiveSamples(
 		scope: batchOpts?.scope ? `${batchOpts.scope}:stale_session_close` : undefined,
 		env: batchOpts?.env,
 	});
-	await runD1Batches(db, sessionInsertStatements, {
-		scope: batchOpts?.scope ? `${batchOpts.scope}:session_insert` : undefined,
+	await Promise.all([
+		sessionInsertStatements.length > 0
+			? runD1Batches(db, sessionInsertStatements, {
+					scope: batchOpts?.scope ? `${batchOpts.scope}:session_insert` : undefined,
+					env: batchOpts?.env,
+				})
+			: Promise.resolve(),
+		sessionUpdateStatements.length > 0
+			? runD1Batches(db, sessionUpdateStatements, {
+					scope: batchOpts?.scope ? `${batchOpts.scope}:session_update` : undefined,
+					env: batchOpts?.env,
+				})
+			: Promise.resolve(),
+	]);
+	await insertViewerSamplesMultiRow(db, sampleRows, {
 		env: batchOpts?.env,
+		scope: batchOpts?.scope ? `${batchOpts.scope}:viewer_samples` : undefined,
 	});
-	await runD1Batches(db, sessionUpdateStatements, {
-		scope: batchOpts?.scope ? `${batchOpts.scope}:session_update` : undefined,
-		env: batchOpts?.env,
-	});
-	await insertViewerSamplesMultiRow(db, sampleRows);
 
 	return archive;
 }

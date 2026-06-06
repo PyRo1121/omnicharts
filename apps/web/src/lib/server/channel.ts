@@ -162,30 +162,48 @@ export type ChannelPlatformSuggestion = {
 
 const CHANNEL_LOOKUP_PLATFORMS = ['twitch', 'kick', 'youtube'] as const;
 
+async function lookupChannelOnPlatform(ctx: ServerLoadContext, slug: string, platform: string): Promise<ChannelPlatformSuggestion | null> {
+	if (ctx.db && (platform === 'twitch' || platform === 'kick' || platform === 'youtube')) {
+		try {
+			const body = await buildChannelDetailResponse(ctx.db, {
+				platform,
+				slug,
+				period: parseRankingPeriod('7d'),
+			});
+			if (!body) return null;
+			return {
+				slug: body.slug,
+				platform: body.platform ?? platform,
+				displayName: body.display_name,
+			};
+		} catch {
+			/* platformProxy D1 may be empty — fall through to ingest HTTP */
+		}
+	}
+
+	try {
+		const url = `${getIngestBaseUrl()}/v1/channels/${encodeURIComponent(slug)}?platform=${encodeURIComponent(platform)}&period=7d`;
+		const res = await ctx.fetch(url, { headers: { accept: 'application/json' } });
+		if (!res.ok) return null;
+		const body = parseChannelLookupBody(await res.json());
+		if (!body) return null;
+		return {
+			slug: body.slug,
+			platform: body.platform ?? platform,
+			displayName: body.display_name,
+		};
+	} catch {
+		return null;
+	}
+}
+
 export async function findChannelOnOtherPlatforms(
 	ctx: ServerLoadContext,
 	slug: string,
 	currentPlatform: string,
 ): Promise<ChannelPlatformSuggestion[]> {
 	const others = CHANNEL_LOOKUP_PLATFORMS.filter((platform) => platform !== currentPlatform);
-	const matches = await Promise.all(
-		others.map(async (platform) => {
-			try {
-				const url = `${getIngestBaseUrl()}/v1/channels/${encodeURIComponent(slug)}?platform=${encodeURIComponent(platform)}&period=7d`;
-				const res = await ctx.fetch(url, { headers: { accept: 'application/json' } });
-				if (!res.ok) return null;
-				const body = parseChannelLookupBody(await res.json());
-				if (!body) return null;
-				return {
-					slug: body.slug,
-					platform: body.platform ?? platform,
-					displayName: body.display_name,
-				};
-			} catch {
-				return null;
-			}
-		}),
-	);
+	const matches = await Promise.all(others.map((platform) => lookupChannelOnPlatform(ctx, slug, platform)));
 	return matches.filter((row): row is ChannelPlatformSuggestion => row != null);
 }
 

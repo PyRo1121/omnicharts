@@ -1,5 +1,6 @@
 import type { HelixStream } from './helix';
 import { flushSampleArchivePage, ingestHelixStreamsBatch } from './ingest-stream';
+import type { IngestRunOpts } from '../db/d1-meta';
 
 export type StreamPageIngestStats = {
 	streamsSeen: number;
@@ -14,6 +15,7 @@ export async function ingestStreamPage(
 	minViewers: number,
 	seenUserIds: Set<string>,
 	stats: StreamPageIngestStats,
+	runOpts?: IngestRunOpts,
 ): Promise<{ pageMaxViewers: number }> {
 	let pageMaxViewers = 0;
 	const toIngest: HelixStream[] = [];
@@ -30,7 +32,7 @@ export async function ingestStreamPage(
 		stats.channelsIngested++;
 	}
 
-	const archiveRows = await ingestHelixStreamsBatch(env, toIngest, minViewers);
+	const archiveRows = await ingestHelixStreamsBatch(env, toIngest, minViewers, runOpts);
 	await flushSampleArchivePage(env, archiveRows);
 
 	return { pageMaxViewers };

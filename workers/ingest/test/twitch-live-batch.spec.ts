@@ -130,6 +130,39 @@ describe('batchUpsertChannelsFromStreams', () => {
 		expect(prepare.mock.calls.some(([sql]) => sql.includes('INSERT INTO channels'))).toBe(true);
 	});
 
+	it('uses lightweight last_seen UPDATE for unchanged tracked channel', async () => {
+		const prepare = vi.fn((sql: string) => ({
+			bind: () => ({
+				run: async () => ({ meta: { changes: 1 } }),
+				all: async () => {
+					if (sql.includes('platform_channel_id IN')) {
+						return {
+							results: [
+								{
+									id: 'twitch-ch-42',
+									slug: 'streamer',
+									display_name: 'Streamer',
+									language: null,
+									ingest_state: 'tracked',
+									first_observed_at: '2026-01-01T00:00:00Z',
+									platform_channel_id: '42',
+								},
+							],
+						};
+					}
+					return { results: [] };
+				},
+			}),
+		}));
+		const batch = vi.fn(async () => []);
+		const db = mockIngestD1((sql) => prepare(sql), batch);
+
+		await batchUpsertChannelsFromStreams(db, [stream], { minViewers: 5, promoteToTracked: true });
+
+		expect(prepare.mock.calls.some(([sql]) => sql.includes('UPDATE channels SET last_seen_at'))).toBe(true);
+		expect(prepare.mock.calls.some(([sql]) => sql.includes('INSERT INTO channels'))).toBe(false);
+	});
+
 	it('writes slug_history when existing twitch channel slug changes', async () => {
 		const prepare = vi.fn((sql: string) => ({
 			bind: () => ({

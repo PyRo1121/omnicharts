@@ -4,8 +4,12 @@
 {
 	"$schema": "./node_modules/wrangler/config-schema.json",
 	"name": "omnicharts-web",
-	"compatibility_date": "2026-06-01",
+	"compatibility_date": "2026-06-05",
 	"compatibility_flags": ["nodejs_als"],
+	"observability": {
+		"enabled": true,
+		"logs": { "head_sampling_rate": 1 }
+	},
 	"pages_build_output_dir": ".svelte-kit/cloudflare",
 	// Local platformProxy — match ingest root dev-friendly vars (checkpoint uses airtime=1)
 	"vars": {
@@ -23,6 +27,10 @@
 	],
 	"env": {
 		"production": {
+			"observability": {
+				"enabled": true,
+				"logs": { "head_sampling_rate": 0.25 }
+			},
 			"vars": {
 				"TWITCH_MIN_VIEWERS": "20",
 				"TWITCH_RANKING_MIN_AIRTIME_MINUTES": "60"

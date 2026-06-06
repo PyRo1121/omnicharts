@@ -1,5 +1,6 @@
 import { PLATFORM_TWITCH, type PlatformId } from '@omnicharts/domain';
 import { chunkArray, D1_BATCH_MAX_STATEMENTS, runD1Batches } from './d1-batch';
+import type { D1LogOpts } from './d1-meta';
 
 export type StaleSessionClose = {
 	channelId: string;
@@ -11,7 +12,7 @@ export async function batchCloseStaleOpenSessionsForChannels(
 	db: D1Database,
 	closes: StaleSessionClose[],
 	endedAt: string,
-	batchOpts?: { env?: Env; scope?: string },
+	batchOpts?: D1LogOpts,
 ): Promise<void> {
 	if (closes.length === 0) return;
 
@@ -33,7 +34,7 @@ export async function closeOpenSessionsForPlatformChannelIds(
 	platformId: PlatformId,
 	platformChannelIds: string[],
 	endedAt: string,
-	batchOpts?: { env?: Env; scope?: string },
+	batchOpts?: D1LogOpts,
 ): Promise<void> {
 	if (platformChannelIds.length === 0) return;
 
@@ -60,7 +61,7 @@ export async function closeOpenSessionsForTwitchPlatformChannelIds(
 	db: D1Database,
 	platformChannelIds: string[],
 	endedAt: string,
-	batchOpts?: { env?: Env; scope?: string },
+	batchOpts?: D1LogOpts,
 ): Promise<void> {
 	return closeOpenSessionsForPlatformChannelIds(db, PLATFORM_TWITCH, platformChannelIds, endedAt, batchOpts);
 }
@@ -71,7 +72,7 @@ export async function closeStaleOpenSessionsForChannel(
 	channelId: string,
 	platformStreamId: string,
 	endedAt: string,
-	batchOpts?: { env?: Env; scope?: string },
+	batchOpts?: D1LogOpts,
 ): Promise<void> {
 	await batchCloseStaleOpenSessionsForChannels(db, [{ channelId, platformStreamId }], endedAt, batchOpts);
 }

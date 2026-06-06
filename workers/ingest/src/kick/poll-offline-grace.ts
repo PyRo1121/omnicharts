@@ -7,10 +7,7 @@ export const KICK_OFFLINE_MISS_THRESHOLD = 3;
 export async function resetKickPollMissCounters(db: D1Database, broadcasterIds: string[]): Promise<void> {
 	if (broadcasterIds.length === 0) return;
 	const keys = broadcasterIds.map(missKey);
-	await db
-		.prepare(`DELETE FROM ingest_metadata WHERE key IN (SELECT value FROM json_each(?))`)
-		.bind(JSON.stringify(keys))
-		.run();
+	await db.prepare(`DELETE FROM ingest_metadata WHERE key IN (SELECT value FROM json_each(?))`).bind(JSON.stringify(keys)).run();
 }
 
 /** Returns broadcaster ids safe to treat as offline for session close after grace period. */

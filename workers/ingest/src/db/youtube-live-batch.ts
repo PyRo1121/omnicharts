@@ -1,5 +1,6 @@
 import { PLATFORM_YOUTUBE } from '@omnicharts/domain';
 import { chunkArray, D1_BATCH_MAX_STATEMENTS, maxRowsPerInsert, runD1Batches } from './d1-batch';
+import { logD1Meta } from './d1-meta';
 import { batchCloseStaleOpenSessionsForChannels } from './session-lifecycle';
 import type { SampleArchiveRow } from '../r2/sample-archive';
 import type { YoutubeVideoItem } from '../youtube/types';
@@ -41,6 +42,7 @@ async function fetchOpenSessionsByChannelId(
 async function insertViewerSamplesMultiRow(
 	db: D1Database,
 	rows: { sessionRowId: string; sampledAt: string; viewerCount: number }[],
+	batchOpts?: { env?: Env; scope?: string },
 ): Promise<void> {
 	if (rows.length === 0) return;
 	const cols = 3;
@@ -49,7 +51,7 @@ async function insertViewerSamplesMultiRow(
 	for (const chunk of chunkArray(rows, rowCap)) {
 		const placeholders = chunk.map(() => '(?, ?, ?)').join(', ');
 		const binds = chunk.flatMap((r) => [r.sessionRowId, r.sampledAt, r.viewerCount]);
-		await db
+		const result = await db
 			.prepare(
 				`INSERT INTO viewer_samples (stream_session_id, sampled_at, viewer_count)
          VALUES ${placeholders}
@@ -57,6 +59,9 @@ async function insertViewerSamplesMultiRow(
 			)
 			.bind(...binds)
 			.run();
+		if (batchOpts?.env) {
+			logD1Meta(batchOpts.scope ?? 'ingest:viewer_samples', result, batchOpts);
+		}
 	}
 }
 
@@ -133,15 +138,24 @@ export async function batchRecordYoutubeLiveSamples(
 		scope: batchOpts?.scope ? `${batchOpts.scope}:stale_session_close` : undefined,
 		env: batchOpts?.env,
 	});
-	await runD1Batches(db, sessionInsertStatements, {
-		scope: batchOpts?.scope ? `${batchOpts.scope}:session_insert` : undefined,
+	await Promise.all([
+		sessionInsertStatements.length > 0
+			? runD1Batches(db, sessionInsertStatements, {
+					scope: batchOpts?.scope ? `${batchOpts.scope}:session_insert` : undefined,
+					env: batchOpts?.env,
+				})
+			: Promise.resolve(),
+		sessionUpdateStatements.length > 0
+			? runD1Batches(db, sessionUpdateStatements, {
+					scope: batchOpts?.scope ? `${batchOpts.scope}:session_update` : undefined,
+					env: batchOpts?.env,
+				})
+			: Promise.resolve(),
+	]);
+	await insertViewerSamplesMultiRow(db, sampleRows, {
 		env: batchOpts?.env,
+		scope: batchOpts?.scope ? `${batchOpts.scope}:viewer_samples` : undefined,
 	});
-	await runD1Batches(db, sessionUpdateStatements, {
-		scope: batchOpts?.scope ? `${batchOpts.scope}:session_update` : undefined,
-		env: batchOpts?.env,
-	});
-	await insertViewerSamplesMultiRow(db, sampleRows);
 
 	return archive;
 }

@@ -6,6 +6,7 @@ import { closeOpenSessionsForPlatformChannelIds } from '../db/session-lifecycle'
 import { ingestHelixStreamsBatch } from './ingest-stream';
 import { helixBudgetAllowsFetch, helixBudgetReconcileBatches } from './rate-limit';
 import { requireDb } from '../worker-bindings';
+import type { IngestRunOpts } from '../db/d1-meta';
 
 export type ReconcileStats = {
 	candidates: number;
@@ -19,6 +20,7 @@ export type ReconcileStats = {
 export type ReconcileOptions = {
 	/** Shared client for sequential coverage (one budget across sweep + game pass + reconcile). */
 	client?: TwitchHelixClient;
+	runOpts?: IngestRunOpts;
 };
 
 /**
@@ -57,11 +59,12 @@ export async function runTwitchReconcileRecent(env: Env, opts: ReconcileOptions 
 		const now = new Date().toISOString();
 
 		stats.liveFound += liveStreams.length;
-		const archiveRows = await ingestHelixStreamsBatch(env, liveStreams, minViewers);
+		const archiveRows = await ingestHelixStreamsBatch(env, liveStreams, minViewers, opts.runOpts);
 		stats.samplesWritten += archiveRows.length;
 		await closeOpenSessionsForPlatformChannelIds(db, PLATFORM_TWITCH, offlineIds, now, {
 			env,
 			scope: 'reconcile:offline_close_sessions',
+			pollCycle: opts.runOpts?.pollCycle,
 		});
 	}
 

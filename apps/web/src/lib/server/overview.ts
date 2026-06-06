@@ -1,7 +1,9 @@
+import { PLATFORM_KICK, PLATFORM_YOUTUBE } from '@omnicharts/domain';
 import { getIngestBaseUrl } from '$lib/server/ingest';
 import { parseIngestHealth } from '$lib/server/json-guards';
 import type { ServerLoadContext } from '$lib/server/load-context';
 import { loadHomepageFromD1 } from '$lib/server/homepage-d1';
+import { loadPlatformCountsFromD1 } from '$lib/server/platform-counts-d1';
 import { loadChannelRankings, type ChannelRankingsLoad } from '$lib/server/rankings';
 import { loadGameRankings, type GameRankingsLoad } from '$lib/server/game-rankings';
 import { heroStats, type RankingPeriod } from '$lib/mock/home';
@@ -153,31 +155,52 @@ async function loadRollupPlatformOverview(
 
 	if (rankingsLive) {
 		try {
-			const healthRes = await ctx.fetch(`${getIngestBaseUrl()}/health`, {
-				headers: { accept: 'application/json' },
-			});
-			if (healthRes.ok) {
-				const health = parseIngestHealth(await healthRes.json());
-				if (!health) throw new Error('invalid health payload');
-				const tracked = health.tracked_channels[platform];
-				const live =
-					health.channels_live_by_platform?.[platform] ?? (platform === 'kick' || platform === 'youtube' ? 0 : health.channels_live);
+			if (ctx.db) {
+				const platformId = platform === 'kick' ? PLATFORM_KICK : PLATFORM_YOUTUBE;
+				const counts = await loadPlatformCountsFromD1(ctx.db, platformId);
 				healthStats = [
 					{
 						label: 'Channels tracked',
-						value: formatCount(tracked),
+						value: formatCount(counts.tracked),
 						hint: `${platform === 'kick' ? 'Kick' : 'YouTube'} ingest state tracked`,
 						source: 'live',
 					},
 					{
 						label: 'Live now',
-						value: formatCount(live),
+						value: formatCount(counts.live),
 						hint: 'From latest directory sweep',
 						source: 'live',
 					},
 				];
-				channelsLive = live;
-				ingestStatus = health.status;
+				channelsLive = counts.live;
+				ingestStatus = 'ok';
+			} else {
+				const healthRes = await ctx.fetch(`${getIngestBaseUrl()}/health`, {
+					headers: { accept: 'application/json' },
+				});
+				if (healthRes.ok) {
+					const health = parseIngestHealth(await healthRes.json());
+					if (!health) throw new Error('invalid health payload');
+					const tracked = health.tracked_channels[platform];
+					const live =
+						health.channels_live_by_platform?.[platform] ?? (platform === 'kick' || platform === 'youtube' ? 0 : health.channels_live);
+					healthStats = [
+						{
+							label: 'Channels tracked',
+							value: formatCount(tracked),
+							hint: `${platform === 'kick' ? 'Kick' : 'YouTube'} ingest state tracked`,
+							source: 'live',
+						},
+						{
+							label: 'Live now',
+							value: formatCount(live),
+							hint: 'From latest directory sweep',
+							source: 'live',
+						},
+					];
+					channelsLive = live;
+					ingestStatus = health.status;
+				}
 			}
 		} catch {
 			/* keep unavailable health stats */
