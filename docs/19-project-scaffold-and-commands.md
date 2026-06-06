@@ -317,7 +317,9 @@ Root `.oxlintrc.json` targets **enterprise bug prevention** — correctness + hi
 | `typescript/no-unsafe-type-assertion`, `no-unnecessary-type-assertion`, `no-base-to-string`, `no-unnecessary-type-conversion`, `restrict-template-expressions`, `unbound-method`, `no-unnecessary-type-parameters`, `no-unnecessary-boolean-literal-compare` | Type-aware noise at scale (API/JSON boundaries); prefer targeted fixes over hundreds of assertion nits. |
 | `typescript/only-throw-error` | SvelteKit `error()` / `redirect()` throw framework types, not plain `Error`. |
 
-**Test / script overrides:** `*.test.ts`, `*.spec.ts`, `test/**`, `e2e/**` relax type-aware and `no-explicit-any`. `scripts/**` also disables `no-unsafe-*` and `import/no-cycle` (CLI JSON parsing).
+**Agent policy:** Fix lint violations in code (typed mocks, JSON guards, `testEnv()` helpers) — do **not** weaken or blanket-disable rules for noise. Minimal overrides only: `no-console` off in `scripts/**` and tests; ingest logging shims (`log.ts`, `d1-meta.ts`).
+
+**Test / script overrides:** `*.test.ts`, `*.spec.ts`, `test/**`, `e2e/**` relax `no-explicit-any` and `no-unsafe-*` propagation; still **error** on `no-unsafe-type-assertion`, `no-base-to-string`, `unbound-method`. `scripts/**` also disables `import/no-cycle`; JSON/CLI paths use `scripts/lib/json-guards.ts` instead of `as` casts.
 
 **Oxfmt:** `.oxfmtrc.json` — tabs, single quotes, semicolons, 140 print width.
 
@@ -355,3 +357,4 @@ Root `.oxlintrc.json` targets **enterprise bug prevention** — correctness + hi
 | 2026-06-05 | **Oxlint + Oxfmt:** root devDeps `oxlint`, `oxfmt`; configs `.oxlintrc.json`, `.oxfmtrc.json`; scripts `lint`, `format`, `format:check` scoped to apps/web, packages, workers/ingest, scripts. |
 | 2026-06-05 | **Oxlint tune:** practical rule set — correctness + eqeqeq/no-console/no-debugger/no-explicit-any + explicit duplicate/unreachable rules; scripts + logging shims exempt from no-console. |
 | 2026-06-05 | **Oxlint enterprise:** full correctness + suspicious (minus documented noise), perf warn, type-aware (`oxlint-tsgolint`), import/ESLint parity; test/script/svelte overrides; doc 19 lint philosophy table. |
+| 2026-06-05 | **Oxlint zero-error gate:** `bun run lint` / `bun run format:check` at repo root; fix code (json-guards, test helpers) not rule disables; tests/scripts enforce assertion/base-to-string/unbound-method errors. |
