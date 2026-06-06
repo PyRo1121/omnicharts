@@ -258,7 +258,7 @@ Optional `platform_channel_ids` array scopes to specific Helix `user_id` values.
 
 1. **D1 migrations (canonical cwd `workers/ingest`)**
    - [ ] `bun run d1:migrate:remote` from repo root (or `cd workers/ingest && npx wrangler d1 migrations apply omnicharts --remote`)
-   - [ ] `bun run d1:verify-schema:remote` — tables/columns through `0006` ([13](./13-testing-and-verification.md))
+   - [ ] `bun run d1:verify-schema:remote` — tables/columns through **0010** ([13](./13-testing-and-verification.md))
 2. **Ingest Worker**
    - [ ] Production vars: `TWITCH_RANKING_MIN_AIRTIME_MINUTES=60`, `TWITCH_MIN_VIEWERS=20` ([12](./12-channel-discovery-and-tracking.md), `wrangler.jsonc` `env.production`)
    - [ ] Secrets: `TWITCH_CLIENT_*`, EventSub, **`ADMIN_API_KEY`** ([rotation](#admin_api_key-rotation-mutating-admin) above)

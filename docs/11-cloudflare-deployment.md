@@ -394,7 +394,7 @@ Use before first prod cut or after schema/ingest changes. Full ops detail: [15-i
 | Step | Action |
 |------|--------|
 | 1 | `bun run d1:migrate:remote` — **from `workers/ingest`** (shared `migrations/d1/`) |
-| 2 | `bun run d1:verify-schema:remote` — parity through migration `0006` |
+| 2 | `bun run d1:verify-schema:remote` — parity through migration **0010** |
 | 3 | Set production ingest **and Pages** vars (`TWITCH_RANKING_MIN_AIRTIME_MINUTES=60`, `TWITCH_MIN_VIEWERS=20`) and `wrangler secret put` for Twitch + **`ADMIN_API_KEY`** |
 | 4 | Deploy **ingest Worker** before Pages |
 | 5 | Deploy Pages; verify `/health` and homepage rankings |

@@ -33,6 +33,12 @@
 |-----|------|
 | [phase4-signoff](./phase4-signoff.md) | Retention & agency complete — gates, slices 4.1–4.7 (2026-06-05) |
 
+## Phase 5 kickoff
+
+| Doc | Role |
+|-----|------|
+| [phase5-execution-plan](./phase5-execution-plan.md) | Cloudflare prod deploy — ordered slices 5.0–5.6, agent vs operator split, P1–P7 pre-deploy gates (2026-06-05) |
+
 ## Phase 4
 
 | Doc | Role |

@@ -2,7 +2,7 @@
 
 Living plan aligned with [docs/00-vision-and-principles.md](./docs/00-vision-and-principles.md). Update checkboxes as phases ship.
 
-**Phase 0–3 (MVP):** Shipped (2026-06-05) — three-platform discovery loop. **Phase 4** shipped (2026-06-05) — [28-phase4-plan](./docs/28-phase4-plan.md).
+**Phase 0–3 (MVP):** Shipped (2026-06-05) — three-platform discovery loop. **Phase 4** shipped (2026-06-05) — [28-phase4-plan](./docs/28-phase4-plan.md) · [phase4-signoff](./docs/audits/phase4-signoff.md). **Phase 5** kickoff — [phase5-execution-plan](./docs/audits/phase5-execution-plan.md).
 
 ## MVP definition (canonical)
 
@@ -88,7 +88,9 @@ Phase 2 = Twitch-only slice of the same loop. See [02-user-personas](./docs/02-u
 
 ---
 
-## Phase 4 — Retention & agency (weeks 11–14)
+## Phase 4 — Retention & agency (weeks 11–14) — **shipped 2026-06-05**
+
+**Sign-off:** [docs/audits/phase4-signoff.md](./docs/audits/phase4-signoff.md)
 
 Plan: [28-phase4-plan](./docs/28-phase4-plan.md)
 
@@ -106,9 +108,14 @@ Plan: [28-phase4-plan](./docs/28-phase4-plan.md)
 
 ## Phase 5 — Cloudflare production (weeks 15–18)
 
-- [ ] Pages + ingest Worker on **Workers Paid** for ingest ([ADR-004](./docs/adr/0004-cloudflare-free-vs-paid.md))
-- [ ] D1, R2, Queues, Cron per [11](./docs/11-cloudflare-deployment.md)
-- [ ] `/health`, SLOs ([14-observability](./docs/14-observability-slos-and-error-budgets.md))
+**Plan:** [docs/audits/phase5-execution-plan.md](./docs/audits/phase5-execution-plan.md)
+
+- [x] Pre-deploy gates documented (P1–P7: lint, check:web, local schema **0010**, `verify:wrangler-production`)
+- [ ] Workers Paid account + D1/R2/Queues bindings ([ADR-004](./docs/adr/0004-cloudflare-free-vs-paid.md))
+- [ ] Remote D1 migrate + verify through **0010** (`d1:migrate:remote`, `d1:verify-schema:remote`)
+- [ ] Secrets sync from `workers/ingest/.dev.vars` (agents; [15-ingest-runbook](./docs/15-ingest-runbook.md))
+- [ ] Deploy ingest Worker → Pages per [11](./docs/11-cloudflare-deployment.md)
+- [ ] `/health` + SLOs ([14-observability](./docs/14-observability-slos-and-error-budgets.md))
 - [ ] Public beta + custom domain
 
 **Exit criteria:** Public beta; ingest lag p95 &lt; 5 min.
